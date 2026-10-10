@@ -12,6 +12,10 @@
 <div class="app" id="app">
   <header class="top">
     <h1>Counselor Copilot</h1>
+    <nav class="top-nav" aria-label="About this screen">
+      <button type="button" class="linkbtn" data-act="open-about">About</button>
+      <button type="button" class="linkbtn" data-act="open-built">How it was built</button>
+    </nav>
     <div class="top-chips" id="top-chips"></div>
     <div class="student-line" id="student-line" hidden></div>
   </header>
@@ -52,6 +56,12 @@
                 <input type="range" id="f-gpa" min="0" max="4" step="0.1" value="3.5">
                 <output id="o-gpa" for="f-gpa">3.5</output>
                 <label class="tog"><input type="checkbox" id="f-gpa-none"><span>none</span></label>
+              </div>
+              <div class="dial">
+                <label for="f-actv">Activities, your rating <em>(0 to 10; used only for closeness)</em></label>
+                <input type="range" id="f-actv" min="0" max="10" step="0.5" value="5">
+                <output id="o-actv" for="f-actv">5</output>
+                <label class="tog"><input type="checkbox" id="f-actv-none" checked><span>none</span></label>
               </div>
               <label class="field">
                 <span>Home state</span>

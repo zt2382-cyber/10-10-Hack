@@ -15,6 +15,10 @@ It answers four questions:
    confirmed against a knowledge base.
 4. **Is the list balanced, and what could change it?** Warnings when a list is lopsided, suggested fills beyond the
    usual very selective colleges, and a "what if the score were..." slider.
+5. **Who does this student resemble?** Per college, whether the student sits closer to the people admitted there or
+   the people denied, as a distance over score, activities rating, major group, hooks and residency only. Shown as
+   rings and a mind map on the first view and a "Who they resemble" tab per college. It never reads the essay or
+   the activity text, and it is not a forecast (`docs/req/REQUIREMENTS.md`).
 
 It never gives a personal chance of admission.
 
@@ -29,13 +33,13 @@ small: how many colleges are reach, target and likely; the single most important
 this student stands", with every college's middle score range on a shared line and the student's score drawn
 through all of them. Beside it are three levers: the list itself (suggested colleges that would fill the gaps), a
 "what if the score were..." slider that re-labels the list as it moves, and what each college says matters.
-Pressing a college opens four tabs: why this label, cases like this student, what could change it, and what the
-college says. A footer holds the essay notes, how the answer was made, a one-page sheet to print for the family,
+Pressing a college opens five tabs: why this label, cases like this student, who they resemble, what could change
+it, and what the college says. A footer holds the essay notes, how the answer was made, a one-page sheet to print for the family,
 and "What is the student's chance?", which explains why no percentage is given and points at the evidence instead.
 
 **What works today.**
 - End to end in about six seconds with the essay reader and PRISM switched on.
-- 60 of 60 labels match a hand-worked answer sheet; 177 unit tests pass.
+- 60 of 60 labels match a hand-worked answer sheet; 212 unit tests pass.
 - The essay reader runs through Nicrron with two models from different makers.
 - PRISM: the guardrail stops an essay with a hidden instruction; college statements come back "confirmed" from the
   Knowledge Base and a planted false one "not confirmed"; each run and its five steps are recorded.
@@ -81,7 +85,7 @@ Optional settings, all read from environment variables (no key is ever stored in
 | `ANTHROPIC_API_KEY` or `ANTHROPIC_KEY_FILE` | The one screening call through PRISM's proxy, which lets the guardrail block |
 | `PORT` | The port (default 8765) |
 
-Tests: `python -m unittest discover -s tests -t .` (177 tests, no network).
+Tests: `python -m unittest discover -s tests -t .` (212 tests, no network).
 
 To share the screen as plain files with no server: `python tools/make_static.py --zip` saves real runs for the six
 demo students into `dist/`.
@@ -115,6 +119,9 @@ part agreed to before building · `docs/` setup notes and an example result.
 
 - Labels use test scores and admit rates only. The federal file has no GPA field, and the screen says so.
 - Similar-case matching uses score, major group and hook status. Essay themes only reorder the school's own cases.
+- Closeness uses score, activities rating, major group, hooks and residency only (GPA for the school's own cases).
+  Its weights are starting values, not tuned. `python -m engine.similarity --check` counts how its lean sorted 400
+  past posters (`docs/closeness_check.json`); the table is shown under "How this was made".
 - College statements cover 24 of the 300 colleges.
 - Cost is the sticker price. What a family would pay is not known here.
 - PRISM's Evaluator is not attached yet; the run's score is read back in code instead.

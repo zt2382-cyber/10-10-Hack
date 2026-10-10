@@ -14,10 +14,13 @@ Distances are computed in code; optional masked text vectors are prepared by the
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from engine import semantic
 from engine import cases as _cases
 from engine import colleges as _colleges
+
+ROOT = Path(__file__).resolve().parent.parent
 
 NEIGHBOURS = 7
 NEEDED = _cases.NEEDED
@@ -55,6 +58,45 @@ CLOSE, FAR = 0.15, 0.5   # per-part words: at or under CLOSE is "close", at or o
 # the steady test: recompute with other neighbour counts and a slightly different score
 STEADY_K = (5, 10)
 STEADY_SCORE = (-30, 30)
+
+
+def method() -> dict:
+    """The method's constants, for the screen's About page: weights, spans, thresholds and the kinds settings.
+    Read from the same names the code uses, so the page cannot drift from the code."""
+    return {
+        "parts": [
+            {"part": "score", "name": PART_WORD["score"], "weight": WEIGHTS["score"], "distance": f"score difference / {SCORE_SPAN} SAT points, capped at 1",
+             "student": "SAT, or ACT converted to the SAT scale", "case": "SAT, or ACT converted", "pools": "both", "required": False},
+            {"part": "activities", "name": PART_WORD["activities"], "weight": WEIGHTS["activities"], "distance": f"rating difference / {RATING_SPAN:g}",
+             "student": "the counselor's 0 to 10 rating (optional)", "case": "self-rated activities and awards, 0 to 10", "pools": "national only", "required": False},
+            {"part": "major", "name": PART_WORD["major"], "weight": WEIGHTS["major"], "distance": "0 same group, 1 different",
+             "student": "intended major, or the essay reader's tag when both models agreed", "case": "stated major", "pools": "both", "required": False},
+            {"part": "hooks", "name": PART_WORD["hooks"], "weight": WEIGHTS["hooks"], "distance": "0 same set of hooks, 1 different",
+             "student": "first-gen, legacy, under-represented, athlete, or none", "case": "the same set", "pools": "both", "required": False},
+            {"part": "residency", "name": PART_WORD["residency"], "weight": WEIGHTS["residency"], "distance": "0 if both in-state or both out-of-state for this college, else 1",
+             "student": "home state", "case": "home state", "pools": "both, public colleges only", "required": False},
+            {"part": "gpa", "name": PART_WORD["gpa"], "weight": WEIGHTS["gpa"], "distance": f"GPA difference / {GPA_SPAN:g} on a 4.0 scale, capped at 1",
+             "student": "GPA, converted to a 4.0 scale", "case": "GPA in the school's own file", "pools": "own only", "required": False},
+            {"part": "essay", "name": PART_WORD["essay"], "weight": WEIGHTS["essay"],
+             "distance": "(1 - cosine similarity) / 2, bounded from 0 to 1",
+             "student": "masked essay embedding", "case": "masked full essay or marked theme summary embedding",
+             "pools": "both, where text is available", "required": False},
+            {"part": "activity_text", "name": PART_WORD["activity_text"], "weight": WEIGHTS["activity_text"],
+             "distance": "(1 - cosine similarity) / 2, bounded from 0 to 1",
+             "student": "masked activity descriptions embedding", "case": "masked activity notes embedding",
+             "pools": "both, where text is available", "required": False},
+        ],
+        "never_used": [ "race", "gender", "income", "class rank", "the essay/recommendation/interview self-rating"],
+        "neighbours": NEIGHBOURS, "needed": NEEDED, "lean_gap": LEAN_GAP, "change_gain": CHANGE_GAIN, "max_changes": MAX_CHANGES,
+        "score_steps": list(SCORE_STEPS), "rating_steps": list(RATING_STEPS), "close": CLOSE, "far": FAR,
+        "steady": {"neighbours": list(STEADY_K), "score": list(STEADY_SCORE)},
+        "kinds": {"k": KINDS, "min_admitted": KINDS_MIN, "cap": KINDS_CAP, "rounds": KINDS_ROUNDS, "seed": KINDS_SEED,
+                  "parts": list(KIND_PARTS), "score_band": KIND_SCORE_BAND, "rating_band": KIND_RATING_BAND},
+        "points_cap": POINTS_CAP, "check": {"n": CHECK_N, "seed": CHECK_SEED},
+        "libraries": {"engine": ["csv", "json", "functools.lru_cache", "random", "statistics", "collections.Counter", "pathlib", "optional Nicrron text embeddings"],
+                      "not_used": ["numpy", "scikit-learn", "pandas"],
+                      "screen": ["plain HTML, CSS and JavaScript", "inline SVG drawn by hand", "no chart library, no framework, no build step"]},
+    }
 
 
 # ---------------------------------------------------------------- the two sides of a comparison
@@ -479,9 +521,67 @@ def closeness(student, college, tags=None, semantic_context=None) -> dict:
             "essay_retrieval": [r for r in context.get("retrieval", []) if r["case_id"] in ids][:6],
             "weights": dict(WEIGHTS),
             "needed": NEEDED, "neighbours": NEIGHBOURS,
+            "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
             "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
             "own": _pool(sv, own, college, OWN_SOURCE, True, own=True),
             "caveat": CAVEAT}
+
+
+# ---------------------------------------------------------------- R5. how well it holds up
+
+CHECK_N = 400
+CHECK_SEED = 20261010
+CHECK_PATH = ROOT / "docs" / "closeness_check.json"
+CHECK_CAVEAT = ("Counted on self-reported public posts, each person hidden before their own lean was computed. People who "
+                "post are admitted far more often than applicants overall, so this says how the lean sorts posters, not "
+                "applicants.")
+
+
+def check(n=CHECK_N, seed=CHECK_SEED) -> dict:
+    """For a seeded sample of real national decisions, hide that person, compute their lean at that college, and
+    count how many in each lean were in fact admitted and denied. National pool only; never SYNTHETIC rows."""
+    import random
+    from datetime import datetime, timezone
+
+    by_college = _cases._national()[0]
+    scorecard = {}
+    for col in _colleges.load_colleges():
+        short = _colleges.case_name_for(col)
+        if short and short not in scorecard:
+            scorecard[short] = col
+    pool = [(short, cv) for short in sorted(by_college) for cv in _national_groups(short)[0] + _national_groups(short)[1]]
+    rng = random.Random(seed)
+    sample = rng.sample(pool, min(n, len(pool)))
+    table = {k: {"admitted": 0, "denied": 0} for k in ("closer_to_admitted", "in_between", "closer_to_denied")}
+    skipped = 0
+    for short, cv in sample:
+        groups = _national_groups(short)
+        adm, den = groups[0], groups[1]
+        # the hidden person must leave both groups at or above NEEDED, as a real student would see them
+        if len(adm) - (cv["outcome"] == "admitted") < NEEDED or len(den) - (cv["outcome"] == "denied") < NEEDED:
+            skipped += 1
+            continue
+        sv = {"score": cv["score"], "converted": False, "activities": cv["activities"], "major_group": cv["major_group"],
+              "major_interests": [cv["major_group"]] if cv["major_group"] else [], "hooks": cv["hooks"],
+              "home_state": cv["home_state"], "gpa": None}
+        lean = _lean(_gap(sv, groups, scorecard.get(short, {}), exclude=cv["case_id"])[2])
+        if lean:
+            table[lean][cv["outcome"]] += 1
+    rows = [{"lean": k, "admitted": v["admitted"], "denied": v["denied"], "n": v["admitted"] + v["denied"]} for k, v in table.items()]
+    return {"generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"), "sampled": len(sample),
+            "used": sum(r["n"] for r in rows), "skipped_small_groups": skipped, "seed": seed, "neighbours": NEIGHBOURS,
+            "lean_gap": LEAN_GAP, "source": NATIONAL_SOURCE, "rows": rows, "caveat": CHECK_CAVEAT}
+
+
+def _write_check():
+    import json
+    res = check()
+    CHECK_PATH.write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"{'lean':20} {'admitted':>9} {'denied':>7} {'n':>5}")
+    for r in res["rows"]:
+        print(f"{r['lean']:20} {r['admitted']:9} {r['denied']:7} {r['n']:5}")
+    print(f"sampled {res['sampled']}, used {res['used']}, skipped {res['skipped_small_groups']} (a group would drop under {NEEDED})")
+    print("written:", CHECK_PATH)
 
 
 # ---------------------------------------------------------------- command line
@@ -507,7 +607,7 @@ if __name__ == "__main__":
     if "--spread" in sys.argv:
         _spread()
     elif "--check" in sys.argv:
-        print("--check is not built yet.")
+        _write_check()
     else:
         from engine import pipeline
         st = pipeline.demo_students()[0]

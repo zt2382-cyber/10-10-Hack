@@ -175,6 +175,7 @@ class ClosenessTests(unittest.TestCase):
             self.assertIn("to", f)
         self.assertTrue(r["own"]["verified"])
         self.assertIn("not a forecast", r["caveat"])
+        self.assertEqual(r["student"], {"score": 1450, "converted": False, "activities": None})
 
     def test_lean_follows_gap_and_threshold(self):
         self.assertEqual(S._lean(S.LEAN_GAP), "closer_to_admitted")
@@ -421,6 +422,41 @@ class KindsTests(unittest.TestCase):
         for n in names:
             S._kinds(n)
         self.assertLess(time.perf_counter() - t, 1.0)
+
+
+class MethodTests(unittest.TestCase):
+    def test_method_reads_from_the_same_constants(self):
+        m = S.method()
+        self.assertEqual({p["part"]: p["weight"] for p in m["parts"]}, S.WEIGHTS)
+        self.assertEqual(m["neighbours"], S.NEIGHBOURS)
+        self.assertEqual(m["lean_gap"], S.LEAN_GAP)
+        self.assertEqual(m["kinds"]["seed"], S.KINDS_SEED)
+        self.assertNotIn("essay text", m["never_used"])
+        self.assertNotIn("activity descriptions", m["never_used"])
+        self.assertTrue(all(not p["required"] for p in m["parts"]))
+        self.assertIn("numpy", m["libraries"]["not_used"])
+        for text in strings(m):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+        json.dumps(m)   # plain data only
+
+
+class CheckTests(unittest.TestCase):
+    def test_small_check_is_deterministic_national_only_and_adds_up(self):
+        a = S.check(n=60, seed=7)
+        b = S.check(n=60, seed=7)
+        for k in ("rows", "used", "sampled", "skipped_small_groups"):
+            self.assertEqual(a[k], b[k])
+        self.assertEqual(a["sampled"], 60)
+        self.assertEqual(a["used"] + a["skipped_small_groups"], 60)
+        self.assertEqual([r["lean"] for r in a["rows"]], ["closer_to_admitted", "in_between", "closer_to_denied"])
+        for r in a["rows"]:
+            self.assertEqual(r["n"], r["admitted"] + r["denied"])
+        self.assertNotIn("synthetic", json.dumps(a).lower())
+        for text in strings(a):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+        self.assertNotEqual(json.dumps(S.check(n=60, seed=8)["rows"]), json.dumps(a["rows"]))
 
 
 if __name__ == "__main__":

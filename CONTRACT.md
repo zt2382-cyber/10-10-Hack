@@ -51,6 +51,7 @@ retrieve, score, bucket, explain, log.
 | `engine/claims.py`, `tests/test_claims.py` | Claims |
 | `web/index.html`, `web/app.js`, `web/style.css` | Screen |
 | `tests/acceptance/answer_sheet.csv`, `tests/acceptance/run_acceptance.py`, `tests/acceptance/README.md` | Acceptance |
+| `engine/similarity.py`, `tests/test_similarity.py`, `docs/closeness_check.json`, `tools/sync_fixture.py`, `docs/req/` | Closeness (added 2026-10-10 afternoon) |
 
 ## Shared helpers already written: `engine/colleges.py`
 `load_colleges() -> list[College]`, `find_college(name_or_id) -> College | None`, `case_name_for(college) -> str | None`
@@ -68,11 +69,14 @@ tuition_out, pell_share, grad_rate, url, source`.
  "essay": "full text or empty string", "college_list": ["Cornell University", "Purdue University-Main Campus"]}
 ```
 Any field except `college_list` may be null or missing. `hooks` values: `first_gen`, `legacy`, `urm`,
-`recruited_athlete`, `none`.
+`recruited_athlete`, `none`. Optional, used only by Closeness: `activities_rating` (0 to 10, the counselor's own
+rating) and `major_interests` (a list of majors the student named).
 
 ## Output: Result (dict). This is the only thing the screen reads.
 The full example is `docs/fixture_result.json`. Top-level keys:
-`run_id, generated_at, synthetic, student, steps, privacy, reader, colleges, balance, checks, prism, refusals`.
+`run_id, generated_at, synthetic, student, steps, privacy, reader, colleges, balance, checks, prism, refusals,
+closeness_check, closeness_method` (the last two are the Closeness holds-up table from `docs/closeness_check.json`,
+or null, and `similarity.method()`: the weights, spans and thresholds the About page shows, read from the code).
 
 ### `label` object: `labels.label_college(student, college_or_None) -> dict`
 ```json
@@ -128,6 +132,44 @@ The full example is `docs/fixture_result.json`. Top-level keys:
 sat, act, gpa, major_group, hooks, home_state, activities_note, essay_theme, college (Scorecard name), outcome
 (admitted/denied/waitlisted), verified_by ("counselor")`. It refuses any field that looks like a name, email, phone
 or date of birth. Store: `data/local/school_cases.csv` (git-ignored), seeded from the SYNTHETIC file on first use.
+
+### `closeness` object: `similarity.closeness(student, college, tags=None) -> dict` (Closeness, added in the afternoon)
+On every college in `colleges`; `null` for a college outside the data. Requirements: `docs/req/REQUIREMENTS.md`.
+```json
+{"needed": 15, "neighbours": 7, "student": {"score": 1450, "converted": false, "activities": null},
+ "national": {"source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "ok",
+   "n_admitted": 184, "n_denied": 213, "n_waitlisted": 50,
+   "d_admitted": 0.08, "d_denied": 0.039, "gap": -0.041, "lean": "closer_to_denied",
+   "text": "Looks more like the people denied here than the people admitted.",
+   "steady": false, "flips": [{"cause": "score 30 points higher", "to": "in_between"}],
+   "parts": [{"part": "score", "distance": 0.05, "text": "close"}, {"part": "major", "distance": 0.0, "text": "close"}],
+   "not_used": ["activities rating", "GPA", "residency (private college)", "essay", "activity descriptions"],
+   "nearest_admitted": [{"case_id": "N-1296", "sat": 1450, "act": null, "major": "CS", "hooks": "FIRST-GEN", "home_state": "NY",
+                         "activities_rating": 6.5, "outcome": "admitted", "distance": 0.0, "parts": {"score": 0.0, "major": 0.0, "hooks": 0.0}}],
+   "nearest_denied": [],
+   "kinds": [{"kind_id": "K1", "name": "Mid score, CS, activities 6.5", "size": 113, "median_sat": 1520, "median_activities": 6.5,
+              "top_major": "CS", "medoid_case_id": "N-1042", "distance": 0.079, "nearest": true}],
+   "changes": [{"change": "Score 100 points higher", "gap_before": -0.041, "gap_after": -0.004, "lean_after": "in_between", "because": ["N-88"]}],
+   "changes_note": "",
+   "points": [{"case_id": "N-1042", "sat": 1460, "activities": 6.5, "outcome": "denied", "kind_id": null}]},
+ "own": {"source": "Your school's own finished cases", "verified": true, "status": "not_enough", "n_admitted": 1, "n_denied": 3, "n_waitlisted": 0,
+         "d_admitted": 0.21, "d_denied": 0.3, "gap": 0.09, "lean": null, "text": "Not enough finished cases in one of the two groups to say which the student is closer to.",
+         "steady": null, "flips": [], "parts": [], "not_used": [], "nearest_admitted": [], "nearest_denied": [], "kinds": [], "changes": [], "changes_note": "", "points": []},
+ "caveat": "Closeness compares this student with people who chose to post their results. It is not a forecast."}
+```
+- A **distance**, never a probability: each part (score, activities rating, major group, hooks, residency at public
+  colleges, GPA for the school's own cases) is 0 (same) to 1 (far); the total is a weighted mean over the parts both
+  sides have (weights in `similarity.WEIGHTS`). Parts missing on either side are skipped and named in `not_used`.
+- `d_admitted` / `d_denied`: mean distance to the 7 nearest admitted / denied cases with a score; `gap` is their
+  difference; `lean` is `closer_to_admitted` when gap >= 0.03, `closer_to_denied` when gap <= -0.03, else
+  `in_between`. `steady` / `flips` rerun with 5 and 10 neighbours and the score 30 points either way.
+- `status`: `ok` (both groups 15 or more), `not_enough` (either group 1 to 14; counts and distances still shown,
+  `lean` null), `none` (a group is empty or no cases), `cant_say` (no score). Two pools, never merged.
+- `kinds`: three kinds of admitted student per college (k-medoids, seeded, national pool, 30 or more admitted),
+  named only from counted facts; `[]` otherwise. `points` is capped at 300.
+- `changes`: up to 3 of score +30/+60/+100, activities rating +1/+2, or another major the student named, kept only
+  when the gap rises by 0.02 or more. Never hooks, home state, GPA, or anything about who the student is.
+- The reach / target / likely label is untouched by any of this.
 
 ### `balance` object: `balance.assess(labelled, student) -> dict`
 `labelled` is a list of `{"college": College | None, "name": str, "label": label}`.
