@@ -11,7 +11,7 @@
       "speed": 0.95
     }
   },
-  "gap": 0.45,
+  "gap": 0.55,
   "segments": [
     {
       "id": "s01_need",
@@ -27,11 +27,12 @@
     },
     {
       "id": "s04_where",
-      "text": "Then the list. Each college is a place on the trail: how far its usual range sits from this student's score. Reach, target, likely: every label is set by a written rule, in code, from published federal numbers. Never by a model."
+      "text": "Then the list. Each college is a place on the trail: how far its usual range sits from this student's score. Reach, target, likely: every label is set by a written rule, in code, from published federal numbers. Never by a model. And the same list can be seen as rings, or as a map.",
+      "hold": 4.2
     },
     {
       "id": "s05_cases",
-      "text": "Open any college to see what actually happened to students like this one. Your school's cases beside public posts. Counts, not odds. Admits and denials. And when there are too few to say, it says so."
+      "text": "Open any college to see who this student resembles. Part by part, beside the nearest students who got in, and the nearest who did not. Your school's cases next to public posts. A resemblance, not a forecast. And when there are too few to say, it says so."
     },
     {
       "id": "s06_hands",
@@ -48,7 +49,7 @@
     },
     {
       "id": "s09_built",
-      "text": "Under the hood: models reached through Nicrron read the essay. PRISM guards the input, checks each college statement against a knowledge base, and records every step. Sixty of sixty labels match an answer sheet worked by hand."
+      "text": "Under the hood, three parts built by the team. A label engine: every label from a written rule over federal data. A closeness engine that measures resemblance part by part, and checks how well it held up on nearly four hundred past cases. And an evidence scorer that orders the examples and says why. Models reached through Nicrron read the essay. PRISM guards the input, checks each college statement, and records every step. Sixty of sixty labels match an answer sheet worked by hand."
     },
     {
       "id": "s10_ending",
