@@ -39,7 +39,7 @@ and "What is the student's chance?", which explains why no percentage is given a
 
 **What works today.**
 - End to end in about six seconds with the essay reader and PRISM switched on.
-- 60 of 60 labels match a hand-worked answer sheet; 212 unit tests pass.
+- 60 of 60 labels match a hand-worked answer sheet; 216 unit tests pass.
 - The essay reader runs through Nicrron with two models from different makers.
 - PRISM: the guardrail stops an essay with a hidden instruction; college statements come back "confirmed" from the
   Knowledge Base and a planted false one "not confirmed"; each run and its five steps are recorded.
@@ -50,6 +50,38 @@ and "What is the student's chance?", which explains why no percentage is given a
 - The school's own "verified" cases are invented demo data; real ones would come from a counselor or from Nerd Apply.
 - Matching on essays and activities is thin, because the public case file has no essay text.
 - Nobody outside the builders has reviewed the print sheet, dark mode or phone width.
+
+## What it does, feature by feature
+<!-- FEATURES_START -->
+Generated from `docs/features.json` by `tools/sync_features.py`; the About page shows the same list. 21 of 24 work today.
+
+| Feature | What it does | Where | Status |
+|---|---|---|---|
+| **Reach / target / likely label** | Each college gets a label from a written rule in code, from its published admit rate and middle score range. Never from a model. | The counters on the first view; "Why this label" tab on each college, with the rule, its inputs and what was not used. | Works |
+| **On the edge, and publishers disagree** | Every label is rerun with the score 30 points either way and the admit rate 5 points lower; a label that flips is marked. Five published rulebooks are run on the same score and any disagreement is shown. | "on the edge" under a college in the picture; the "Why this label" tab. | Works |
+| **Cases like this student, two pools** | Counts of admitted, denied and waitlisted among finished cases like this student, with n, the matching rules used, examples, and the official admit rate beside them. The school's own verified cases and the national self-reported pool are never added together. | "Cases like this student" tab. | Works |
+| **What the college says it weighs** | Statements from each college's own Common Data Set form, each with its field, year and source link, checked in code and confirmed against a knowledge base. Common beliefs are checked against the form. | "What the college says" tab; lever 3 on the first view. | Works |
+| **List balance and suggested fills** | Warnings when a list is reach-heavy, has no likely or no target, piles onto very selective colleges, or is short. Up to six suggested colleges that would be likely or target, preferring the home state. | The one warning beside the counters; lever 1, "Show suggested colleges". | Works |
+| **"What if the score were…" slider** | Moves the student's score and re-labels the whole list as it moves, with a ladder of which colleges change at which score. Labels only; nothing else is re-run. | Lever 2 on the first view. | Works |
+| **Where this student stands** | One picture: every college's middle score range on a shared score line, the student's score drawn through them, admits-of-10 dots and case dots per college. | The first view, "Score ranges". | Works |
+| **Essay notes with quotes, after masking** | Names, addresses, phones and dates are masked, then one model reads the essay and returns observations with word-for-word quotes; code drops any note whose quote is not in the essay. A second model tags the major independently. An essay with instructions aimed at an AI is stopped twice. | "Essay notes" in the footer; the stopped banner. | Works with a key |
+| **How this was made: the five steps** | Retrieve, score, bucket, explain, log: what each step did, how long it took, and whether code or a model did it. Sentences hidden by checks are counted with the reason. | "How this was made" in the footer. | Works |
+| **Add a finished case** | A counselor records a finished case for the school's own pool. Anything that looks like a name, email, phone or date of birth is refused. | "Add a finished case" in the footer. | Works |
+| **One-page sheet for the family** | A print layout with the list by label, the balance warnings, suggested colleges, and the caveats, in plain words. | "Print for the family" in the footer. | Works |
+| **No personal chance of admission** | The screen never shows a percentage for the student. Asking for one gets an explanation and a pointer to the evidence instead. | "What is the student's chance?" in the footer; every count sits beside the official admit rate. | Works |
+| **Shared preview with no server** | Saved runs for the six demo students, with the what-if scores, as plain files that open from a folder or a zip. | `python tools/make_static.py --zip` | Works |
+| **Closeness: admitted or denied, which does the student resemble?** | Per college, the distance from the student to the 7 nearest admitted and the 7 nearest denied cases, over score, activities rating, major group, hooks and residency. A lean, a steady test, the parts that are close or far, and the nearest cases. A distance, never a percentage; the label is untouched. | "Who they resemble" tab on each college. | Works |
+| **Rings picture** | The student at the centre, one dot per college as far out as the student is from the people admitted there. Hollow when there are too few cases; on an outer ring when it cannot be placed. | The first view, "Rings". | Works |
+| **Mind map picture** | The student in the middle, a branch per label, a node per college, and under each college its nearest kind of admitted student and its three nearest admitted cases. | The first view, "Mind map". | Works |
+| **Scatter, part bars, kinds and changes** | A scatter of that college's cases by score and activities rating with the student as a star and the three kinds' medoids ringed; a bar per part; three kinds of admitted student found by k-medoids and named from counts; and what would bring the student closer (score, activities, a named major; never hooks, home state or GPA). | "Who they resemble" tab. | Works |
+| **Activities rating input** | A 0 to 10 dial for the counselor's own rating of the student's activities, used only by closeness. | Edit details, "Activities, your rating". | Works |
+| **Holds-up check for closeness** | 400 past posters, each hidden in turn, their lean computed and their real outcome counted. Shown as counts with the caveat about self-reporting. | "How this was made", bottom; python -m engine.similarity --check | Works |
+| **About, and How it was built** | A tour with live buttons; the parts and weights, the algorithm as a diagram, the libraries, the choices made, and every data source with what was taken from it. Weights and thresholds are read from the engine, not typed into the page. | The two links in the header. | Works |
+| **Tests and the acceptance sheet** | 216 unit tests with no network, including one that fails if the fixture or this feature list drifts from its copies. 60 labels worked out by hand from the published rows, by a builder who did not see the label code: 60 of 60 match. | `python -m unittest discover -s tests -t . ; python tests/acceptance/run_acceptance.py` | Works |
+| **PRISM Evaluator on the essay notes** | The run's score is read back in code instead. |  | Not done |
+| **Several intended majors in the form** | Closeness can try another major the student named, but the form sends only one; the API accepts major_interests. |  | Not done |
+| **Matching on essay and activity text** | The public case file has no essay text, so essay themes only reorder the school's own cases and closeness never reads text. |  | Thin |
+<!-- FEATURES_END -->
 
 ## How it handles accuracy and uncertainty
 
@@ -85,7 +117,7 @@ Optional settings, all read from environment variables (no key is ever stored in
 | `ANTHROPIC_API_KEY` or `ANTHROPIC_KEY_FILE` | The one screening call through PRISM's proxy, which lets the guardrail block |
 | `PORT` | The port (default 8765) |
 
-Tests: `python -m unittest discover -s tests -t .` (212 tests, no network).
+Tests: `python -m unittest discover -s tests -t .` (216 tests, no network).
 
 To share the screen as plain files with no server: `python tools/make_static.py --zip` saves real runs for the six
 demo students into `dist/`.
