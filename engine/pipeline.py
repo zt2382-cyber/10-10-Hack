@@ -316,7 +316,7 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         # Stopped here. The text is not sent to PRISM or to any model: nothing leaves this computer.
         verdicts.append({"by": "PRISM guardrail", "blocked": None,
                          "detail": "Not asked. Our own check had already stopped the essay, so nothing was sent anywhere."})
-    elif prism_mod and essay:
+    elif prism_mod and essay and use_model:  # no model will read the essay in a labels-only run, so there is nothing to screen
         scr = _safe(prism_mod.screen, {"blocked": False, "how": "off", "detail": ""}, masked.get("text", ""))
         if scr.get("how") == "prism-proxy":
             guard = "our own check, then PRISM's guardrail"

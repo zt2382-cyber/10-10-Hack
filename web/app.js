@@ -1,7 +1,8 @@
-/* Counselor Copilot: the one screen.
+/* Counselor Copilot: the one screen, told as a story in four chapters.
+   1 Who you are -> 2 Where you stand -> 3 What is in your hands -> 4 Your plan.
    Part 1: pure helpers that take data and return HTML or SVG strings (no DOM; testable in Node).
    Part 2: the page wiring (runs only in a browser).
-   Three levels: the first view (one picture, three levers), a drill-in with four tabs, and "Details" inside each tab.
+   Two views: the meeting view (default) and "Show the working" (body.show-working reveals .working-only).
    Every piece of data goes through esc() before it reaches HTML. */
 (function (root) {
 'use strict';
@@ -33,6 +34,12 @@ function commas(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d
 function clip(s, n) { s = str(s); return s.length > n ? s.slice(0, n - 1).replace(/[\s,-]+$/, '') + '…' : s; }
 function shortName(n) { return str(n).replace(/-Main Campus$/i, '').replace(/-/g, ', '); }
 function f1(v) { return (Math.round(v * 10) / 10).toString(); }
+var WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+function word(n) { return n >= 0 && n <= 10 ? WORDS[n] : String(n); }
+function joinAnd(list) {
+  list = arr(list).filter(Boolean);
+  return list.length < 2 ? (list[0] || '') : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1];
+}
 
 /* "about 9 in 100": a published rate about the college, never about the student. */
 function inHundred(rate) {
@@ -53,6 +60,7 @@ function moneyAbout(n) {
   if (v === null) return '';
   return 'about $' + commas(Math.round(v / 1000) * 1000);
 }
+function costLine(n) { return num(n) === null ? '' : moneyAbout(n) + ' a year before aid'; }
 function duration(ms) {
   var v = num(ms);
   if (v === null) return '';
@@ -67,17 +75,16 @@ var STATES = {AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'C
   NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
   OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas',
   UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming'};
-var STATE_TEXT = {
-  reach: 'Reach', reach_for_everyone: 'Reach for everyone', target: 'Target', likely: 'Likely',
-  cant_say: "Can't say", outside_data: 'Outside our data'
-};
 var ORDER = ['reach', 'target', 'likely', 'cant_say', 'outside_data'];
+/* The event's own words stay (Reach, Target, Likely); each is always paired with a plain gloss. */
+var WORD = {reach: 'Reach', target: 'Target', likely: 'Likely', cant_say: "Can't say yet", outside_data: 'Not in our data'};
+var GLOSS = {reach: 'ambitious', target: 'within range', likely: 'a safer choice', cant_say: 'the published numbers run out', outside_data: 'we say nothing about it'};
 var GROUPS = [
-  {key: 'reach', title: 'Reach', always: true, empty: 'No reach college on this list.'},
-  {key: 'target', title: 'Target', always: true, empty: 'No target college on this list.'},
-  {key: 'likely', title: 'Likely', always: true, empty: 'No likely college on this list.'},
-  {key: 'cant_say', title: "Can't say", always: false},
-  {key: 'outside_data', title: 'Outside our data', always: false}
+  {key: 'reach', title: 'Reach · ambitious', always: true, empty: 'No ambitious college on this list yet.'},
+  {key: 'target', title: 'Target · within range', always: true, empty: 'No college within range on this list yet.'},
+  {key: 'likely', title: 'Likely · a safer choice', always: true, empty: 'No safer choice on this list yet.'},
+  {key: 'cant_say', title: "Can't say yet", always: false},
+  {key: 'outside_data', title: 'Not in our data', always: false}
 ];
 function groupOf(state) {
   var s = str(state).toLowerCase().replace(/[\s']+/g, '_');
@@ -85,28 +92,17 @@ function groupOf(state) {
   if (s === 'target' || s === 'likely' || s === 'outside_data') return s;
   return 'cant_say';
 }
-function stateText(label) {
-  var L = obj(label);
-  return str(L.text) || STATE_TEXT[L.state] || cap(str(L.state)) || "Can't say";
+function isEveryone(label) { return str(obj(label).state) === 'reach_for_everyone'; }
+function glossOf(label, brief) {
+  if (isEveryone(label)) return brief ? 'hard for every applicant' : 'hard for every applicant, however strong';
+  return GLOSS[groupOf(obj(label).state)];
 }
-
-/* Shape as well as colour: triangle = reach, circle = target, square = likely, dashed = no label. */
-var SHAPES = {
-  reach: '<path d="M8 2 15 14H1z"/>',
-  target: '<circle cx="8" cy="8" r="6"/>',
-  likely: '<rect x="2" y="2" width="12" height="12" rx="1"/>',
-  cant_say: '<path d="M8 1.5 14.5 8 8 14.5 1.5 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>',
-  outside_data: '<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 2"/>'
-};
-function shape(key, extra) {
-  return '<svg class="shape sh-' + (SHAPES[key] ? key : 'cant_say') + '" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"' +
-    (extra || '') + '>' + (SHAPES[key] || SHAPES.cant_say) + '</svg>';
-}
-function badge(label) {
+function labelPhrase(label, brief) { return WORD[groupOf(obj(label).state)] + ' · ' + glossOf(label, brief); }
+function pill(label, brief) {
   var g = groupOf(obj(label).state);
-  return '<span class="badge b-' + g + '">' + shape(g) + '<span>' + esc(stateText(label)) + '</span></span>';
+  return '<span class="pill p-' + g + '"><i class="dot" aria-hidden="true"></i><b>' + esc(WORD[g]) + '</b><span>' + esc(glossOf(label, brief)) + '</span></span>';
 }
-function badgeFor(state) { return badge({state: groupOf(state) === 'cant_say' ? 'cant_say' : str(state).toLowerCase().replace(/\s+/g, '_')}); }
+function pillFor(state) { return pill({state: groupOf(state)}, true); }
 
 var HOOKS = {
   first_gen: 'First in family to attend college', 'first-gen': 'First in family to attend college',
@@ -125,52 +121,203 @@ var MAJORS = {
 };
 function majorText(m) { var s = str(m); return MAJORS[s] || s; }
 function studentShort(label) { return str(label).split(/\s*[(:]/)[0].trim() || 'Student'; }
-
-/* ---------- Level 1: top chips, student line, counters ---------- */
-function renderTopChips(result, mode) {
-  var r = obj(result), h = '';
-  if (r.synthetic === true || mode === 'static') h += '<span class="stamp" title="Invented demo data. No real student.">SYNTHETIC</span>';
-  if (mode === 'example') h += '<span class="chip chip-example">Example data</span>';
-  if (mode === 'static') h += '<span class="chip chip-example">Shared preview</span>';
-  return h;
-}
-function renderStudentLine(student, open) {
-  var s = obj(student), bits = [studentShort(s.label)];
-  bits.push(num(s.sat) !== null ? 'SAT ' + num(s.sat) : (num(s.act) !== null ? 'ACT ' + num(s.act) : 'No test score'));
+function studentTagline(label) { var s = str(label), i = s.indexOf(':'); return i === -1 ? '' : cap(s.slice(i + 1).trim()); }
+function studentFacts(s) {
+  s = obj(s);
+  var bits = [num(s.sat) !== null ? 'SAT ' + num(s.sat) : (num(s.act) !== null ? 'ACT ' + num(s.act) : 'No test score')];
   if (str(s.home_state)) bits.push(STATES[str(s.home_state).toUpperCase()] || str(s.home_state));
   if (str(s.intended_major)) bits.push(str(s.intended_major));
-  return '<p class="sline">' + bits.map(esc).join('<span class="sep" aria-hidden="true"> · </span>') + '</p>' +
-    '<button type="button" class="btn small" data-act="edit-student" aria-expanded="' + (open ? 'true' : 'false') +
-    '" aria-controls="student-panel">' + (open ? 'Hide' : 'Edit') + '</button>';
+  return bits;
 }
-var WARN_RANK = ['all_cant_say', 'no_likely', 'reach_heavy', 'prestige_pile', 'no_target', 'short_list'];
-function warningTexts(warnings) {
-  return arr(warnings).map(function (x, i) {
-    var id = str(obj(x).id), k = WARN_RANK.indexOf(id);
-    return {t: typeof x === 'string' ? x : str(obj(x).text), k: k === -1 ? 50 + i : k, i: i};
-  }).filter(function (w) { return w.t; }).sort(function (a, b) { return a.k - b.k || a.i - b.i; }).map(function (w) { return w.t; });
-}
-function renderCounters(balance, whatIf) {
-  var b = obj(balance), c = obj(b.counts), tiles = [['reach', 'Reach'], ['target', 'Target'], ['likely', 'Likely']];
-  if (num(c.cant_say)) tiles.push(['cant_say', "Can't say"]);
-  if (num(c.outside_data)) tiles.push(['outside_data', 'Outside our data']);
-  var h = '<ul class="tiles">' + tiles.map(function (t) {
-    var n = num(c[t[0]]) || 0;
-    return '<li class="tile t-' + t[0] + (n === 0 ? ' zero' : '') + '"><span class="tile-n">' + n + '</span>' +
-      '<span class="tile-l">' + shape(t[0]) + esc(t[1]) + '</span></li>';
-  }).join('') + '</ul>';
-  var w = warningTexts(b.warnings);
-  h += '<div class="warnbox">';
-  if (whatIf) h += '<p class="whatif-tag">Showing the list as it would be labelled with a different score.</p>';
-  else if (w.length) {
-    h += '<p class="warn1">' + esc(w[0]) + (w.length > 1
-      ? ' <button type="button" class="linkbtn" data-act="more-warnings" aria-expanded="false" aria-controls="more-warn">' + (w.length - 1) + ' more</button>' : '') + '</p>';
-    if (w.length > 1) h += '<ul id="more-warn" class="more-warn" hidden>' + w.slice(1).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
-  } else h += '<p class="quiet">No warnings about the balance of this list.</p>';
-  return h + '</div>';
+/* The waypoint: a dot on a short stem. Filled = you are here; outline = could go. */
+function waypoint(filled) {
+  return '<svg class="wp' + (filled ? ' wp-on' : '') + '" viewBox="0 0 16 22" width="16" height="22" aria-hidden="true" focusable="false">' +
+    '<line x1="8" y1="11" x2="8" y2="21"/><circle cx="8" cy="7" r="5.5"/></svg>';
 }
 
-/* ---------- Level 1: the picture. Every college on one score axis; the student is one line. ---------- */
+/* ---------- top bar and the opening screen ---------- */
+function renderTopChips(result, mode) {
+  var h = '';
+  if (obj(result).synthetic === true || mode === 'static' || mode === 'example') h += '<span class="chip" title="An invented student for this demo. No real person.">Example student</span>';
+  if (mode === 'static') h += '<span class="chip">Shared preview</span>';
+  return h;
+}
+function renderStudentCards(students, chosen) {
+  var list = arr(students);
+  if (!list.length) return '<p class="quiet">No example students could be loaded. Use Change the details to enter one.</p>';
+  function card(s, i, small) {
+    s = obj(s);
+    return '<button type="button" class="scard' + (small ? ' scard-small' : '') + '" data-act="pick-student" data-i="' + i + '" aria-pressed="' + (i === chosen ? 'true' : 'false') + '">' +
+      waypoint(i === chosen) + '<span class="scard-name">' + esc(studentShort(s.label)) + '</span>' +
+      '<span class="scard-line">' + esc(studentTagline(s.label) || studentFacts(s).slice(1).join(' · ') || 'Example student') + '</span>' +
+      (small ? '' : '<span class="scard-facts">' + esc(studentFacts(s)[0]) + '</span>') + '</button>';
+  }
+  var main = '', safety = '';
+  list.forEach(function (s, i) {
+    if (isSafetyDemo(obj(s).label)) safety += card(s, i, true); else main += card(s, i, false);
+  });
+  return '<div class="scards">' + main + '</div>' +
+    (safety ? '<p class="mini">Two safety demonstrations</p><div class="scards scards-small">' + safety + '</div>' : '');
+}
+function isSafetyDemo(label) { return /hidden instruction|personal details/i.test(str(label)); }
+function personGlyph(x, y) {
+  return '<g class="pperson" transform="translate(' + x + ' ' + y + ')"><circle cx="0" cy="-12" r="8"/><path d="M-13 12a13 13 0 0 1 26 0z"/></g>';
+}
+function renderGhost() {
+  var bars = [[560, 70, 150], [500, 122, 170], [330, 174, 250], [250, 226, 270], [210, 278, 240]], s = '';
+  bars.forEach(function (b) { s += '<rect class="ghost-bar" x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="16" rx="8"/>'; });
+  return '<svg class="ghost" viewBox="0 0 960 330" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">' + s +
+    '<line class="pline" x1="470" x2="470" y1="48" y2="322"/>' + personGlyph(470, 34) + '</svg>';
+}
+var CHAPTERS = [['ch1', 'Who you are'], ['ch2', 'Where you stand'], ['ch3', 'What is in your hands'], ['ch4', 'Your plan']];
+function renderWaypoints(current, ready) {
+  return '<ol>' + CHAPTERS.map(function (c, i) {
+    return '<li><button type="button" class="way" data-act="go" data-to="' + c[0] + '"' + (ready ? '' : ' disabled') +
+      (ready && c[0] === current ? ' aria-current="step"' : '') + '>' + waypoint(ready && c[0] === current) + '<span>' + (i + 1) + ' ' + esc(c[1]) + '</span></button></li>';
+  }).join('') + '</ol>';
+}
+function chapterHead(n, kicker, title) {
+  return '<p class="kicker">' + waypoint(true) + '<span>' + n + ' · ' + esc(kicker) + '</span></p><h2 class="ch-title" tabindex="-1">' + esc(title) + '</h2>';
+}
+function nextButton(to, text) { return '<p class="next"><button type="button" class="btn primary big" data-act="go" data-to="' + to + '">' + esc(text) + '</button></p>'; }
+
+/* ---------- Chapter 1: who you are ---------- */
+function essayStopped(privacy, reader) {
+  var pv = obj(privacy);
+  return pv.blocked === true || str(obj(reader).status) === 'blocked' || arr(pv.verdicts).some(function (v) { return obj(v).blocked === true; });
+}
+function verdictMarks(privacy) {
+  return arr(obj(privacy).verdicts).map(obj).filter(function (v) { return str(v.by); }).map(function (v) {
+    var stopped = v.blocked === true, asked = v.blocked === true || v.blocked === false;
+    return '<span class="verdict ' + (stopped ? 'v-stop' : (asked ? 'v-pass' : 'v-na')) + '"' + (!asked && str(v.detail) ? ' title="' + esc(v.detail) + '"' : '') + '>' +
+      esc(str(v.by).replace(/\s*\(.*\)\s*$/, '')) + ': ' + (stopped ? 'stopped' : (asked ? 'passed' : 'not asked')) + '</span>';
+  }).join('');
+}
+function renderStrengths(result) {
+  var r = obj(result), st = obj(r.student), rd = obj(r.reader), pv = obj(r.privacy);
+  var h = chapterHead(1, 'Who you are', 'What stands out in you');
+  h += '<p class="you-line"><b>' + esc(studentShort(st.label)) + '</b><span class="sep" aria-hidden="true"> · </span>' +
+    studentFacts(st).map(esc).join('<span class="sep" aria-hidden="true"> · </span>') + '</p>';
+  var acts = arr(st.activities).map(obj).filter(function (a) { return str(a.type) || str(a.role) || str(a.description); }).slice(0, 3);
+  if (acts.length) {
+    h += '<ul class="acts">' + acts.map(function (a) {
+      var lead = [str(a.type), str(a.role).toLowerCase()].filter(Boolean).join(', ');
+      return '<li>' + waypoint(false) + '<span><b>' + esc(lead) + '</b>' + (lead && str(a.description) ? ': ' : '') + esc(a.description) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  var stopped = essayStopped(pv, rd), status = str(rd.status);
+  if (stopped) {
+    var why = str(obj(arr(pv.verdicts).map(obj).filter(function (v) { return v.blocked === true; })[0]).detail) || str(pv.reason);
+    h += '<div class="calm"><p><b>We did not read this essay.</b> It contains text written to steer an AI, so it was stopped before any model saw it. Your counselor can read it with you.</p>' +
+      '<p class="working-only verdicts">' + verdictMarks(pv) + (why ? '<span class="quiet">' + esc(why) + '</span>' : '') + '</p></div>';
+  } else if (status === 'ok') {
+    var themes = arr(obj(rd.tags).essay_themes).map(str).filter(Boolean);
+    if (themes.length) h += '<p class="themes"><span class="quiet">Your essay is about</span> ' + themes.map(function (t) { return '<span class="chip chip-theme">' + esc(t) + '</span>'; }).join('') + '</p>';
+    var notes = arr(rd.notes).map(obj).filter(function (n) { return str(n.quote) && n.quote_found !== false; }).slice(0, 2);
+    if (notes.length) {
+      h += '<div class="words"><p class="label">In your words</p>' + notes.map(function (n) {
+        return '<figure><blockquote>“' + esc(n.quote) + '”</blockquote>' + (str(n.observation) ? '<figcaption>' + esc(n.observation) + '</figcaption>' : '') + '</figure>';
+      }).join('') + '</div>';
+    }
+    var d = num(rd.dropped) || 0;
+    if (d > 0) h += '<p class="quiet small">' + d + ' ' + plural(d, 'note was', 'notes were') + ' left out because ' + plural(d, 'its quote was', 'their quotes were') + ' not in the essay.</p>';
+    h += '<p class="quiet small">Personal details were hidden before any AI read this. Your counselor reads the essay; it never changes a label.</p>';
+    var masked = arr(pv.masked).map(obj).filter(function (m) { return num(m.count); });
+    if (masked.length || verdictMarks(pv)) {
+      h += '<p class="working-only verdicts">' + verdictMarks(pv) + (masked.length ? '<span class="quiet">Hidden: ' + esc(masked.map(function (m) { return num(m.count) + ' ' + str(m.kind); }).join(', ')) + '</span>' : '') + '</p>';
+    }
+  } else if (status === 'error') {
+    h += '<p class="quiet small">The essay could not be read this time. Nothing below depends on it.</p>';
+  } else if (!acts.length) {
+    h += '<p class="quiet">There is more to you than a score. Add activities or an essay under Counselor tools, Change the details, to see it here.</p>';
+  }
+  return h + nextButton('ch2', "Now let's look at where you stand");
+}
+
+/* ---------- Chapter 2: where you stand ---------- */
+function listCounts(result) {
+  var c = {reach: 0, target: 0, likely: 0, cant_say: 0, outside_data: 0, everyone: 0, names: {reach: [], target: [], likely: []}};
+  arr(obj(result).colleges).map(obj).forEach(function (x) {
+    var g = groupOf(obj(x.label).state);
+    c[g]++;
+    if (isEveryone(x.label)) c.everyone++;
+    if (c.names[g]) c.names[g].push(shortName(x.name));
+  });
+  return c;
+}
+function headlineSentence(result) {
+  var st = obj(obj(result).student), c = listCounts(result), r = c.reach, t = c.target, l = c.likely, n = r + t + l;
+  if (num(st.sat) === null && num(st.act) === null) return "Without a test score we can't place you against these colleges yet. Here is what we can still say.";
+  if (!n) return "We can't place you against these colleges yet. Here is what we can still say.";
+  var hard = c.everyone === r && r > 0 ? 'hard to get into for every applicant, however strong' : 'ambitious choices';
+  if (r && t && l) return 'This list has ambition, colleges within range, and safer choices.';
+  if (r && !t && !l) return r === 1 ? 'This list has one college so far, and it is an ambitious choice. Keep the dream; give it a foundation.'
+    : 'Every college here is an ambitious choice today. Keep the dreams; give them a foundation.';
+  if (r >= 2 && t + l === 1) {
+    return 'This list aims high. ' + word(r) + ' of these ' + word(n).toLowerCase() + ' are ' + hard + '. ' +
+      (t ? c.names.target[0] + ' is within range.' : c.names.likely[0] + ' is a safer choice.');
+  }
+  if (!l && t) {
+    return (r ? 'This list has ' + word(r).toLowerCase() + ' ambitious ' + plural(r, 'choice', 'choices') + ' and ' + word(t).toLowerCase() + ' within range.'
+              : word(t) + ' of these ' + plural(t, 'colleges is', 'colleges are') + ' within range.') + ' It has room for a safer choice.';
+  }
+  if (!t && l && r) return 'This list has ambition and safer choices, with room for something in between.';
+  if (!r) return 'This list stands on solid ground. It has room for a dream or two.';
+  return 'Here is where you stand at each college.';
+}
+/* One block per college in its label colour, then a dashed slot for each missing group: room to fill, not an alarm. */
+function renderBalanceBar(result) {
+  var c = listCounts(result), h = '<div class="bbar" role="img" aria-label="' +
+    esc(c.reach + ' reach, ' + c.target + ' target, ' + c.likely + ' likely' + (c.cant_say ? ', ' + c.cant_say + " can't say yet" : '')) + '">';
+  ['reach', 'target', 'likely', 'cant_say'].forEach(function (g) {
+    for (var i = 0; i < c[g]; i++) h += '<span class="bb bb-' + g + '"></span>';
+    if (c[g] && g !== 'cant_say') h += '<span class="bb-word p-' + g + '"><b>' + c[g] + ' ' + WORD[g].toLowerCase() + '</b> ' + GLOSS[g] + '</span>';
+    else if (c[g]) h += '<span class="bb-word">' + c[g] + " can't say yet</span>";
+    else if (g !== 'cant_say' && (c.reach + c.target + c.likely) > 0) h += '<span class="bb bb-slot"></span><span class="bb-word bb-room">room for ' + (g === 'likely' ? 'a likely college, a safer choice' : (g === 'target' ? 'a target, within range' : 'a reach, a dream')) + '</span>';
+  });
+  return h + '</div>';
+}
+var CAUTION_RANK = ['all_cant_say', 'no_likely', 'reach_heavy', 'prestige_pile', 'no_target', 'short_list'];
+var CAUTION = {
+  all_cant_say: "We can't place these colleges yet. That is not a bad sign; it means the published numbers run out.",
+  no_likely: 'This list has no safer choice yet. A plan needs one or two, and some colleges fit your numbers.',
+  reach_heavy: 'Most of this list is ambition. That is a fine place to dream from, and a plan needs a few safer choices too.',
+  prestige_pile: 'Most of this list is ambition. That is a fine place to dream from, and a plan needs a few safer choices too.',
+  no_target: 'There is nothing in the middle yet. A college within range would steady this list.',
+  short_list: 'This is a short list. Most plans have a few more colleges on them.'
+};
+function warningTexts(warnings) {
+  return arr(warnings).map(function (x, i) {
+    var id = str(obj(x).id), k = CAUTION_RANK.indexOf(id);
+    return {t: CAUTION[id] || (typeof x === 'string' ? x : str(obj(x).text)), raw: typeof x === 'string' ? x : str(obj(x).text), k: k === -1 ? 50 + i : k, i: i};
+  }).filter(function (w) { return w.t; }).sort(function (a, b) { return a.k - b.k || a.i - b.i; });
+}
+function cautionLine(result) {
+  var c = listCounts(result), w = warningTexts(obj(obj(result).balance).warnings);
+  if (!w.length) return '';
+  if (c.reach && !c.target && !c.likely) return 'This list is all ambition. That is a fine place to dream from, and a plan needs a few safer choices too.';
+  return w[0].t;
+}
+function renderHeadline(result, whatIfScore) {
+  var caution = cautionLine(result), raw = warningTexts(obj(obj(result).balance).warnings);
+  var notes = arr(obj(obj(result).student).input_notes).map(str).filter(Boolean);
+  return chapterHead(2, 'Where you stand', 'Where you stand at each college') +
+    (notes.length ? '<ul class="input-notes">' + notes.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '') +
+    '<p class="hero">' + (num(whatIfScore) !== null ? '<span class="hero-if">If your score were ' + esc(whatIfScore) + ':</span> ' : '') + esc(headlineSentence(result)) + '</p>' +
+    renderBalanceBar(result) +
+    (raw.length ? '<ul class="working-only plain small">' + raw.map(function (x) { return '<li>' + esc(x.raw) + '</li>'; }).join('') + '</ul>' : '');
+}
+function renderCaution(result) {
+  var caution = cautionLine(result);
+  return (caution ? '<p class="caution">' + esc(caution) + ' <button type="button" class="linkbtn" data-act="go" data-to="ch3">See what you can do</button></p>' : '') +
+    nextButton('ch3', 'See what you can do about it');
+}
+
+/* ---------- the trail map: the student stands on the trail; each college is ahead, nearby or behind ---------- */
+function edgeLever(c) {
+  var lv = arr(obj(c).levers).map(obj).filter(function (l) { return l.kind === 'score' && l.moves === true && num(l.points) !== null && str(l.to); })[0];
+  return lv ? num(lv.points) + ' ' + plural(num(lv.points), 'point', 'points') + ' from ' + GLOSS[groupOf(lv.to)] : '';
+}
 function pictureModel(result, opts) {
   var o = obj(opts), r = obj(result), st = obj(r.student), cs = arr(r.colleges).map(obj);
   var sat = num(st.sat), act = num(st.act), useAct = o.kind ? o.kind === 'ACT' : (sat === null && act !== null);
@@ -182,190 +329,321 @@ function pictureModel(result, opts) {
     if (lo !== null && hi !== null && hi < lo) { t = lo; lo = hi; hi = t; }
     return {i: i, c: c, L: L, g: g, lo: lo, hi: hi, has: lo !== null && hi !== null && g !== 'outside_data'};
   });
-  rows.sort(function (a, b) { return ORDER.indexOf(a.g) - ORDER.indexOf(b.g) || a.i - b.i; });
+  /* furthest ahead first; colleges we cannot place come last */
+  rows.sort(function (a, b) {
+    if (a.has !== b.has) return a.has ? -1 : 1;
+    if (!a.has) return ORDER.indexOf(a.g) - ORDER.indexOf(b.g) || a.i - b.i;
+    return ORDER.indexOf(a.g) - ORDER.indexOf(b.g) || (b.lo + b.hi) - (a.lo + a.hi) || a.i - b.i;
+  });
   var vals = [useAct ? 18 : 1050];
   rows.forEach(function (x) { if (x.has) vals.push(x.lo, x.hi); });
   [score, base, num(o.scoreMin), num(o.scoreMax)].forEach(function (v) { if (v !== null) vals.push(v); });
   var lowest = Math.min.apply(null, vals);
-  return {rows: rows, useAct: useAct, test: useAct ? 'ACT' : 'SAT', score: score, base: base,
+  return {rows: rows, useAct: useAct, test: useAct ? 'ACT' : 'SAT', score: score, base: base, name: studentShort(st.label),
           min: useAct ? Math.max(1, lowest - 2) : Math.max(400, Math.floor((lowest - 50) / 100) * 100), max: useAct ? 36 : 1600};
 }
+function gapNote(x, score) {
+  if (!x.has || score === null) return '';
+  if (score < x.lo) return (x.lo - score) + ' ' + plural(x.lo - score, 'point', 'points') + ' above your score';
+  if (score >= x.hi) return score === x.hi ? 'your score is at the top of this range' : 'your score is ' + (score - x.hi) + ' ' + plural(score - x.hi, 'point', 'points') + ' above this range';
+  return 'your score is inside this range';
+}
 function renderPicture(result, opts) {
-  var m = pictureModel(result, opts), o = obj(opts);
-  var W = 880, X0 = 268, X1 = 640, AX = 664, CX = 772, RH = 38, TOP = 42, n = m.rows.length, H = TOP + Math.max(n, 1) * RH + 8;
+  var m = pictureModel(result, opts), o = obj(opts), c0 = listCounts(result);
+  var W = 960, X0 = 28, X1 = 668, RX = 692, RH = 56, TOP = 70, n = m.rows.length;
+  var emptyRow = n > 0 && !c0.likely && (c0.reach + c0.target) > 0 ? 1 : 0, nSug = arr(obj(obj(result).balance).suggestions).length;
+  var H = TOP + Math.max(n + emptyRow, 1) * RH + 34;
   function sx(v) { return X0 + (Math.max(m.min, Math.min(m.max, v)) - m.min) / (m.max - m.min) * (X1 - X0); }
   function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var who = m.name + (m.score !== null ? ', ' + m.score : '');
   var s = '<svg class="pic" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' +
-    esc('Where this student stands: ' + n + ' ' + plural(n, 'college', 'colleges') + ' on one ' + m.test + ' score axis' +
-    (m.score !== null ? ', with the student at ' + m.score : '') + '.') + '">';
+    esc('Where you stand: ' + n + ' ' + plural(n, 'college', 'colleges') + ' on one ' + m.test + ' score line' + (m.score !== null ? ', with ' + who : '') + '.') + '">';
   s += '<defs><pattern id="pichatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
-    '<rect class="ph-bg" width="8" height="8"/><rect class="ph-fg" width="4" height="8"/></pattern></defs>';
-  var step = m.useAct ? 4 : 100, ticks = [], t;
-  for (t = Math.ceil(m.min / step) * step; t <= m.max; t += step) ticks.push(t);
-  var every = ticks.length > 9 ? 2 : 1;
-  ticks.forEach(function (tv, k) {
-    s += '<line class="pgrid" x1="' + p(sx(tv)) + '" x2="' + p(sx(tv)) + '" y1="' + (TOP - 4) + '" y2="' + (H - 4) + '"/>';
-    if ((ticks.length - 1 - k) % every === 0) s += '<text class="ptick" x="' + p(sx(tv)) + '" y="' + (TOP - 9) + '" text-anchor="middle">' + tv + '</text>';
+    '<rect class="ph-bg" width="8" height="8"/><rect class="ph-fg" width="3" height="8"/></pattern></defs>';
+  (m.useAct ? [20, 26, 32] : [1100, 1300, 1500]).forEach(function (tv) {
+    if (tv <= m.min || tv >= m.max) return;
+    s += '<line class="pgrid" x1="' + p(sx(tv)) + '" x2="' + p(sx(tv)) + '" y1="' + (TOP - 6) + '" y2="' + (H - 26) + '"/>' +
+      '<text class="ptick" x="' + p(sx(tv)) + '" y="' + (H - 8) + '" text-anchor="middle">' + (m.useAct ? 'ACT ' : 'SAT ') + tv + '</text>';
   });
-  s += '<text class="phead" x="8" y="' + (TOP - 9) + '">College</text>' +
-    '<text class="phead" x="' + (X0 - 26) + '" y="' + (TOP - 9) + '" text-anchor="end">' + m.test + ' score</text>' +
-    '<text class="phead" x="' + AX + '" y="' + (TOP - 9) + '">Admits, of 10</text>' +
-    '<text class="phead" x="' + CX + '" y="' + (TOP - 9) + '">Cases</text>';
-  if (!n) s += '<text class="pnone" x="' + X0 + '" y="' + (TOP + 22) + '">No colleges on this list yet.</text>';
+  var lx = m.score !== null ? sx(m.score) : null;
+  if (lx !== null) {
+    if (lx - X0 > 250) s += '<text class="pcap" x="' + p(lx - 14) + '" y="' + (TOP - 12) + '" text-anchor="end">colleges asking for less than this</text>';
+    if (X1 - lx > 180) s += '<text class="pcap" x="' + p(lx + 14) + '" y="' + (TOP - 12) + '">colleges asking for more</text>';
+  }
+  if (!n) s += '<text class="pnote" x="' + X0 + '" y="' + (TOP + 30) + '">No colleges on this list yet.</text>';
   m.rows.forEach(function (x, k) {
-    var c = x.c, L = x.L, y = TOP + k * RH, cy = y + RH / 2 - 1, name = str(c.name) || 'Unnamed college';
-    var nat = obj(obj(c.cases).national), ownP = obj(obj(c.cases).own);
-    var a = num(nat.admitted) || 0, d = num(nat.denied) || 0, w = num(nat.waitlisted) || 0, nn = num(nat.n) || 0, on = num(ownP.n) || 0;
-    var rate = num(c.admit_rate);
-    var say = name + '. ' + stateText(L) + '.' + (L.steady === false ? ' On the edge.' : '') +
-      (x.has ? ' Middle ' + m.test + ' range ' + x.lo + ' to ' + x.hi + '.' : ' No published range.') +
-      (rate !== null ? ' Admits ' + inHundred(rate) + '.' : '') +
-      (c.cases ? ' National cases ' + nn + (nn ? ': ' + a + ' admitted, ' + d + ' denied, ' + w + ' waitlisted' : '') + '. Your school ' + on + '.' : '') + ' Open the details.';
+    var c = x.c, L = x.L, y = TOP + k * RH, by = y + 26, name = str(c.name) || 'Unnamed college', note = gapNote(x, m.score) || (x.has && x.g === 'cant_say' ? "we can't place you here yet" : ''), edge = edgeLever(c), cost = costLine(c.cost_year);
+    var say = name + '. ' + labelPhrase(L) + '.' + (x.has ? ' Middle ' + m.test + ' range ' + x.lo + ' to ' + x.hi + '.' : ' No published range.') +
+      (note ? ' ' + cap(note) + '.' : '') + (edge ? ' ' + cap(edge) + '.' : '') + (cost ? ' ' + cap(cost) + '.' : '') + ' See how we got this.';
     s += '<g class="prow pr-' + x.g + '" data-act="open-receipt" data-i="' + x.i + '" tabindex="0" role="button" aria-label="' + esc(say) + '">';
-    s += '<title>' + esc(name) + '</title><rect class="phit" x="1" y="' + (y + 1) + '" width="' + (W - 2) + '" height="' + (RH - 2) + '" rx="7"/>';
-    s += shape(x.g, ' x="8" y="' + (y + 5) + '"');
-    s += '<text class="pname" x="32" y="' + (y + 17) + '">' + esc(clip(name, 27)) + '</text>';
-    s += '<text class="plabel" x="32" y="' + (y + 31) + '">' + esc(stateText(L) + (L.steady === false ? ' · on the edge' : '')) + '</text>';
+    s += '<title>' + esc(name + ': see how we got this') + '</title><rect class="phit" x="4" y="' + (y + 1) + '" width="' + (W - 8) + '" height="' + (RH - 2) + '" rx="10"/>';
     if (x.has) {
-      var x0 = sx(x.lo), x1 = Math.max(sx(x.hi), x0 + 8), top = cy - 8, bot = cy + 8;
-      if (x.g === 'reach') {
-        var e = Math.min(7, (x1 - x0) / 2);
-        s += '<polygon class="pbar" points="' + [p(x0) + ',' + cy, p(x0 + e) + ',' + top, p(x1 - e) + ',' + top, p(x1) + ',' + cy, p(x1 - e) + ',' + bot, p(x0 + e) + ',' + bot].join(' ') + '"/>';
-      } else {
-        s += '<rect class="pbar' + (x.g === 'cant_say' ? ' pbar-open' : '') + '" x="' + p(x0) + '" y="' + top + '" width="' + p(x1 - x0) + '" height="16" rx="' + (x.g === 'target' ? 8 : 1) + '"/>';
+      var x0 = sx(x.lo), x1 = Math.max(sx(x.hi), x0 + 12), mid = (X0 + X1) / 2, nameW = Math.min(name.length, 44) * 8.3;
+      var endAnchor = x0 + nameW > X1;
+      s += '<text class="pname" x="' + p(endAnchor ? x1 : x0) + '" y="' + (y + 19) + '"' + (endAnchor ? ' text-anchor="end"' : '') + '>' + esc(clip(name, 44)) + '</text>';
+      s += '<rect class="pbar" x="' + p(x0) + '" y="' + by + '" width="' + p(x1 - x0) + '" height="16" rx="8"/>';
+      if (num(obj(obj(c.cases).own).n) > 0) s += '<circle class="pown" cx="' + p(x1 - 8) + '" cy="' + (by + 8) + '" r="4"/>';
+      if (note) {
+        var nw = note.length * 7 + 16, left = x0 - X0, right = X1 - x1, ahead = m.score !== null && m.score < x.lo;
+        var side = (ahead && left >= nw) ? 'L' : (!ahead && right >= nw) ? 'R' : (right >= nw ? 'R' : (left >= nw ? 'L' : ((x1 - x0) >= nw ? 'IN' : (left > right ? 'L' : 'R'))));
+        s += side === 'IN' ? '<text class="pnote pnote-in" x="' + p((x0 + x1) / 2) + '" y="' + (by + 12.5) + '" text-anchor="middle">' + esc(note) + '</text>'
+          : '<text class="pnote" x="' + p(side === 'L' ? x0 - 8 : x1 + 8) + '" y="' + (by + 13) + '"' + (side === 'L' ? ' text-anchor="end"' : '') + '>' + esc(note) + '</text>';
       }
     } else {
-      s += '<rect class="pband" x="' + X0 + '" y="' + (cy - 9) + '" width="' + (X1 - X0) + '" height="18" rx="3" fill="url(#pichatch)"/>' +
-        '<text class="pbandt" x="' + ((X0 + X1) / 2) + '" y="' + (cy + 4) + '" text-anchor="middle">' +
-        (x.g === 'outside_data' ? 'outside our data' : 'no published ' + (m.useAct ? 'ACT ' : '') + 'range') + '</text>';
+      s += '<text class="pname" x="' + X0 + '" y="' + (y + 19) + '">' + esc(clip(name, 44)) + '</text>' +
+        '<rect class="pband" x="' + X0 + '" y="' + by + '" width="' + (X1 - X0) + '" height="16" rx="8" fill="url(#pichatch)"/>' +
+        '<text class="pnote pbandt" x="' + (X0 + 14) + '" y="' + (by + 12.5) + '">' +
+        (x.g === 'outside_data' ? (str(c.suggestion) ? 'Not in our data. Did you mean ' + esc(c.suggestion) + '?' : 'Not in our data, so we say nothing about it.') : "No published " + (m.useAct ? 'ACT ' : '') + "range, so we can't place you. Not a bad sign.") + '</text>';
     }
-    if (rate !== null) {
-      var fill = rate > 0 ? Math.max(1, Math.round(rate * 10)) : 0;
-      for (var i = 0; i < 10; i++) s += '<circle class="' + (i < fill ? 'pd-on' : 'pd-off') + '" cx="' + (AX + 4 + i * 9.4) + '" cy="' + cy + '" r="3.3"/>';
-    } else if (x.g !== 'outside_data') s += '<text class="pnone" x="' + AX + '" y="' + (cy + 4) + '">not published</text>';
-    if (nn > 0) {
-      [[a, 'a', -9], [d, 'd', 0], [w, 'w', 9]].forEach(function (q) {
-        var k2 = Math.min(q[0], 11), yy = cy + q[2];
-        for (var j = 0; j < k2; j++) {
-          var xx = CX + 3 + j * 6.6;
-          s += q[1] === 'w' ? '<rect class="pc-w" x="' + p(xx - 2.2) + '" y="' + p(yy - 2.2) + '" width="4.4" height="4.4" transform="rotate(45 ' + p(xx) + ' ' + yy + ')"/>'
-            : '<circle class="pc-' + q[1] + '" cx="' + p(xx) + '" cy="' + yy + '" r="' + (q[1] === 'a' ? 2.7 : 2.2) + '"/>';
-        }
-        if (q[0] > 11) s += '<text class="pplus" x="' + p(CX + 3 + 11 * 6.6) + '" y="' + (yy + 3) + '">+</text>';
-      });
-    } else if (c.cases) s += '<text class="pnone" x="' + CX + '" y="' + (cy + 4) + '">none</text>';
-    if (on > 0) s += '<circle class="pring" cx="' + (W - 14) + '" cy="' + cy + '" r="6"/>';
+    s += '<circle class="pdot" cx="' + (RX + 6) + '" cy="' + (y + 14) + '" r="6"/>' +
+      '<text class="plab" x="' + (RX + 19) + '" y="' + (y + 19) + '"><tspan class="plab-w">' + esc(WORD[x.g]) + '</tspan>' +
+      (x.g === 'cant_say' || x.g === 'outside_data' ? '' : '<tspan class="plab-g"> · ' + esc(glossOf(L, true)) + '</tspan>') + '</text>';
+    if (cost) s += '<text class="pcost" x="' + (RX + 19) + '" y="' + (y + 36) + '">' + esc(cost) + '</text>';
+    if (edge) s += '<text class="pedge" x="' + (RX + 19) + '" y="' + (y + 51) + '">' + esc(edge) + '</text>';
     s += '</g>';
   });
-  if (m.base !== null && m.score !== null && m.base !== m.score) {
-    s += '<line class="pline-base" x1="' + p(sx(m.base)) + '" x2="' + p(sx(m.base)) + '" y1="' + (TOP - 4) + '" y2="' + (H - 4) + '"/>';
+  if (emptyRow) {
+    var ey = TOP + n * RH;
+    s += '<g class="pempty"><rect x="' + X0 + '" y="' + (ey + 14) + '" width="' + (X1 - X0) + '" height="30" rx="15"/>' +
+      '<text class="pnote" x="' + (X0 + 18) + '" y="' + (ey + 34) + '">Likely: none yet.' + (nSug ? ' Chapter 3 shows ' + nSug + ' that would be within range or safer.' : ' Chapter 3 is about what you can change.') + '</text></g>';
   }
-  if (m.score !== null) {
-    var lx = sx(m.score), txt = (o.whatIf ? 'What if ' : 'Student ') + m.score, tw = txt.length * 7.4 + 14, tx = Math.max(X0 + tw / 2, Math.min(X1 - tw / 2 + 30, lx));
-    s += '<g class="pstudent" aria-hidden="true"><line class="pline" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="16" y2="' + (H - 4) + '"/>' +
-      '<rect class="ptagbg" x="' + p(tx - tw / 2) + '" y="1" width="' + p(tw) + '" height="19" rx="9.5"/>' +
-      '<text class="ptag" x="' + p(tx) + '" y="15" text-anchor="middle">' + esc(txt) + '</text></g>';
+  if (m.base !== null && m.score !== null && m.base !== m.score) {
+    s += '<line class="pline-base" x1="' + p(sx(m.base)) + '" x2="' + p(sx(m.base)) + '" y1="' + (TOP - 6) + '" y2="' + (H - 26) + '"/>';
+  }
+  if (lx !== null) {
+    var tag = o.whatIf ? 'If your score were ' + m.score : who, tw = tag.length * 9.2, right2 = lx + 22 + tw < W - 10;
+    // The student's line is drawn UNDER the college rows, so names and notes (which carry a paper-coloured halo) stay readable.
+    var lineEl = '<line class="pline" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="42" y2="' + (H - 26) + '"/>';
+    var firstRow = s.indexOf('<g class="prow');
+    s = firstRow > -1 ? s.slice(0, firstRow) + lineEl + s.slice(firstRow) : s + lineEl;
+    s += '<g class="pstudent" aria-hidden="true">' + personGlyph(p(lx), 30) +
+      '<text class="pyou" x="' + p(right2 ? lx + 22 : lx - 22) + '" y="30"' + (right2 ? '' : ' text-anchor="end"') + '>' + esc(tag) + '</text></g>';
   }
   return s + '</svg>';
 }
+function didYouMean(c, canSwap) {
+  c = obj(c);
+  if (groupOf(obj(c.label).state) !== 'outside_data' || !str(c.suggestion)) return '';
+  return '<p class="calm meant">“' + esc(c.name) + '” is not in our data. Did you mean <b>' + esc(c.suggestion) + '</b>? ' +
+    (canSwap === false ? '' : '<button type="button" class="btn small" data-act="swap-college" data-from="' + esc(c.name) + '" data-name="' + esc(c.suggestion) + '">Use ' + esc(c.suggestion) + '</button>') + '</p>';
+}
 function renderPictureCard(result, opts) {
-  var m = pictureModel(result, opts);
-  return '<div class="panel pic-card"><div class="pic-head"><h2>Where this student stands</h2>' +
-    (m.score === null ? '<span class="quiet">No test score entered, so there is no line.</span>' : '') + '</div>' +
+  var m = pictureModel(result, opts), canSwap = obj(opts).canSwap;
+  return '<div class="card pic-card">' + arr(obj(result).colleges).map(function (c) { return didYouMean(c, canSwap); }).join('') +
     '<div class="pic-scroll">' + renderPicture(result, opts) + '</div>' +
-    '<ul class="legend" aria-label="How to read the picture">' +
-    '<li><span class="lg-bar"></span>the college\'s middle score range</li>' +
-    '<li><span class="lg-line"></span>the student\'s score</li>' +
-    '<li><i class="cd cd-admitted"></i>admitted <i class="cd cd-denied"></i>denied <i class="cd cd-waitlisted"></i>waitlisted, national cases</li>' +
-    '<li><span class="lg-ring"></span>your school has cases</li>' +
-    '<li class="lg-tip">Press a row to see why.</li></ul></div>';
+    '<p class="pic-foot"><span class="quiet">Each bar is where the middle half of a college\'s students scored.' + (m.score === null ? ' There is no line for you, because no test score was entered.' : ' The line is you.') + '</span>' +
+    '<span class="tap">Tap a college to see how we got this.</span></p></div>';
 }
 
-/* ---------- Level 1: the three levers ---------- */
-function ladderLines(ladder) {
-  var seen = {}, out = [], maxPts = 0, kind = 'SAT';
-  arr(ladder).map(obj).forEach(function (st) {
-    var moves = arr(st.moves).map(obj), pts = num(st.points);
-    if (pts !== null && pts > maxPts) maxPts = pts;
-    if (str(st.kind)) kind = str(st.kind);
-    if (!moves.length || pts === null) return;
-    var sig = moves.map(function (mv) { return str(mv.name) + '>' + str(mv.to); }).join('|');
-    if (seen[sig]) return;
-    seen[sig] = 1;
-    out.push(pts + ' more ' + plural(pts, 'point', 'points') + ' moves ' + moves.length + ' ' + plural(moves.length, 'college', 'colleges') + ': ' +
-      moves.slice(0, 3).map(function (mv) { return shortName(mv.name) + ', ' + str(mv.from) + ' to ' + str(mv.to); }).join('; ') +
-      (moves.length > 3 ? '; and ' + (moves.length - 3) + ' more' : '') + '.');
+/* ---------- Chapter 3: what is in your hands ---------- */
+function changesBetween(base, view) {
+  var before = {}, out = [];
+  arr(obj(base).colleges).map(obj).forEach(function (c) { before[str(c.name)] = groupOf(obj(c.label).state); });
+  arr(obj(view).colleges).map(obj).forEach(function (c) {
+    var g = groupOf(obj(c.label).state), b = before[str(c.name)];
+    if (b && b !== g) out.push({name: str(c.name), from: b, to: g});
   });
-  if (!out.length && maxPts) out.push('Up to ' + maxPts + ' more ' + kind + ' points moves no college on this list.');
-  return out.slice(0, 2);
+  return out;
+}
+var NOT_A_PREDICTION = ' This shows how the rule works. It is not a prediction.';
+function moveSentence(score, moves, would) {
+  var mv = arr(moves).map(obj).filter(function (x) { return str(x.name); });
+  if (!mv.length) return 'At ' + score + ', no college on this list changes label.' + NOT_A_PREDICTION;
+  return 'At ' + score + ', ' + mv.slice(0, 3).map(function (x) {
+    return shortName(x.name) + (would ? ' would move' : ' moves') + ' from ' + GLOSS[groupOf(x.from)] + ' to ' + GLOSS[groupOf(x.to)];
+  }).join('; ') + (mv.length > 3 ? '; and ' + (mv.length - 3) + ' more change' : '') + '.' + NOT_A_PREDICTION;
+}
+/* The nearest score at which a label changes, from the server's ladder. */
+function nearestMove(result) {
+  var ladder = arr(obj(obj(result).levers).score_ladder).map(obj), maxPts = 0, hit = null;
+  ladder.forEach(function (st) {
+    if (num(st.points) !== null && num(st.points) > maxPts) maxPts = num(st.points);
+    if (!hit && arr(st.moves).length && num(st.new_score) !== null) hit = st;
+  });
+  return {hit: hit, maxPts: maxPts, kind: str(obj(ladder[0]).kind) || 'SAT'};
+}
+function ladderSentence(result) {
+  var nm = nearestMove(result);
+  if (nm.hit) return moveSentence(num(nm.hit.new_score), nm.hit.moves, true);
+  if (nm.maxPts) return 'Up to ' + nm.maxPts + ' more points changes no label on this list.' + NOT_A_PREDICTION;
+  return 'Move the slider to see how the labels would change.' + NOT_A_PREDICTION;
+}
+function suggestionCard(s, canAdd, hidden) {
+  s = obj(s);
+  var g = groupOf(s.would_be), bits = [];
+  if (num(s.admit_rate) !== null) bits.push(inHundred(s.admit_rate) + ' get in');
+  if (costLine(s.cost_year)) bits.push(costLine(s.cost_year));
+  return '<li class="sugg p-' + g + '"' + (hidden ? ' hidden data-more="1"' : '') + '><p class="sugg-name"><i class="dot" aria-hidden="true"></i>' + esc(str(s.name) || 'A college') + '</p>' +
+    (s.would_be ? '<p class="sugg-would">would be ' + esc(GLOSS[g]) + ' <span class="quiet">(' + esc(WORD[g].toLowerCase()) + ')</span></p>' : '') +
+    (str(s.why) ? '<p class="sugg-why">' + esc(s.why) + '</p>' : '') +
+    (bits.length ? '<p class="quiet small">' + esc(cap(bits.join(' · '))) + (str(s.tuition_note) ? '<span class="working-only"> · ' + esc(s.tuition_note) + '</span>' : '') + '</p>' : '') +
+    (canAdd !== false && str(s.name) ? '<button type="button" class="btn small" data-act="add-suggestion" data-name="' + esc(s.name) + '">Add to my list</button>' : '') + '</li>';
+}
+/* What a college says it reads, set beside what is in this profile. Three neutral marks; never a count or a score. */
+var FIT_MARK = {in_profile: ['fit-in', 'in your profile'], not_yet: ['fit-not', 'not in this profile yet'], cant_see: ['fit-cant', "we can't see this here"]};
+function fitRows(fit, max) {
+  return arr(obj(fit).looks_for).map(obj).filter(function (f) { return str(f.factor); }).slice(0, max || 99).map(function (f) {
+    var mk = FIT_MARK[str(f.state)] || FIT_MARK.cant_see;
+    return '<li' + (str(f.note) ? ' title="' + esc(f.note) + '"' : '') + '><i class="fit-mark ' + mk[0] + '" aria-hidden="true"></i><span class="fit-factor">' + esc(cap(f.factor)) + '</span>' +
+      (str(f.rating) ? '<span class="fit-rating">' + esc(f.rating) + '</span>' : '') + '<span class="sr">: ' + mk[1] + '</span></li>';
+  }).join('');
+}
+function fitKey() {
+  return '<p class="fit-key quiet small"><span><i class="fit-mark fit-in" aria-hidden="true"></i>in your profile</span><span><i class="fit-mark fit-not" aria-hidden="true"></i>not in this profile yet</span>' +
+    '<span><i class="fit-mark fit-cant" aria-hidden="true"></i>we can\'t see this here</span></p>';
+}
+function fitDoesNot(fit) {
+  var d = arr(obj(fit).does_not_consider).map(str).filter(Boolean);
+  return d.length ? '<p class="fit-relief">This college says it does not consider: ' + esc(d.join('; ')) + '.</p>' : '';
+}
+function renderFit(fit) {
+  fit = obj(fit);
+  var rows = fitRows(fit);
+  if (!rows && !fitDoesNot(fit)) return '';
+  return '<div class="fit"><p class="label">What this college says it reads</p>' + (rows ? '<ul class="fit-list">' + rows + '</ul>' + fitKey() : '') + fitDoesNot(fit) +
+    (str(fit.note) ? '<p class="quiet small">' + esc(fit.note) + '</p>' : '') +
+    '<p class="working-only small quiet">' + [esc(str(fit.year)), sourceLink(fit.source_url)].filter(Boolean).join(' · ') + '</p></div>';
+}
+function fitColleges(result) {
+  return arr(obj(result).colleges).map(obj).map(function (c, i) {
+    return arr(obj(c.fit).looks_for).length ? {i: i, name: str(c.name), fit: obj(c.fit)} : null;
+  }).filter(Boolean);
+}
+function coverageLine(result, counted) {
+  var cov = obj(obj(obj(result).levers).fit_coverage), w = num(cov['with']), of = num(cov.of), n = arr(obj(result).colleges).length;
+  if (w === null || of === null) { w = counted; of = n; }
+  return w > 0 ? "We have each college's own statement for " + w + ' of your ' + of + ' ' + plural(of, 'college', 'colleges') + '.'
+    : "We don't hold these colleges' own statements yet, so we say nothing here.";
+}
+function saysLevers(result) {
+  return arr(obj(result).colleges).map(obj).map(function (c, i) {
+    var lv = arr(c.levers).map(obj).filter(function (l) { return l.kind === 'says' && (arr(l.factors).length || str(l.text)); })[0];
+    return lv ? {i: i, name: str(c.name), lv: lv} : null;
+  }).filter(Boolean);
 }
 /* slider: {disabled, reason, min, max, step, value, shown} */
-function renderLeversCard(result, slider, canAdd) {
-  var r = obj(result), lv = obj(r.levers), ll = obj(lv.list), sl = obj(slider);
-  var nSug = arr(obj(r.balance).suggestions).length || num(ll.suggestions) || 0;
-  var h = '<div class="panel levers"><h2>What could change this</h2><ol class="lever-list">';
-  h += '<li><h3><span class="lv-n">1</span>The list</h3><p>' + esc(str(ll.text) || 'The first thing you can change is the list itself.') + '</p>' +
-    (nSug ? '<button type="button" class="btn small" data-act="show-suggestions">Show ' + nSug + ' suggested ' + plural(nSug, 'college', 'colleges') + '</button>'
-          : '<p class="quiet small">No suggested colleges for this list.</p>') + '</li>';
-  h += '<li><h3><span class="lv-n">2</span>The score</h3>';
+function renderHands(result, slider, canAdd) {
+  var r = obj(result), sl = obj(slider), sug = arr(obj(r.balance).suggestions), says = saysLevers(r), fits = fitColleges(r);
+  var h = chapterHead(3, 'What is in your hands', 'What is in your hands') + '<p class="ch-sub">Three things you can change. Try any of them.</p><div class="hands">';
+  h += '<section class="card hand"><h3>' + waypoint(false) + 'Your list</h3><p class="hand-lead">The list is the biggest lever you have.</p>';
+  if (sug.length) {
+    h += '<ul class="suggs">' + sug.map(function (x, i) { return suggestionCard(x, canAdd, i >= 3); }).join('') + '</ul>';
+    if (sug.length > 3) h += '<button type="button" class="linkbtn" data-act="more-suggestions" aria-expanded="false">See ' + (sug.length - 3) + ' more</button>';
+    if (canAdd === false) h += '<p class="quiet small">Shared preview: adding colleges is switched off.</p>';
+  } else h += '<p class="quiet">We have no colleges to suggest for this list.</p>';
+  h += '</section>';
+  h += '<section class="card hand"><h3>' + waypoint(false) + 'Your score</h3>';
   if (sl.disabled || num(sl.value) === null) {
-    h += '<p class="quiet">' + esc(str(sl.reason) || 'No test score to vary.') + '</p>';
+    h += '<p class="hand-lead">' + esc(str(sl.reason) || 'No test score to vary.') + '</p><p class="quiet">Whether to take or send a test is a conversation for you and your counselor.</p>';
   } else {
-    h += '<label class="whatif-l" for="whatif">What if the score were…</label><div class="whatif-row">' +
+    h += '<label class="hand-lead" for="whatif">If your score were different…</label><div class="whatif-row">' +
       '<input type="range" id="whatif" min="' + esc(sl.min) + '" max="' + esc(sl.max) + '" step="' + esc(sl.step) + '" value="' + esc(sl.value) + '">' +
-      '<output id="whatif-out" for="whatif">' + esc(sl.shown) + '</output>' +
-      '<button type="button" class="btn small" data-act="reset-score" id="whatif-reset" disabled>Reset</button></div>' +
-      '<p class="hint" id="whatif-hint" role="status"></p>';
-    var lines = ladderLines(lv.score_ladder);
-    if (lines.length) h += '<ul class="ladder">' + lines.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+      '<output id="whatif-out" for="whatif">' + esc(sl.shown) + '</output></div>' +
+      '<p id="whatif-say" class="whatif-say" role="status">' + esc(ladderSentence(r)) + '</p>' +
+      '<p class="hint" id="whatif-hint"></p>' +
+      '<p class="hand-foot"><span class="quiet">Whether a retake is worth the effort is your call.</span> <button type="button" class="linkbtn" data-act="reset-score" id="whatif-reset" disabled>Back to your score</button></p>';
   }
-  h += '</li>';
-  h += '<li><h3><span class="lv-n">3</span>What each college says matters</h3>' +
-    '<button type="button" class="btn small" data-act="open-says">See what the colleges say</button></li></ol>';
-  if (str(lv.note)) h += '<p class="quiet small lv-note">' + esc(lv.note) + '</p>';
-  return h + '</div>';
-}
-function suggestionCard(s, canAdd) {
-  s = obj(s);
-  var facts = [];
-  if (num(s.admit_rate) !== null) facts.push('Admits ' + inHundred(s.admit_rate));
-  if (num(s.sat25) !== null && num(s.sat75) !== null) facts.push('Middle score range ' + num(s.sat25) + ' to ' + num(s.sat75));
-  if (num(s.cost_year) !== null) facts.push('Sticker cost ' + moneyAbout(s.cost_year) + ' a year');
-  if (str(s.tuition_note)) facts.push(str(s.tuition_note));
-  return '<li class="sugg"><div class="sugg-head"><span class="sugg-name">' + esc(str(s.name) || 'A college') + '</span>' +
-    (s.would_be ? '<span class="sugg-would">Would be ' + badgeFor(s.would_be) + '</span>' : '') + '</div>' +
-    (facts.length ? '<ul class="facts">' + facts.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>' : '') +
-    (str(s.why) ? '<p class="why"><b>Why:</b> ' + esc(s.why) + '</p>' : '') +
-    (canAdd !== false && str(s.name) ? '<button type="button" class="btn small" data-act="add-suggestion" data-name="' + esc(s.name) + '">Add to list</button>' : '') + '</li>';
-}
-function panelHead(kicker, title) {
-  return '<header class="rc-head"><div><p class="rc-kicker">' + esc(kicker) + '</p><h2 id="receipt-title">' + esc(title) + '</h2></div>' +
-    '<button type="button" class="btn" data-act="close-panel">Close</button></header>';
-}
-function renderSuggestionsPanel(balance, canAdd) {
-  var s = arr(obj(balance).suggestions), w = warningTexts(obj(balance).warnings);
-  return panelHead('The list', 'Suggested colleges') + '<section class="rc-sec">' +
-    (w.length ? '<ul class="more-warn open">' + w.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-    (s.length ? '<ul class="suggs">' + s.map(function (x) { return suggestionCard(x, canAdd); }).join('') + '</ul>'
-              : '<p class="state-box">No suggested colleges for this list.</p>') +
-    (canAdd === false ? '<p class="quiet small">Shared preview: adding colleges is switched off.</p>' : '') + '</section>';
-}
-function renderFootLinks(result, mode) {
-  var n = arr(obj(obj(result).reader).notes).length;
-  var links = [['open-essay', 'Essay notes (' + n + ')'], ['open-how', 'How this was made']];
-  if (mode !== 'static') links.push(['open-case', 'Add a finished case']);
-  links.push(['print', 'Print for the family'], ['ask-chance', "What is the student's chance?"]);
-  return links.map(function (l) {
-    return '<button type="button" class="linkbtn" data-act="' + l[0] + '"' + (l[0] === 'ask-chance' ? ' aria-expanded="false" aria-controls="chance-answer"' : '') + '>' + esc(l[1]) + '</button>';
-  }).join('<span class="sep" aria-hidden="true">·</span>');
-}
-function renderChanceAnswer(refusals) {
-  return '<p><b>This screen does not give odds.</b> ' + esc(str(arr(refusals)[0]) || 'No personal odds of admission are given.') + '</p>' +
-    '<p class="quiet">The picture shows where the score sits against each college. The finished cases show what happened to students like this one.</p>' +
-    '<button type="button" class="btn small" data-act="see-cases">Show the finished cases</button>';
+  h += '</section>';
+  h += '<section class="card hand"><h3>' + waypoint(false) + 'What they look for</h3><p class="hand-lead">What each college says it looks for.</p>';
+  if (fits.length) {
+    var fnotes = {};
+    h += '<ul class="looks">' + fits.slice(0, 3).map(function (x) {
+      if (str(x.fit.note)) fnotes[str(x.fit.note)] = 1;
+      return '<li><button type="button" class="linkbtn" data-act="open-receipt" data-i="' + x.i + '" data-tab="says">' + esc(shortName(x.name)) + '</button>' +
+        '<ul class="fit-list">' + fitRows(x.fit, 3) + '</ul></li>';
+    }).join('') + '</ul>' + fitKey() + Object.keys(fnotes).map(function (t) { return '<p class="quiet small">' + esc(t) + '</p>'; }).join('');
+  } else if (says.length) {
+    h += '<ul class="looks">' + says.slice(0, 4).map(function (x) {
+      var f = arr(x.lv.factors).map(str).filter(Boolean).slice(0, 4);
+      return '<li><button type="button" class="linkbtn" data-act="open-receipt" data-i="' + x.i + '" data-tab="says">' + esc(shortName(x.name)) + '</button>' +
+        (f.length ? '<p><span class="quiet small">' + esc(str(x.lv.rating) ? 'rates as ' + str(x.lv.rating) : 'looks for') + '</span> ' + f.map(function (t) { return '<span class="chip chip-theme">' + esc(t) + '</span>'; }).join('') + '</p>'
+                  : '<p class="small">' + esc(x.lv.text) + '</p>') + '</li>';
+    }).join('') + '</ul>';
+  }
+  h += '<p class="quiet small">' + esc(coverageLine(r, Math.max(fits.length, says.length))) + '</p></section></div>';
+  if (str(obj(r.levers).note)) h += '<p class="quiet small working-only">' + esc(obj(r.levers).note) + '</p>';
+  return h + nextButton('ch4', 'Put it into a plan');
 }
 
-/* ---------- Level 2: the drill-in, four tabs ---------- */
+/* ---------- Chapter 4: your plan ---------- */
+function planLines(result) {
+  var r = obj(result), st = obj(r.student), out = [];
+  var sug = arr(obj(r.balance).suggestions).map(function (x) { return shortName(obj(x).name); }).filter(Boolean).slice(0, 3);
+  if (sug.length) out.push({t: 'Widen the list.', x: 'Talk about adding one or two of these: ' + joinAnd(sug) + '.'});
+  var sat = num(st.sat), act = num(st.act), nm = nearestMove(r), kind = sat !== null ? 'SAT' : 'ACT', score = sat !== null ? sat : act;
+  if (score === null) out.push({t: 'Know your number.', x: 'No test score is on file. Talk about whether taking or sending one would help.'});
+  else if (nm.hit) {
+    var mv = arr(nm.hit.moves).map(obj), first = obj(mv[0]);
+    out.push({t: 'Know your number.', x: 'Your ' + kind + ' is ' + score + '. At ' + num(nm.hit.new_score) + ', ' + shortName(first.name) + ' changes from ' + GLOSS[groupOf(first.from)] + ' to ' + GLOSS[groupOf(first.to)] +
+      (mv.length > 1 ? ', and ' + (mv.length - 1) + ' more ' + plural(mv.length - 1, 'college changes', 'colleges change') + ' too' : '') + '. Whether a retake is worth the effort is your call.'});
+  } else if (nm.maxPts) out.push({t: 'Know your number.', x: 'Your ' + kind + ' is ' + score + '. Up to ' + nm.maxPts + ' more points changes no label on this list, so the list matters more than the score here.'});
+  var says = saysLevers(r).slice(0, 2).map(function (x) {
+    var f = arr(x.lv.factors).map(str).filter(Boolean).slice(0, 3);
+    return f.length ? shortName(x.name) + ' rates as ' + (str(x.lv.rating) || 'important') + ': ' + joinAnd(f) + '.' : '';
+  }).filter(Boolean);
+  if (!says.length) {
+    says = fitColleges(r).slice(0, 2).map(function (x) {
+      var top = arr(x.fit.looks_for).map(obj).filter(function (f) { return str(f.factor); }), rating = str(obj(top[0]).rating);
+      var f = top.filter(function (y) { return str(y.rating) === rating; }).map(function (y) { return str(y.factor); }).slice(0, 3);
+      return f.length ? shortName(x.name) + (rating ? ' rates as ' + rating + ': ' : ' reads: ') + joinAnd(f) + '.' : '';
+    }).filter(Boolean);
+  }
+  if (says.length) out.push({t: 'Write to what they ask.', x: says.join(' ')});
+  var withCases = arr(r.colleges).map(obj).map(function (c) {
+    return {name: shortName(c.name), n: (num(obj(obj(c.cases).own).n) || 0) + (num(obj(obj(c.cases).national).n) || 0)};
+  }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 2);
+  if (withCases.length) out.push({t: 'Read the real cases.', x: 'Look at how it went for students like you at ' + joinAnd(withCases.map(function (x) { return x.name; })) + ', including students who were not admitted.'});
+  var q = str(obj(arr(obj(r.reader).notes)[0]).question);
+  if (q && !essayStopped(r.privacy, r.reader)) out.push({t: 'Bring a question.', x: q});
+  return out;
+}
+var WHY_NO_PERCENT = 'No one can honestly give you a percentage. What we can show is real students and how it went for them.';
+function renderPlan(result) {
+  var lines = planLines(result);
+  var h = chapterHead(4, 'Your plan', 'Your plan') + '<p class="ch-sub">For you and your counselor to decide together.</p><div class="card plan">';
+  h += lines.length ? '<ol class="plan-list">' + lines.map(function (l) { return '<li><b>' + esc(l.t) + '</b> ' + esc(l.x) + '</li>'; }).join('') + '</ol>'
+    : '<p class="quiet">Add a college or two and the plan will fill in.</p>';
+  h += '<p class="plan-close">This plan is a starting point. Your counselor makes the final call with you.</p></div>';
+  h += '<p class="next"><button type="button" class="btn primary big" data-act="print">Print your plan</button>' +
+    '<button type="button" class="linkbtn" data-act="why-no-percent" aria-expanded="false" aria-controls="why-answer">Why no percentage?</button></p>' +
+    '<div id="why-answer" class="calm" hidden><p>' + esc(WHY_NO_PERCENT) + '</p>' +
+    '<button type="button" class="btn small" data-act="see-cases">See how it went for students like you</button></div>' +
+    '<p class="quiet small checked">Everything here was checked against its source. <button type="button" class="linkbtn" data-act="toggle-working">Show the working</button></p>';
+  return h;
+}
+
+/* ---------- keep track, and pay it forward ---------- */
+var TRACK_STEPS = [['considering', 'Considering'], ['applying', 'Applying'], ['submitted', 'Submitted'], ['result', 'Result']];
+var TRACK_OUT = [['admitted', 'Admitted'], ['denied', 'Not admitted'], ['waitlisted', 'Waitlisted']];
+/* state: {college name: {status, outcome, asking}}; falls back to each college's own tracker */
+function renderTracker(result, canPost, state, message) {
+  var cs = arr(obj(result).colleges).map(obj).filter(function (c) { return str(c.name) && groupOf(obj(c.label).state) !== 'outside_data'; }), st = obj(state), msg = obj(message);
+  if (!cs.length) return '';
+  var h = '<div class="card tracker"><h3 class="section">Keep track, and pay it forward</h3>' +
+    '<p class="quiet">When results come in, they go back into your school\'s cases, with no names.</p>';
+  if (canPost === false) h += '<p class="quiet small">Shared preview: saved runs for six invented students. Run it on a laptop to edit.</p>';
+  h += '<ul class="track-rows">' + cs.map(function (c) {
+    var t = obj(st[str(c.name)] || c.tracker), status = str(t.status) || 'considering', outcome = str(t.outcome), off = canPost === false ? ' disabled' : '';
+    var row = '<li><span class="track-name">' + esc(shortName(c.name)) + '</span><span class="track-steps" role="group" aria-label="Where this application is">' +
+      TRACK_STEPS.map(function (s) {
+        return '<button type="button" class="step" data-act="track" data-name="' + esc(c.name) + '" data-status="' + s[0] + '" aria-pressed="' + (s[0] === status ? 'true' : 'false') + '"' + off + '>' +
+          s[1] + (s[0] === 'result' && status === 'result' && outcome ? ': ' + esc((TRACK_OUT.filter(function (o) { return o[0] === outcome; })[0] || ['', outcome])[1]).toLowerCase() : '') + '</button>';
+      }).join('') + '</span>';
+    if (t.asking === true && canPost !== false) {
+      row += '<span class="track-ask">Which result? ' + TRACK_OUT.map(function (o) {
+        return '<button type="button" class="btn small" data-act="track-outcome" data-name="' + esc(c.name) + '" data-outcome="' + o[0] + '">' + o[1] + '</button>';
+      }).join('') + '</span>';
+    }
+    return row + '</li>';
+  }).join('') + '</ul>';
+  h += '<div id="tracker-msg" class="track-msg" role="status" aria-live="polite">' + (str(msg.note) ? '<p>' + esc(msg.note) + '</p>' : '') +
+    (msg.case_added === true ? '<p class="calm paid"><b>This result is now one of your school\'s finished cases.</b> Next year\'s students will see it. ' +
+      '<button type="button" class="btn small" data-act="build">Build the list again</button></p>' : '') + '</div>';
+  if (canPost !== false) h += '<p><button type="button" class="linkbtn small" data-act="track-reset">Clear the demo results</button></p>';
+  return h + '</div>';
+}
+
+/* ---------- pressing a college: the drill-in ---------- */
 function rangeInfo(c) {
   c = obj(c);
   var L = obj(c.label), inp = obj(L.inputs), kind = str(L.score_kind);
@@ -376,93 +654,69 @@ function rangeInfo(c) {
           kind: kind || (useAct ? 'ACT' : 'SAT'), test: useAct ? 'ACT' : 'SAT'};
 }
 function rangeBar(c) {
-  var r = rangeInfo(c);
-  if (r.lo === null || r.hi === null) {
-    return '<span class="range none"><span class="range-cap">No score range published</span></span>';
-  }
+  var r = rangeInfo(c), g = groupOf(obj(obj(c).label).state);
+  if (r.lo === null || r.hi === null) return '<span class="range none"><span class="range-cap">This college publishes no score range.</span></span>';
   function pc(v) { return Math.max(0, Math.min(100, (v - r.min) / (r.max - r.min) * 100)); }
   var where = '';
   if (r.score !== null) where = r.score < r.lo ? 'below the range' : (r.score >= r.hi ? 'at or above the top of the range' : 'inside the range');
-  var aria = 'College\'s middle ' + r.test + ' range ' + r.lo + ' to ' + r.hi + '. ' +
-    (r.score !== null ? 'Student\'s score ' + r.score + ', ' + where + '.' : 'No student score to mark.');
+  var aria = 'This college\'s middle ' + r.test + ' range is ' + r.lo + ' to ' + r.hi + '. ' + (r.score !== null ? 'Your score, ' + r.score + ', is ' + where + '.' : 'No score to mark.');
   var left = pc(r.lo), width = Math.max(1.5, pc(r.hi) - pc(r.lo));
-  return '<span class="range" role="img" aria-label="' + esc(aria) + '">' +
+  return '<span class="range p-' + g + '" role="img" aria-label="' + esc(aria) + '">' +
     '<span class="track"><span class="band" style="left:' + left.toFixed(1) + '%;width:' + width.toFixed(1) + '%"></span>' +
     (r.score !== null ? '<span class="me" style="left:' + pc(r.score).toFixed(1) + '%"></span>' : '') + '</span>' +
-    '<span class="range-cap">Middle range <b>' + r.lo + ' to ' + r.hi + '</b>' +
-    (r.score !== null ? ' · student <b>' + r.score + '</b>, ' + esc(where) : ' · no student score') +
-    (/converted/i.test(r.kind) ? ' (ACT converted to SAT)' : '') + '</span></span>';
+    '<span class="range-cap">Middle half of students: <b>' + r.lo + ' to ' + r.hi + '</b>' +
+    (r.score !== null ? ' · you: <b>' + r.score + '</b>, ' + esc(where) : '') + (/converted/i.test(r.kind) ? ' (ACT converted to SAT)' : '') + '</span></span>';
 }
-function renderWhyDetails(c) {
+function renderWhyWorking(c) {
   c = obj(c);
-  var L = obj(c.label), g = groupOf(L.state), inp = obj(L.inputs), h = '';
+  var L = obj(c.label), g = groupOf(L.state), inp = obj(L.inputs), h = '<div class="working-only working-box">';
   var NAMES = {sat25: "College's 25th percentile SAT", sat75: "College's 75th percentile SAT",
                act25: "College's 25th percentile ACT", act75: "College's 75th percentile ACT", admit_rate: 'Official admit rate'};
-  var rows = [['Student&#39;s score', num(L.score_used) !== null ? esc(num(L.score_used) + (str(L.score_kind) ? ' (' + str(L.score_kind) + ')' : '')) : 'No score to compare']];
+  var rows = [['Rule', esc(str(L.rule_id) || 'not recorded')],
+    ['Score used', num(L.score_used) !== null ? esc(num(L.score_used) + (str(L.score_kind) ? ' (' + str(L.score_kind) + ')' : '')) : 'No score to compare']];
   Object.keys(inp).forEach(function (k) {
     var v = inp[k];
-    rows.push([esc(NAMES[k] || cap(k.replace(/_/g, ' '))),
-      k === 'admit_rate' ? esc(rateFull(v)) : (v === null || v === undefined || typeof v === 'object' ? 'not published' : esc(v))]);
+    rows.push([esc(NAMES[k] || cap(k.replace(/_/g, ' '))), k === 'admit_rate' ? esc(rateFull(v)) : (v === null || v === undefined || typeof v === 'object' ? 'not published' : esc(v))]);
   });
-  h += '<h4>The numbers used</h4><table class="kv"><tbody>' + rows.map(function (r) {
-    return '<tr><th scope="row">' + r[0] + '</th><td>' + r[1] + '</td></tr>';
-  }).join('') + '</tbody></table>';
+  h += '<h4>The numbers used</h4><table class="kv"><tbody>' + rows.map(function (r) { return '<tr><th scope="row">' + r[0] + '</th><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>';
   if (str(c.source)) h += '<p class="src">Numbers from: ' + esc(c.source) + '</p>';
   var nu = arr(L.not_used).map(str).filter(Boolean);
-  h += '<h4>What was not used</h4>' + (nu.length
-    ? '<p class="not-used">' + nu.map(function (x) { return '<span class="pill">' + esc(x) + '</span>'; }).join('') +
-      '<span class="quiet"> None of these changed the label.</span></p>'
-    : '<p class="quiet">Nothing was listed.</p>');
+  h += '<h4>What was not used</h4>' + (nu.length ? '<p>' + nu.map(function (x) { return '<span class="unused">' + esc(x) + '</span>'; }).join('') + '<span class="quiet"> None of these changed the label.</span></p>' : '<p class="quiet">Nothing was listed.</p>');
   var cv = arr(L.caveats).map(str).concat(arr(c.flags).map(function (f) { return typeof f === 'string' ? f : str(obj(f).text); })).filter(Boolean);
-  h += '<h4>Caveats</h4>' + (cv.length
-    ? '<ul class="plain">' + cv.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'
-    : '<p class="quiet">None recorded for this college.</p>');
+  if (cv.length) h += '<h4>Caveats</h4><ul class="plain">' + cv.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
   var fl = arr(L.flips).map(obj);
-  h += '<h4>What would flip it</h4>';
-  if (fl.length) {
-    h += '<ul class="flips">' + fl.map(function (f) {
-      return '<li><span>' + esc(cap(f.cause)) + '</span><span class="becomes">becomes ' + badgeFor(f.to) + '</span></li>';
-    }).join('') + '</ul>';
-  } else if (L.state === 'reach_for_everyone') {
-    h += '<p class="quiet">Nothing in this student\'s profile changes it. The label comes from the college\'s admit rate, not from the score.</p>';
-  } else if (g === 'cant_say') {
-    h += '<p class="quiet">Not tested, because there is no label to test.</p>';
-  } else {
-    h += '<p class="quiet">Nothing small changes it: a score 30 points lower or higher, or an admit rate 5 points lower, gives the same label.</p>';
-  }
+  h += '<h4>What would change the label</h4>';
+  if (fl.length) h += '<ul class="rows">' + fl.map(function (f) { return '<li><span>' + esc(cap(f.cause)) + '</span><span class="becomes">becomes ' + pillFor(f.to) + '</span></li>'; }).join('') + '</ul>';
+  else if (isEveryone(L)) h += '<p class="quiet">Nothing in the profile changes it. The label comes from the college\'s admit rate, not from the score.</p>';
+  else if (g === 'cant_say') h += '<p class="quiet">Not tested, because there is no label to test.</p>';
+  else h += '<p class="quiet">Nothing small: a score 30 points lower or higher, or an admit rate 5 points lower, gives the same label.</p>';
   var pubs = arr(L.publishers).map(obj);
-  h += '<h4>What each publisher would call it</h4>';
+  h += '<h4>What each publisher would call it' + (L.publishers_disagree === true ? ' <span class="tagx">they differ</span>' : '') + '</h4>';
   if (pubs.length) {
-    h += '<ul class="pubs">' + pubs.map(function (p) {
+    h += '<ul class="rows">' + pubs.map(function (p) {
       var same = p.label && groupOf(p.label) === g;
-      return '<li><span class="pub-name">' + esc(p.name) + '</span>' +
-        (p.label ? badgeFor(p.label) : '<span class="quiet">could not label</span>') +
-        (p.label ? '<span class="pub-cmp ' + (same ? 'same' : 'differs') + '">' + (same ? 'same as ours' : 'differs from ours') + '</span>' : '') + '</li>';
+      return '<li><span class="pub-name">' + esc(p.name) + '</span>' + (p.label ? pillFor(p.label) : '<span class="quiet">could not label</span>') +
+        (p.label ? '<span class="becomes ' + (same ? '' : 'differs') + '">' + (same ? 'same as ours' : 'differs from ours') + '</span>' : '') + '</li>';
     }).join('') + '</ul>';
-  } else {
-    h += '<p class="quiet">No publisher\'s rulebook could label this one.</p>';
-  }
-  return h;
+  } else h += '<p class="quiet">No publisher\'s rulebook could label this one.</p>';
+  return h + '</div>';
 }
 function renderWhyTab(c) {
   c = obj(c);
-  var L = obj(c.label), g = groupOf(L.state);
+  var L = obj(c.label), g = groupOf(L.state), edge = edgeLever(c);
   var h = (g === 'outside_data' ? '' : '<div class="tab-pic">' + rangeBar(c) + '</div>') +
-    '<p class="rule">' + badge(L) + '<span>' + esc(str(L.rule_text) || 'No rule text was recorded.') + '</span></p>';
-  var marks = [];
-  if (L.steady === false) marks.push('<span class="mark m-edge">On the edge</span>');
-  if (L.publishers_disagree === true) marks.push('<span class="mark m-pub">Publishers disagree</span>');
-  if (marks.length) h += '<p class="marks">' + marks.join('') + '</p>';
-  if (g !== 'outside_data') h += '<details class="more"><summary>Details</summary>' + renderWhyDetails(c) + '</details>';
+    '<p class="reason">' + esc(str(L.rule_text) || 'No reason was recorded for this label.') + '</p>';
+  if (num(c.admit_rate) !== null) h += '<p class="quiet">' + esc(cap(inHundred(c.admit_rate))) + ' applicants get in' + (costLine(c.cost_year) ? ', and it costs ' + esc(costLine(c.cost_year)) : '') + '.</p>';
+  if (edge) h += '<p class="close-one">' + waypoint(false) + 'This one is close: ' + esc(edge) + '.</p>';
+  if (g !== 'outside_data') h += renderWhyWorking(c);
   return h;
 }
 function outcomeKind(o) {
   var s = str(o).toLowerCase();
   return s === 'admitted' || s === 'denied' || s === 'waitlisted' ? s : 'other';
 }
-function outcomeTag(o) {
-  return '<span class="outcome"><i class="cd cd-' + outcomeKind(o) + '" aria-hidden="true"></i>' + esc(cap(str(o).toLowerCase()) || 'Not recorded') + '</span>';
-}
+var OUTCOME_WORD = {admitted: 'Admitted', denied: 'Not admitted', waitlisted: 'Waitlisted', other: 'Not recorded'};
+function outcomeTag(o) { return '<span class="outcome"><i class="cd cd-' + outcomeKind(o) + '" aria-hidden="true"></i>' + OUTCOME_WORD[outcomeKind(o)] + '</span>'; }
 function dotGrid(a, d, w) {
   var h = '', left = 150;
   [[a, 'admitted'], [d, 'denied'], [w, 'waitlisted']].forEach(function (q) {
@@ -476,63 +730,58 @@ function examplesTable(examples) {
   var ex = arr(examples).map(obj);
   if (!ex.length) return '<p class="quiet">No example cases to list.</p>';
   var cols = [
-    ['Case', function (e) { return esc(e.case_id) + (e.shared ? ' <span class="tag tag-self">shared</span>' : ''); }, function (e) { return str(e.case_id); }],
-    ['Score', function (e) {
-      return num(e.sat) !== null ? 'SAT ' + num(e.sat) : (num(e.act) !== null ? 'ACT ' + num(e.act) : 'none sent');
-    }, function () { return 'x'; }],
+    ['Case', function (e) { return esc(e.case_id) + (e.shared ? ' <span class="tagx">shared</span>' : ''); }, function (e) { return str(e.case_id); }],
+    ['Score', function (e) { return num(e.sat) !== null ? 'SAT ' + num(e.sat) : (num(e.act) !== null ? 'ACT ' + num(e.act) : 'none sent'); }, function () { return 'x'; }],
     ['Major', function (e) { return esc(majorText(e.major || e.major_group)); }, function (e) { return str(e.major || e.major_group); }],
-    ['Hooks', function (e) { return esc(hookText(e.hooks)); }, function (e) { return hookText(e.hooks); }],
+    ['Background', function (e) { return esc(hookText(e.hooks)); }, function (e) { return hookText(e.hooks); }],
     ['Home', function (e) { return esc(e.home_state); }, function (e) { return str(e.home_state); }],
-    ['Activities', function (e) {
-      if (str(e.activities_note)) return esc(e.activities_note);
-      return num(e.activities_rating) !== null ? 'rated ' + num(e.activities_rating) : '';
-    }, function (e) { return str(e.activities_note) || (num(e.activities_rating) !== null ? 'x' : ''); }],
+    ['Activities', function (e) { return str(e.activities_note) ? esc(e.activities_note) : (num(e.activities_rating) !== null ? 'rated ' + num(e.activities_rating) : ''); },
+      function (e) { return str(e.activities_note) || (num(e.activities_rating) !== null ? 'x' : ''); }],
     ['Essay theme', function (e) { return esc(e.essay_theme); }, function (e) { return str(e.essay_theme); }],
     ['Year', function (e) { return esc(e.cycle_year); }, function (e) { return str(e.cycle_year); }],
-    ['Outcome', function (e) { return outcomeTag(e.outcome); }, function () { return 'x'; }]
+    ['Result', function (e) { return outcomeTag(e.outcome); }, function () { return 'x'; }]
   ].filter(function (col) { return ex.some(function (e) { return col[2](e) !== ''; }); });
-  return '<div class="table-wrap"><table class="cases-table"><thead><tr>' +
-    cols.map(function (col) { return '<th scope="col">' + col[0] + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    ex.map(function (e) {
-      return '<tr>' + cols.map(function (col) { return '<td>' + col[1](e) + '</td>'; }).join('') + '</tr>';
-    }).join('') + '</tbody></table></div>';
+  return '<div class="table-wrap"><table class="cases-table"><thead><tr>' + cols.map(function (col) { return '<th scope="col">' + col[0] + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    ex.map(function (e) { return '<tr>' + cols.map(function (col) { return '<td>' + col[1](e) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
 }
 function renderPool(pool, cases, which) {
   var cs = obj(cases), p = obj(pool), need = num(cs.needed) || 15, n = num(p.n) || 0;
   var a = num(p.admitted) || 0, d = num(p.denied) || 0, w = num(p.waitlisted) || 0;
-  var h = '<div class="pool pool-' + which + '"><h4>' + (which === 'own' ? 'Your school' : 'National') + '</h4>' +
-    (which === 'own' ? (p.verified === false ? '<span class="tag tag-self">Not verified</span>' : '<span class="tag tag-verified">Verified by a counselor</span>')
-                     : (p.verified === true ? '<span class="tag tag-verified">Verified</span>' : '<span class="tag tag-self">Self-reported, not verified</span>'));
+  var h = '<div class="pool pool-' + which + '"><h4>' + (which === 'own' ? 'Your school' : 'Students nationwide') + '</h4>' +
+    '<p class="quiet small">' + (which === 'own'
+      ? (p.invented === true ? '<span class="tagx">Invented for this demo</span> Not real students.' : (p.verified === true ? 'Past students, checked by a counselor.' : 'Not checked by a counselor.'))
+      : (p.verified === true ? 'Checked results.' : 'Students who posted their own results online. Not checked.')) + '</p>';
   if (!pool || p.status === 'none' || n === 0) {
-    h += '<p class="big-n zero">0</p><p class="state-box">No finished cases.</p>';
+    h += '<p class="big-n zero">0</p><p class="calm">No past students with a known result here yet.</p>';
   } else {
-    h += '<p class="big-n">' + n + '<span> finished ' + plural(n, 'case', 'cases') + '</span></p>';
-    if (p.status === 'not_enough') h += '<p class="state-box"><b>Not enough cases: ' + n + ' of the ' + need + ' needed.</b></p>';
-    h += dotGrid(a, d, w) + '<p class="out-line"><span><i class="cd cd-admitted" aria-hidden="true"></i><b>' + a + '</b> admitted</span>' +
-      '<span><i class="cd cd-denied" aria-hidden="true"></i><b>' + d + '</b> denied</span>' +
+    h += '<p class="big-n">' + n + '<span> ' + plural(n, 'student', 'students') + ' with similar scores</span></p>' + dotGrid(a, d, w) +
+      '<p class="out-line"><span><i class="cd cd-admitted" aria-hidden="true"></i><b>' + a + '</b> admitted</span>' +
+      '<span><i class="cd cd-denied" aria-hidden="true"></i><b>' + d + '</b> not admitted</span>' +
       '<span><i class="cd cd-waitlisted" aria-hidden="true"></i><b>' + w + '</b> waitlisted</span></p>';
+    if (p.status === 'not_enough') h += '<p class="calm">Too few cases here to say anything yet. We would rather tell you that than guess. <span class="quiet">(' + n + ' of the ' + need + ' we look for.)</span></p>';
   }
+  if (which === 'national' && str(p.note)) h += '<p class="beside">' + esc(p.note) + '</p>';
   if (which === 'national') {
-    h += '<p class="beside">Official admit rate: <b>' + esc(rateFull(cs.official_admit_rate)) + '</b>.' +
-      (num(cs.overcount) !== null ? ' People who post are admitted about <b>' + esc(f1(num(cs.overcount))) + ' times</b> as often as applicants overall.' : '') + '</p>';
+    h += '<p class="beside">Across all applicants, ' + (num(cs.official_admit_rate) !== null ? '<b>' + esc(inHundred(cs.official_admit_rate)) + '</b> get in.' : 'the admit rate is not published.') +
+      ' People who post their results are admitted more often than applicants overall' +
+      (num(cs.overcount) !== null ? '<span class="working-only"> (about ' + esc(f1(num(cs.overcount))) + ' times as often at this college; official rate ' + esc(rateFull(cs.official_admit_rate)) + ')</span>' : '') + '.</p>';
   }
   if (pool) {
     var m = arr(p.matched_on).map(str).filter(Boolean), rx = arr(p.relaxed).map(str).filter(Boolean);
-    h += '<details class="more"><summary>Details</summary>' +
-      (str(p.source) ? '<p class="pool-src">' + esc(p.source) + '</p>' : '') +
+    h += '<div class="working-only working-box">' + (str(p.source) ? '<p class="src">' + esc(p.source) + '</p>' : '') +
       '<dl class="match"><dt>Matched on</dt><dd>' + (m.length ? esc(m.join('; ')) : 'nothing recorded') + '</dd>' +
       '<dt>Relaxed to find more</dt><dd>' + (rx.length ? esc(rx.join('; ')) : 'nothing') + '</dd></dl>' +
-      (n > 0 ? examplesTable(p.examples) : '') +
-      (which === 'national' && str(cs.caveat) ? '<p class="quiet small">' + esc(cs.caveat) + '</p>' : '') + '</details>';
+      (n > 0 ? examplesTable(p.examples) : '') + (which === 'national' && str(cs.caveat) ? '<p class="quiet small">' + esc(cs.caveat) + '</p>' : '') + '</div>';
   }
   return h + '</div>';
 }
 function renderCasesTab(c) {
   c = obj(c);
-  if (!c.cases) return '<p class="state-box">No finished cases.</p>';
+  if (!c.cases) return '<p class="calm">No past students with a known result here yet.</p>';
   var cs = obj(c.cases);
-  return '<div class="pools">' + renderPool(cs.own, cs, 'own') + renderPool(cs.national, cs, 'national') + '</div>' +
-    '<p class="quiet small">Two separate pools, never added together. These are examples, not odds.</p>';
+  return '<p class="reason">Real students with scores like yours, and how it went for them.</p>' +
+    '<div class="pools">' + renderPool(cs.own, cs, 'own') + renderPool(cs.national, cs, 'national') + '</div>' +
+    '<p class="quiet small">Two separate groups, never added together. These are examples, not odds.</p>';
 }
 var LEVER_ICON = {
   score: '<path d="M8 1.5 12 6H9.3v4H12l-4 4.5L4 10h2.7V6H4z"/>',
@@ -540,207 +789,146 @@ var LEVER_ICON = {
   sent_scores: '<path fill-rule="evenodd" d="M3 1.5h7l3 3v10H3zm2 5v1.4h6V6.5zm0 3v1.4h6V9.5z"/>',
   residency: '<path d="M8 1.5 14.5 7H13v7.5H9.5v-4h-3v4H3V7H1.5z"/>'
 };
-var LEVER_NAME = {score: 'Score', says: 'What the college weighs', sent_scores: 'Who sent scores', residency: 'Where applicants live'};
+var LEVER_NAME = {score: 'Your score', says: 'What the college looks for', sent_scores: 'Who sent scores', residency: 'Where applicants live'};
 function sourceLink(url, text) {
   var u = safeUrl(url);
-  return u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(text || 'Source') + '</a>' : '';
+  return u ? '<a class="working-only" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(text || 'source') + '</a>' : '';
 }
 function renderLeversTab(c) {
   var lv = arr(obj(c).levers).map(obj).filter(function (l) { return str(l.text); });
-  if (!lv.length) return '<p class="state-box">Nothing on file that would change this label.</p>';
+  if (!lv.length) return '<p class="calm">We have nothing on file that would change this label.</p>';
   return '<ul class="clevers">' + lv.map(function (l) {
-    var k = str(l.kind), link = sourceLink(l.source_url, 'source');
+    var k = str(l.kind);
     return '<li><svg class="lv-icon" viewBox="0 0 16 16" width="22" height="22" aria-hidden="true" focusable="false">' + (LEVER_ICON[k] || LEVER_ICON.says) + '</svg>' +
-      '<div><p class="lv-kind">' + esc(LEVER_NAME[k] || cap(k.replace(/_/g, ' '))) + '</p><p>' + esc(l.text) + (link ? ' <span class="claim-meta">' + link + '</span>' : '') + '</p></div></li>';
+      '<div><p class="label">' + esc(LEVER_NAME[k] || cap(k.replace(/_/g, ' '))) + '</p><p>' + esc(l.text) + ' ' + sourceLink(l.source_url) + '</p></div></li>';
   }).join('') + '</ul><p class="quiet small">The same written rule and the college\'s own published statements. Not predictions.</p>';
 }
 function sayLine(s) {
   s = obj(s);
-  var kb = s.kb ? obj(s.kb) : null, st = kb ? str(kb.status).toLowerCase() : '', link = sourceLink(s.source_url, 'source');
-  var meta = [esc(str(s.year)), link].filter(Boolean).join(' · ');
-  return '<li><p class="claim">' + esc(s.text) + '</p><p class="claim-meta">' + meta +
-    (st === 'confirmed' ? ' <span class="kb kb-ok"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6.2 11.3 2.9 8l-1.2 1.2 4.5 4.5L14.300 5.600 13.100 4.400z"/></svg>confirmed in the knowledge base</span>'
-      : (st === 'not confirmed' ? ' <span class="kb kb-no">not confirmed</span>' : '')) + '</p></li>';
+  var kb = s.kb ? obj(s.kb) : null, st = kb ? str(kb.status).toLowerCase() : '';
+  return '<li><p class="claim">' + esc(s.text) + (st === 'not confirmed' ? ' <span class="tagx">not confirmed</span>' : '') + '</p>' +
+    '<p class="working-only small quiet">' + [esc(str(s.field)), esc(str(s.year)), sourceLink(s.source_url)].filter(Boolean).join(' · ') +
+    (st === 'confirmed' ? ' · <span class="v-pass verdict">confirmed in the knowledge base</span>' : '') + (s.checked === true ? ' · <span class="v-pass verdict">checked against the source</span>' : '') + '</p></li>';
 }
 function renderSaysTab(c) {
   c = obj(c);
-  var says = arr(c.says), myths = arr(c.myths).map(obj), h = '';
-  if (!says.length && !myths.length) h += '<p class="state-box">We hold no form from this college, so nothing is quoted.</p>';
+  var says = arr(c.says), myths = arr(c.myths).map(obj), h = renderFit(c.fit);
+  if (!says.length && !myths.length && !h) h += "<p class=\"calm\">We don't hold this college's own statement yet, so we quote nothing.</p>";
   if (says.length) {
-    h += '<ul class="claims">' + says.slice(0, 3).map(sayLine).join('') + '</ul>';
-    if (says.length > 3) h += '<details class="more"><summary>' + (says.length - 3) + ' more ' + plural(says.length - 3, 'statement', 'statements') + '</summary><ul class="claims">' + says.slice(3).map(sayLine).join('') + '</ul></details>';
+    h += '<p class="reason">In the college\'s own words, from the form it publishes each year.</p><ul class="claims">' + says.slice(0, 3).map(sayLine).join('') + '</ul>';
+    if (says.length > 3) h += '<details class="more"><summary>' + (says.length - 3) + ' more</summary><ul class="claims">' + says.slice(3).map(sayLine).join('') + '</ul></details>';
   }
   if (myths.length) {
-    h += '<details class="more"><summary>Common beliefs, checked (' + myths.length + ')</summary><ul class="claims">' + myths.map(function (m) {
-      var link = sourceLink(m.source_url, 'source');
-      return '<li><p class="belief">Belief: ' + esc(m.belief) + '</p><p class="claim">' + esc(m.college_says) + '</p>' +
-        '<p class="claim-meta">' + esc(str(m.year)) + (str(m.year) && link ? ' · ' : '') + link + '</p></li>';
+    h += '<details class="more"><summary>Things people say, checked (' + myths.length + ')</summary><ul class="claims">' + myths.map(function (m) {
+      return '<li><p class="quiet">People say: ' + esc(m.belief) + '</p><p class="claim">' + esc(m.college_says) + '</p>' +
+        '<p class="working-only small quiet">' + [esc(str(m.year)), sourceLink(m.source_url)].filter(Boolean).join(' · ') + '</p></li>';
     }).join('') + '</ul></details>';
   }
-  h += '<p class="cost"><b>Cost.</b> ' + (str(c.cost_note) ? esc(c.cost_note) : 'No cost figure is published for this college.') + '</p>';
+  if (str(c.cost_note)) h += '<p class="cost"><b>Cost.</b> ' + esc(c.cost_note) + '</p>';
   return h;
 }
-var TABS = [['why', 'Why this label'], ['cases', 'Cases like this student'], ['levers', 'What could change it'], ['says', 'What the college says']];
+var TABS = [['why', 'How we got this'], ['cases', 'Students like you'], ['levers', 'What could change it'], ['says', 'What the college says']];
 function renderDrill(c, tab) {
   c = obj(c);
   var L = obj(c.label), g = groupOf(L.state), active = TABS.some(function (t) { return t[0] === tab; }) ? tab : 'why';
-  var h = '<header class="rc-head"><div><p class="rc-kicker">Check the work</p><h2 id="receipt-title">' + esc(str(c.name) || 'Unnamed college') + '</h2>' +
-    badge(L) + '</div><button type="button" class="btn" data-act="close-panel">Close</button></header>';
+  var h = '<header class="rc-head"><div><h2 id="receipt-title">' + esc(str(c.name) || 'Unnamed college') + '</h2>' + pill(L) + '</div>' +
+    '<button type="button" class="btn" data-act="close-panel">Close</button></header>';
   if (g === 'outside_data') {
-    return h + '<section class="rc-sec">' + renderWhyTab(c) +
-      '<p class="state-box">This college is outside our data, so there are no cases, statements or costs to show. Check the spelling, or pick it from the search.</p></section>';
+    return h + '<section class="rc-sec"><p class="reason">' + esc(str(L.rule_text) || 'This college is not in our data.') + '</p>' + didYouMean(c) +
+      '<p class="calm">We hold no numbers for this college, so we say nothing about it. Check the spelling, or pick it from the search under Change the details.</p></section>';
   }
   var body = {why: renderWhyTab(c), cases: renderCasesTab(c), levers: renderLeversTab(c), says: renderSaysTab(c)};
   h += '<div class="tabs" role="tablist" aria-label="About this college">' + TABS.map(function (t) {
-    return '<button type="button" role="tab" id="tab-' + t[0] + '" data-act="tab" data-tab="' + t[0] + '" aria-controls="pan-' + t[0] +
-      '" aria-selected="' + (t[0] === active ? 'true' : 'false') + '">' + esc(t[1]) + '</button>';
+    return '<button type="button" role="tab" id="tab-' + t[0] + '" data-act="tab" data-tab="' + t[0] + '" aria-controls="pan-' + t[0] + '" aria-selected="' + (t[0] === active ? 'true' : 'false') + '">' + esc(t[1]) + '</button>';
   }).join('') + '</div>';
   h += TABS.map(function (t) {
     return '<section class="rc-sec tabpan" role="tabpanel" id="pan-' + t[0] + '" aria-labelledby="tab-' + t[0] + '"' + (t[0] === active ? '' : ' hidden') + '>' + body[t[0]] + '</section>';
   }).join('');
-  return h;
+  return h + '<p class="quiet small checked"><button type="button" class="linkbtn" data-act="toggle-working">Show the working</button> for the numbers and sources behind this.</p>';
 }
-
-/* ---------- panels opened from the footer ---------- */
-function renderEssay(reader, privacy) {
-  var r = obj(reader), pv = obj(privacy), st = str(r.status), h = '<div class="essay">';
-  var masked = arr(pv.masked).map(obj).filter(function (m) { return num(m.count); });
-  if (pv.blocked === true || st === 'blocked') {
-    return h + '<p class="banner">The essay was not read. ' + esc(str(pv.reason) || str(r.reason) || 'It contains text written as instructions to the reader.') +
-      ' The labels do not depend on the essay, so they are unchanged.</p></div>';
-  }
-  if (st === 'off') {
-    return h + '<p class="banner">The essay reader is off' + (str(r.reason) ? ': ' + esc(r.reason) : ' (no key is set)') +
-      '. Nothing was sent anywhere. The labels do not depend on the essay.</p></div>';
-  }
-  if (st === 'empty') return h + '<p class="state-box">No essay was entered, so there are no notes.</p></div>';
-  if (st === 'error') {
-    return h + '<p class="banner">The essay could not be read this time' + (str(r.error) || str(r.reason) ? ': ' + esc(str(r.error) || str(r.reason)) : '') +
-      '. The labels do not depend on the essay.</p></div>';
-  }
-  if (!reader) return h + '<p class="state-box">No essay notes for this run.</p></div>';
-  h += '<p class="quiet">Observations only. The essay is never rated and never changes a label.</p>';
-  var notes = arr(r.notes).map(obj);
-  if (notes.length) {
-    h += '<ol class="notes">' + notes.map(function (n) {
-      return '<li><p class="note-obs">' + esc(n.observation) + '</p>' +
-        (str(n.quote) ? '<blockquote><mark>' + esc(n.quote) + '</mark>' +
-          (n.quote_found === true ? '<span class="tag tag-verified">found word for word in the essay</span>' : '') + '</blockquote>' : '') +
-        (str(n.question) ? '<p class="note-q"><b>To ask:</b> ' + esc(n.question) + '</p>' : '') + '</li>';
-    }).join('') + '</ol>';
-  } else {
-    h += '<p class="quiet">The reader returned no notes.</p>';
-  }
-  var d = num(r.dropped) || 0;
-  if (d > 0) {
-    h += '<p class="dropped">' + d + ' ' + plural(d, 'note was', 'notes were') + ' dropped because ' +
-      plural(d, 'its quote was', 'their quotes were') + ' not in the essay.</p>';
-  }
-  var t = obj(r.tags), themes = arr(t.essay_themes).map(str).filter(Boolean), meta = [];
-  if (masked.length) meta.push('Masked before reading: ' + masked.map(function (m) { return num(m.count) + ' ' + str(m.kind) + plural(num(m.count), '', 's'); }).join(', '));
-  if (themes.length) meta.push('Themes: ' + themes.join(', '));
-  if (t.major_group_agreed === false) meta.push('The two readers disagreed about the major group, so it was not used');
-  else if (str(t.major_group)) meta.push('Major group read as ' + majorText(t.major_group) + (t.major_group_agreed === true ? ' by both readers' : ''));
-  if (str(r.model)) meta.push('Read by ' + str(r.model) + (str(r.second_model) ? '; major checked separately by ' + str(r.second_model) : ''));
-  if (meta.length) h += '<details class="more"><summary>Details</summary><p class="quiet small">' + esc(meta.join('. ')) + '.</p></details>';
-  return h + '</div>';
+function panelHead(title) {
+  return '<header class="rc-head"><div><h2 id="receipt-title">' + esc(title) + '</h2></div><button type="button" class="btn" data-act="close-panel">Close</button></header>';
 }
-function renderHow(steps, checks, prism, privacy) {
-  var ss = arr(steps).map(obj), ch = obj(checks), pr = obj(prism), pv = obj(privacy), h = '<div class="how">';
+/* Counselor tools: questions to ask, from the essay notes. */
+function renderQuestions(result) {
+  var r = obj(result), rd = obj(r.reader), st = str(rd.status), h = panelHead('Questions to ask') + '<section class="rc-sec">';
+  if (essayStopped(r.privacy, rd)) return h + '<p class="calm"><b>We did not read this essay.</b> It contains text written to steer an AI, so it was stopped before any model saw it. Read it with the student.</p></section>';
+  if (st === 'off') return h + '<p class="calm">The essay reader is switched off here, so there are no notes. Nothing was sent anywhere.</p></section>';
+  if (st === 'empty' || !r.reader) return h + '<p class="calm">No essay was entered, so there are no notes.</p></section>';
+  if (st === 'error') return h + '<p class="calm">The essay could not be read this time.</p></section>';
+  var notes = arr(rd.notes).map(obj);
+  h += '<p class="quiet">Here is what stood out in the essay. You read it; it never changes a label.</p>';
+  h += notes.length ? '<ol class="notes">' + notes.map(function (n) {
+    return '<li>' + (str(n.question) ? '<p class="note-q">' + esc(n.question) + '</p>' : '') + (str(n.quote) ? '<blockquote>“' + esc(n.quote) + '”</blockquote>' : '') +
+      (str(n.observation) ? '<p class="quiet">' + esc(n.observation) + '</p>' : '') +
+      (n.quote_found === true ? '<p class="working-only small"><span class="verdict v-pass">quote found word for word in the essay</span></p>' : '') + '</li>';
+  }).join('') + '</ol>' : '<p class="quiet">The reader returned no notes.</p>';
+  var d = num(rd.dropped) || 0;
+  if (d > 0) h += '<p class="calm">' + d + ' ' + plural(d, 'note was', 'notes were') + ' left out because ' + plural(d, 'its quote was', 'their quotes were') + ' not in the essay.</p>';
+  if (str(rd.model)) h += '<p class="working-only quiet small">Read by ' + esc(rd.model) + (str(rd.second_model) ? '; major checked separately by ' + esc(rd.second_model) : '') + '.</p>';
+  return h + '</section>';
+}
+/* The working: the five steps, the checks, the privacy and guard record, the run record. */
+function renderWorking(result) {
+  var r = obj(result), ss = arr(r.steps).map(obj), ch = obj(r.checks), pr = obj(r.prism), pv = obj(r.privacy);
+  var h = '<div class="card working-card"><h2 class="ch-title">The working</h2><p class="quiet">Labels are set by code from published numbers. A model only reads the essay and returns quotes, which code checks. The counselor decides.</p>';
   if (ss.length) {
     h += '<ol class="steps">' + ss.map(function (s, i) {
       var by = str(s.by);
-      return '<li><span class="step-n">' + (i + 1) + '</span><span class="step-name">' + esc(cap(s.step)) + '</span>' +
-        '<span class="step-what">' + esc(s.what) + '</span>' +
-        '<span class="step-by">' + (by === 'code' || !by ? 'Done by code' : 'Done by the model ' + esc(by)) +
-        (num(s.ms) !== null ? ' · ' + esc(duration(s.ms)) : '') + '</span></li>';
+      return '<li><span class="step-n">' + (i + 1) + '</span><span class="step-name">' + esc(cap(s.step)) + '</span><span class="step-what">' + esc(s.what) + '</span>' +
+        '<span class="step-by">' + (by === 'code' || !by ? 'Done by code' : 'Done by the model ' + esc(by)) + (num(s.ms) !== null ? ' · ' + esc(duration(s.ms)) : '') + '</span></li>';
     }).join('') + '</ol>';
-  } else {
-    h += '<p class="quiet">No steps were recorded for this run.</p>';
-  }
+  } else h += '<p class="quiet">No steps were recorded for this run.</p>';
   var shown = num(ch.sentences_shown), hidden = num(ch.sentences_hidden);
   if (shown !== null || hidden !== null) {
     var reasons = arr(ch.hidden_reasons).map(str).filter(Boolean);
-    h += '<p class="checks"><b>' + (shown || 0) + ' ' + plural(shown || 0, 'sentence', 'sentences') + ' shown, ' + (hidden || 0) + ' hidden.</b>' +
-      ((hidden || 0) > 0 && reasons.length ? ' Why hidden: ' + esc(reasons.join(' ')) : '') + '</p>';
+    h += '<p><b>' + (shown || 0) + ' ' + plural(shown || 0, 'sentence', 'sentences') + ' shown, ' + (hidden || 0) + ' hidden.</b>' + ((hidden || 0) > 0 && reasons.length ? ' Why hidden: ' + esc(reasons.join(' ')) : '') + '</p>';
   }
-  if (privacy) {
+  if (r.privacy) {
     var masked = arr(pv.masked).map(obj).filter(function (m) { return num(m.count); });
-    h += '<p><b>Privacy:</b> ' + (pv.blocked === true ? 'the essay was held back and not read. ' + esc(pv.reason) : esc(str(pv.note) || 'nothing recorded.')) +
+    h += '<p><b>Privacy:</b> ' + (essayStopped(pv, r.reader) ? 'the essay was stopped and not read. ' + esc(pv.reason) : esc(str(pv.note) || 'nothing recorded.')) +
       (masked.length ? ' <span class="quiet">(' + esc(masked.map(function (m) { return num(m.count) + ' ' + str(m.kind); }).join(', ')) + ')</span>' : '') + '</p>';
+    if (verdictMarks(pv)) h += '<p class="verdicts"><b>Essay guard:</b> ' + verdictMarks(pv) + '</p>';
   }
-  if (privacy && verdictMarks(pv)) h += '<p class="verdicts"><b>Essay guard:</b> ' + verdictMarks(pv) + '</p>';
-  if (prism) {
+  if (r.prism) {
     h += '<p><b>Run record:</b> ' + esc(str(pr.status) || 'unknown') + (str(pr.why) ? '. ' + esc(pr.why) : '') +
-      (num(pr.records_sent) ? ' ' + num(pr.records_sent) + ' ' + plural(num(pr.records_sent), 'record', 'records') + ' sent.' : '') +
-      (str(pr.guardrail) ? ' Essay guard: ' + esc(pr.guardrail) + '.' : '') + '</p>';
+      (num(pr.records_sent) ? ' ' + num(pr.records_sent) + ' ' + plural(num(pr.records_sent), 'record', 'records') + ' sent.' : '') + (str(pr.guardrail) ? ' Essay guard: ' + esc(pr.guardrail) + '.' : '') + '</p>';
   }
-  return h + '<p class="quiet small">Labels are set by code from published numbers. A model only reads the essay and returns quotes, which code checks. The counselor decides.</p></div>';
-}
-/* The essay guard's verdicts: a calm banner when the essay was stopped, small passed marks otherwise. */
-function verdictMarks(privacy) {
-  return arr(obj(privacy).verdicts).map(obj).filter(function (v) { return str(v.by); }).map(function (v) {
-    var stopped = v.blocked === true;
-    return '<span class="verdict ' + (stopped ? 'v-stop' : 'v-pass') + '">' + esc(str(v.by).replace(/\s*\(.*\)\s*$/, '')) + ': ' + (stopped ? 'stopped' : 'passed') + '</span>';
-  }).join('');
-}
-function renderStopBanner(privacy, reader) {
-  var pv = obj(privacy), vs = arr(pv.verdicts).map(obj);
-  var stopped = pv.blocked === true || str(obj(reader).status) === 'blocked' || vs.some(function (v) { return v.blocked === true; });
-  if (!stopped) return '';
-  var why = str(obj(vs.filter(function (v) { return v.blocked === true; })[0]).detail) || str(obj(vs[0]).detail) || str(pv.reason);
-  return '<div class="stopped"><p class="stopped-h">This essay was stopped before any model read it.</p>' +
-    '<p class="verdicts">' + verdictMarks(pv) + '<span class="quiet">The labels below are set without the essay, as always.</span></p>' +
-    (why ? '<details class="more"><summary>Why</summary><p>' + esc(why) + '</p></details>' : '') + '</div>';
-}
-function renderEssayPanel(result) { return panelHead('For the counselor', 'Essay notes') + '<section class="rc-sec">' + renderEssay(obj(result).reader, obj(result).privacy) + '</section>'; }
-function renderHowPanel(result) {
-  var r = obj(result);
-  return panelHead('Check the work', 'How this was made') + '<section class="rc-sec">' + renderHow(r.steps, r.checks, r.prism, r.privacy) + '</section>';
+  arr(r.refusals).map(str).filter(Boolean).forEach(function (t) { h += '<p class="quiet small">' + esc(t) + '</p>'; });
+  return h + '</div>';
 }
 
-/* ---------- family sheet (print only) ---------- */
+/* ---------- the printed plan ---------- */
 function familyLine(c) {
   c = obj(c);
   var L = obj(c.label), g = groupOf(L.state), bits = [];
-  if (g === 'outside_data') return '<li><b>' + esc(c.name) + '.</b> Not in our data, so nothing is said about it.</li>';
+  if (g === 'outside_data') return '<li><b>' + esc(c.name) + '.</b> Not in our data, so we say nothing about it.</li>';
   if (g === 'cant_say') bits.push(str(L.rule_text));
-  else if (L.state === 'reach_for_everyone') bits.push('A reach for every applicant');
-  if (num(c.admit_rate) !== null) bits.push('Admits ' + inHundred(c.admit_rate) + ' applicants');
-  if (num(c.cost_year) !== null) bits.push('Sticker cost ' + moneyAbout(c.cost_year) + ' a year');
+  else if (isEveryone(L)) bits.push('Hard for every applicant, however strong');
+  if (num(c.admit_rate) !== null) bits.push(cap(inHundred(c.admit_rate)) + ' applicants get in');
+  if (costLine(c.cost_year)) bits.push(cap(costLine(c.cost_year)));
   bits = bits.filter(Boolean);
   return '<li><b>' + esc(c.name) + '.</b> ' + esc(bits.map(function (b) { return b.replace(/\.$/, ''); }).join('. ')) + (bits.length ? '.' : '') + '</li>';
 }
 function renderFamily(result) {
-  var r = obj(result), cs = arr(r.colleges).map(obj), b = obj(r.balance), st = obj(r.student), h = '';
-  h += '<header class="fam-head"><h1>College list' + (str(st.label) ? ' for ' + esc(studentShort(st.label)) : '') + '</h1>' +
-    '<p>' + (r.synthetic === true ? '<span class="stamp">SYNTHETIC</span> ' : '') + 'Prepared with the counselor' +
-    (str(r.generated_at) ? ' on ' + esc(str(r.generated_at).slice(0, 10)) : '') + '</p></header>';
+  var r = obj(result), cs = arr(r.colleges).map(obj), st = obj(r.student), h = '';
+  h += '<header class="fam-head"><h1>Your plan' + (str(st.label) ? ': ' + esc(studentShort(st.label)) : '') + '</h1>' +
+    '<p>' + (r.synthetic === true ? 'Example student. ' : '') + 'For you and your counselor to decide together' + (str(r.generated_at) ? ' · ' + esc(str(r.generated_at).slice(0, 10)) : '') + '</p>' +
+    '<p class="fam-hero">' + esc(headlineSentence(r)) + '</p></header>';
   GROUPS.forEach(function (G) {
     var items = cs.filter(function (c) { return groupOf(obj(c.label).state) === G.key; });
     if (!items.length && !G.always) return;
-    h += '<section class="fam-group"><h2>' + shape(G.key) + esc(G.title) + ' (' + items.length + ')</h2>' +
-      (items.length ? '<ul>' + items.map(familyLine).join('') + '</ul>' : '<p>' + esc(G.empty) + '</p>') + '</section>';
+    h += '<section class="fam-group"><h2>' + esc(G.title) + ' (' + items.length + ')</h2>' + (items.length ? '<ul>' + items.map(familyLine).join('') + '</ul>' : '<p>' + esc(G.empty) + '</p>') + '</section>';
   });
-  var w = warningTexts(b.warnings);
-  if (w.length) {
-    h += '<section class="fam-group"><h2>About the balance of this list</h2><ul>' + w.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></section>';
-  }
-  var s = arr(b.suggestions).map(obj);
-  if (s.length) {
-    h += '<section class="fam-group"><h2>Colleges worth a look</h2><ul>' + s.map(function (x) {
-      return '<li><b>' + esc(x.name) + '</b>' + (x.would_be ? ' (would be ' + esc((STATE_TEXT[x.would_be] || str(x.would_be)).toLowerCase()) + ')' : '') +
-        '. ' + esc(x.why) + (num(x.cost_year) !== null ? ' Sticker cost ' + esc(moneyAbout(x.cost_year)) + ' a year.' : '') + '</li>';
-    }).join('') + '</ul></section>';
-  }
+  var lines = planLines(r);
+  if (lines.length) h += '<section class="fam-group"><h2>The plan</h2><ol>' + lines.map(function (l) { return '<li><b>' + esc(l.t) + '</b> ' + esc(l.x) + '</li>'; }).join('') + '</ol></section>';
   var seen = {}, cav = [];
   function add(t) { t = str(t).trim(); if (t && !seen[t]) { seen[t] = 1; cav.push(t); } }
-  add('Labels come from each college\'s published test score range and admit rate. Grades, activities and the essay are not used.');
-  add('Reach, target and likely describe where the score sits against published numbers. They are not odds of getting in.');
+  add('This plan is a starting point. Your counselor makes the final call with you.');
+  add('Reach, target and likely describe where your score sits against each college\'s published numbers. They are not odds of getting in. Grades, activities and the essay are not used for the labels.');
   cs.forEach(function (c) { arr(obj(c.label).caveats).forEach(add); });
-  add('Sticker cost is the published price. What this family would actually pay is not known here.');
-  h += '<section class="fam-group fam-caveats"><h2>Please read this with the list</h2><ul>' +
-    cav.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></section>';
+  add('Cost is the published price before aid. What your family would actually pay is not known here.');
+  h += '<section class="fam-group fam-caveats"><h2>Please read this with the plan</h2><ul>' + cav.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></section>';
   return h;
 }
 
@@ -824,15 +1012,18 @@ function sliderSpec(result, saved) {
   return {disabled: false, min: lo, max: hi, step: useAct ? 1 : 10, value: base, shown: base, values: null, base: base, kind: useAct ? 'ACT' : 'SAT', lo: lo, hi: hi};
 }
 
+
 var api = {
-  esc: esc, inHundred: inHundred, rateFull: rateFull, moneyAbout: moneyAbout, duration: duration, groupOf: groupOf,
-  renderTopChips: renderTopChips, renderStudentLine: renderStudentLine, renderCounters: renderCounters, warningTexts: warningTexts,
-  pictureModel: pictureModel, renderPicture: renderPicture, renderPictureCard: renderPictureCard, ladderLines: ladderLines,
-  renderLeversCard: renderLeversCard, renderSuggestionsPanel: renderSuggestionsPanel, renderFootLinks: renderFootLinks,
-  renderChanceAnswer: renderChanceAnswer, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
+  esc: esc, inHundred: inHundred, rateFull: rateFull, moneyAbout: moneyAbout, duration: duration, groupOf: groupOf, labelPhrase: labelPhrase, pill: pill,
+  renderTopChips: renderTopChips, renderStudentCards: renderStudentCards, renderGhost: renderGhost, renderWaypoints: renderWaypoints,
+  renderStrengths: renderStrengths, headlineSentence: headlineSentence, renderBalanceBar: renderBalanceBar, cautionLine: cautionLine,
+  renderHeadline: renderHeadline, renderCaution: renderCaution, pictureModel: pictureModel, renderPicture: renderPicture, renderPictureCard: renderPictureCard,
+  changesBetween: changesBetween, moveSentence: moveSentence, ladderSentence: ladderSentence, renderHands: renderHands,
+  planLines: planLines, renderPlan: renderPlan, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
-  renderEssay: renderEssay, renderHow: renderHow, renderStopBanner: renderStopBanner, verdictMarks: verdictMarks, renderEssayPanel: renderEssayPanel, renderHowPanel: renderHowPanel,
-  renderFamily: renderFamily, renderCollegeChips: renderCollegeChips, renderQuickAdds: renderQuickAdds, renderEssayPicks: renderEssayPicks,
+  renderTracker: renderTracker, renderFit: renderFit, didYouMean: didYouMean, coverageLine: coverageLine,
+  renderQuestions: renderQuestions, renderWorking: renderWorking, verdictMarks: verdictMarks, renderFamily: renderFamily,
+  renderCollegeChips: renderCollegeChips, renderQuickAdds: renderQuickAdds, renderEssayPicks: renderEssayPicks,
   renderActivityRows: renderActivityRows, renderHits: renderHits, listFrom: listFrom, normaliseStudent: normaliseStudent,
   sliderSpec: sliderSpec, hookText: hookText, FIXTURE: FIXTURE
 };
@@ -848,8 +1039,8 @@ var OFTEN = ['Rutgers University-New Brunswick', 'Purdue University-Main Campus'
   'New York University', 'Boston University', 'Georgia Institute of Technology-Main Campus', 'University of California-Los Angeles'];
 var PREVIEW_LINE = 'Shared preview: saved runs for six invented students. Run it on a laptop to edit.';
 /* mode: 'live' (server answers), 'static' (shared preview from saved files), 'example' (the embedded example). */
-var S = {mode: 'live', base: null, view: null, whatIf: null, slider: null, students: [], manifest: null, runIndex: null,
-         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null};
+var S = {mode: 'live', base: null, view: null, whatIf: null, slider: null, students: [], pick: 0, manifest: null, runIndex: null, example: null,
+         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, chapter: 'ch1'};
 function $(id) { return document.getElementById(id); }
 function all(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
 
@@ -867,41 +1058,74 @@ function fetchJSON(url, opts, ms) {
     });
   }).finally(function () { if (t) clearTimeout(t); });
 }
+
 function notice(text) {
   var n = $('notice');
   if (!text) { n.hidden = true; n.textContent = ''; return; }
   n.hidden = false; n.textContent = text;
 }
 
-/* ---------- drawing the first view ---------- */
+/* ---------- drawing the story ---------- */
 function picOpts() {
   var sl = obj(S.slider);
-  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind};
+  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, canSwap: S.mode !== 'static'};
 }
 function drawView() {
-  $('counters').innerHTML = renderCounters(obj(S.view).balance, S.whatIf !== null);
+  $('headline').innerHTML = renderHeadline(S.view, S.whatIf);
   $('picture').innerHTML = renderPictureCard(S.view, picOpts());
+  $('caution').innerHTML = renderCaution(S.view);
 }
-function drawStudentLine() {
-  $('student-line').innerHTML = renderStudentLine(obj(S.base).student, !$('student-panel').hidden);
-}
+function drawWaypoints() { $('waypoints').innerHTML = renderWaypoints(S.chapter, !!S.base); }
 function showResult(result) {
   S.base = S.view = result; S.whatIf = null; S.seq++;
   S.slider = S.mode === 'static' ? sliderSpec(result, obj(obj(S.manifest).scores)[String(S.runIndex)] || null) : sliderSpec(result);
   $('top-chips').innerHTML = renderTopChips(result, S.mode);
-  $('student-panel').hidden = true; $('student-line').hidden = false;
-  drawStudentLine(); drawView();
-  $('stopped').innerHTML = renderStopBanner(obj(result).privacy, obj(result).reader);
-  $('levers').innerHTML = renderLeversCard(result, S.slider, S.mode !== 'static');
-  $('footlinks').innerHTML = renderFootLinks(result, S.mode);
-  $('chance-answer').hidden = true; $('chance-answer').innerHTML = renderChanceAnswer(obj(result).refusals);
+  $('opening').hidden = true; $('student-panel').hidden = true; $('results').hidden = false;
+  $('ch1').innerHTML = renderStrengths(result);
+  drawView();
+  $('ch3').innerHTML = renderHands(result, S.slider, S.mode !== 'static');
+  $('ch4').innerHTML = renderPlan(result) + '<div id="tracker"></div>';
+  S.track = {}; S.trackMsg = null; drawTracker();
+  $('working').innerHTML = renderWorking(result);
   $('family').innerHTML = renderFamily(result);
-  drawQuick();
+  S.chapter = 'ch1'; drawWaypoints(); drawQuick();
+  window.scrollTo(0, 0);
+}
+function go(id) {
+  var el = $(id);
+  if (!el || $('results').hidden) return;
+  S.chapter = id; drawWaypoints();
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'start'});
+  var t = el.querySelector('.ch-title'); if (t) t.focus({preventScroll: true});
 }
 function inputFromStudent(st) {
   var s = normaliseStudent(st);
   return {label: s.label || 'Student', sat: s.sat, act: s.act, gpa: s.gpa, gpa_scale: s.gpa_scale, home_state: s.home_state || null,
           intended_major: s.intended_major || null, hooks: s.hooks.length ? s.hooks : ['none'], activities: s.activities, essay: '', college_list: s.college_list};
+}
+
+/* ---------- the tracker ---------- */
+function drawTracker() { var el = $('tracker'); if (el) el.innerHTML = renderTracker(S.base, S.mode !== 'static', S.track, S.trackMsg); }
+function trackOf(name) {
+  var c = arr(obj(S.base).colleges).map(obj).filter(function (x) { return str(x.name) === name; })[0];
+  return Object.assign({status: 'considering', outcome: null}, obj(obj(c).tracker), obj(S.track[name]));
+}
+function postTrack(body, name, next) {
+  fetchJSON('api/tracker', {method: 'POST', body: JSON.stringify(body)}, 15000).then(function (r) {
+    var d = obj(r.data);
+    if (!r.ok || r.data === null || str(d.error)) { S.trackMsg = {note: str(d.error) || 'That could not be saved (' + r.status + ').'}; drawTracker(); return; }
+    if (body.reset) S.track = {}; else S.track[name] = next;
+    S.trackMsg = {note: str(d.note), case_added: d.case_added === true}; drawTracker();
+    var b = $('tracker').querySelector('[data-name="' + (window.CSS && CSS.escape ? CSS.escape(name || '') : '') + '"][aria-pressed="true"]'); if (b) b.focus();
+  }).catch(function () { S.trackMsg = {note: 'Keeping track needs the server, which could not be reached.'}; drawTracker(); });
+}
+function trackStep(name, status) {
+  if (status === 'result') { S.track[name] = Object.assign(trackOf(name), {asking: true}); S.trackMsg = null; drawTracker(); var f = $('tracker').querySelector('[data-act="track-outcome"]'); if (f) f.focus(); return; }
+  postTrack({student: obj(S.base).student_key || obj(obj(S.base).student).label, college: name, status: status}, name, {status: status, outcome: null});
+}
+function trackOutcome(name, outcome) {
+  postTrack({student: obj(S.base).student_key || obj(obj(S.base).student).label, college: name, status: 'result', outcome: outcome}, name, {status: 'result', outcome: outcome});
 }
 
 /* ---------- the what-if score ---------- */
@@ -918,7 +1142,7 @@ function onWhatIf(raw) {
   clearTimeout(S.timer);
   var seq = ++S.seq;
   S.timer = setTimeout(function () {
-    if (S.whatIf === null) { S.view = S.base; drawView(); return; }
+    if (S.whatIf === null) { S.view = S.base; drawView(); $('whatif-say').textContent = ladderSentence(S.base); return; }
     var req;
     if (S.mode === 'static') {
       req = fetchJSON('static/run-' + S.runIndex + '-' + v + '.json');
@@ -927,13 +1151,12 @@ function onWhatIf(raw) {
       if (sl.kind === 'ACT') inp.act = v; else inp.sat = v;
       req = fetchJSON('api/run', {method: 'POST', body: JSON.stringify(inp)}, 20000);
     }
+    function failed() { if (seq === S.seq) $('whatif-hint').textContent = 'The labels could not be re-run here. The line has moved; the labels have not.'; }
     req.then(function (r) {
       if (seq !== S.seq) return;
-      if (r.ok && r.data && Array.isArray(r.data.colleges)) { S.view = r.data; drawView(); }
-      else $('whatif-hint').textContent = 'The labels could not be re-run here. The line has moved; the labels have not.';
-    }).catch(function () {
-      if (seq === S.seq) $('whatif-hint').textContent = 'The labels could not be re-run here. The line has moved; the labels have not.';
-    });
+      if (r.ok && r.data && Array.isArray(r.data.colleges)) { S.view = r.data; drawView(); $('whatif-say').textContent = moveSentence(v, changesBetween(S.base, S.view)); }
+      else failed();
+    }).catch(failed);
   }, 250);
 }
 function resetScore() {
@@ -943,38 +1166,38 @@ function resetScore() {
 }
 
 /* ---------- loading: server, then shared preview, then the embedded example ---------- */
+function drawCards() { $('student-cards').innerHTML = renderStudentCards(S.students, S.pick); }
 function setStudents(list) {
-  S.students = list.map(normaliseStudent);
-  $('student-pick').innerHTML = S.students.map(function (s, i) {
-    return '<option value="' + i + '">' + esc(s.label || 'Demo student ' + (i + 1)) + '</option>';
-  }).join('') + (S.mode === 'static' ? '' : '<option value="">New student (blank)</option>');
+  S.students = list.map(normaliseStudent); S.pick = 0;
   if (S.students.length) fillForm(S.students[0]);
-  drawEssayPicks();
+  drawCards(); drawEssayPicks();
 }
 function loadExample(why) {
   function use(data) {
-    if (!data || !Array.isArray(data.colleges)) { notice('No example data could be loaded.'); return; }
-    S.mode = 'example';
-    if (why !== 'runfail') { setStudents([data.student]); S.lastInput = null; }
-    showResult(data);
-    notice(why === 'runfail' ? 'The server could not be reached, so this is example data, not the student you entered.'
-      : (why === 'offline' ? 'The server could not be reached, so this is example data.' : 'Showing example data.'));
+    if (!data || !Array.isArray(data.colleges)) { notice('No example could be loaded.'); return; }
+    S.mode = 'example'; S.example = data;
+    if (why === 'runfail') { showResult(data); notice('The server could not be reached, so this is the example student, not the one you entered.'); return; }
+    setStudents([data.student]); S.lastInput = null;
+    $('top-chips').innerHTML = renderTopChips(data, 'example');
   }
   return fetchJSON('../docs/fixture_result.json').then(function (r) { use(r.ok && r.data ? r.data : FIXTURE); }).catch(function () { use(FIXTURE); });
+}
+function lockEditing() {
+  $('more-fields').hidden = true; $('mode-line').hidden = false; $('mode-line').textContent = PREVIEW_LINE;
+  all('[data-tool="edit"],[data-tool="case"]').forEach(function (b) { b.hidden = true; });
+  $('change-link').hidden = true; $('preview-line').hidden = false; $('preview-line').textContent = PREVIEW_LINE;
 }
 function loadPreview() {
   return fetchJSON('static/manifest.json').then(function (r) {
     var list = listFrom(obj(r.data).students, []);
     if (!r.ok || !list.length) throw new Error('no manifest');
     S.mode = 'static'; S.manifest = r.data;
-    setStudents(list);
-    $('more-fields').hidden = true; $('mode-line').hidden = false; $('mode-line').textContent = PREVIEW_LINE;
+    setStudents(list); lockEditing();
     $('top-chips').innerHTML = renderTopChips(null, 'static');
-    return run();
   });
 }
 
-/* ---------- the student editor ---------- */
+/* ---------- the student editor (Counselor tools, Change the details) ---------- */
 function showOut(k) {
   var none = $('f-' + k + '-none').checked, el = $('f-' + k);
   el.disabled = none;
@@ -1030,7 +1253,7 @@ function readForm() {
     essay: $('f-essay').value, college_list: S.list.slice()
   };
 }
-function changed(text) { if (S.base) $('build-hint').textContent = text || 'Changed. Press Build the list to refresh.'; }
+function changed(text) { S.edited = true; if (S.base) $('build-hint').textContent = text || 'Changed. Press Show where they stand to refresh.'; }
 function addCollege(name) {
   name = str(name).trim();
   if (!name || S.mode === 'static') return false;
@@ -1038,7 +1261,7 @@ function addCollege(name) {
   if (!dup) S.list.push(name);
   drawChips();
   $('college-q').value = ''; clearHits();
-  changed(dup ? name + ' is already on the list.' : name + ' added. Press Build the list to see it.');
+  changed(dup ? name + ' is already on the list.' : name + ' added. Press Show where they stand to see it.');
   return !dup;
 }
 function clearHits() { $('college-hits').innerHTML = ''; $('college-q').setAttribute('aria-expanded', 'false'); }
@@ -1063,29 +1286,44 @@ function searchColleges(q) {
 }
 
 function run() {
-  var btn = $('build-btn');
-  function busy(on) { btn.disabled = on; btn.textContent = on ? 'Building the list…' : 'Build the list'; if (on) $('results').setAttribute('aria-busy', 'true'); else $('results').removeAttribute('aria-busy'); }
+  var btns = all('[data-act="build"]');
+  function busy(on) {
+    btns.forEach(function (b) { b.disabled = on; b.textContent = on ? 'Getting ready…' : 'Show where they stand'; });
+    if (on) $('results').setAttribute('aria-busy', 'true'); else $('results').removeAttribute('aria-busy');
+  }
   if (S.mode === 'static') {
-    var s = S.students[+$('student-pick').value] || S.students[0], idx = s && s.index !== null ? s.index : +$('student-pick').value;
+    var s = S.students[S.pick] || S.students[0], idx = s && s.index !== null ? s.index : S.pick;
     busy(true);
     return fetchJSON('static/run-' + idx + '.json').then(function (r) {
       if (r.ok && r.data && Array.isArray(r.data.colleges)) { S.runIndex = idx; notice(''); showResult(r.data); }
       else notice('That saved run could not be loaded.');
     }).catch(function () { notice('That saved run could not be loaded.'); }).finally(function () { busy(false); });
   }
+  if (S.mode === 'example' && S.example && !S.edited) { showResult(S.example); notice(''); return Promise.resolve(); }
   var input = readForm();
-  if (!input.college_list.length) { $('more-fields').open = true; $('build-hint').textContent = 'Add at least one college first.'; return; }
+  if (!input.college_list.length) { openEditor(); $('build-hint').textContent = 'Add at least one college first.'; return Promise.resolve(); }
   busy(true); $('build-hint').textContent = '';
   return fetchJSON('api/run', {method: 'POST', body: JSON.stringify(input)}, 120000).then(function (r) {
     if (r.ok && r.data && Array.isArray(r.data.colleges)) {
-      S.mode = 'live'; S.lastInput = input; notice(''); showResult(r.data);
-      $('results').focus();
+      S.mode = 'live'; S.lastInput = input; S.edited = false; notice(''); showResult(r.data);
     } else if (r.status === 404 || r.status === 405 || r.status === 501) {
       return loadExample('runfail');
     } else {
-      notice('The list could not be built: ' + (str(obj(r.data).error) || 'the server answered with an error (' + r.status + ').'));
+      notice('We could not get this ready: ' + (str(obj(r.data).error) || 'the server answered with an error (' + r.status + ').'));
     }
   }).catch(function () { return loadExample('runfail'); }).finally(function () { busy(false); });
+}
+function openEditor() {
+  if (S.mode === 'static') { $('student-panel').hidden = false; return; }
+  $('student-panel').hidden = false; $('more-fields').open = true;
+  $('student-panel').scrollIntoView({block: 'start'});
+  var f = $('student-panel').querySelector('input,button,select'); if (f) f.focus({preventScroll: true});
+}
+function setWorking(on) {
+  document.body.classList.toggle('show-working', on);
+  var b = $('working-switch'); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  b.querySelector('span').textContent = on ? 'Hide the working' : 'Show the working';
+  all('[data-act="toggle-working"]:not(#working-switch)').forEach(function (x) { x.textContent = on ? 'Hide the working' : 'Show the working'; });
 }
 
 /* ---------- drawers ---------- */
@@ -1097,11 +1335,12 @@ function openPanel(el, html, focusSel) {
   el.scrollTop = 0;
   var f = (focusSel && el.querySelector(focusSel)) || el.querySelector('[data-act="close-panel"]');
   if (f) f.focus();
+  if (document.body.classList.contains('show-working')) setWorking(true);
 }
 function closePanel() {
   if (!S.openEl) return;
   S.openEl.hidden = true; S.openEl = null; $('backdrop').hidden = true; document.body.classList.remove('drawer-open');
-  if (S.lastFocus && S.lastFocus.focus && document.contains(S.lastFocus)) S.lastFocus.focus(); else $('results').focus();
+  if (S.lastFocus && S.lastFocus.focus && document.contains(S.lastFocus)) S.lastFocus.focus();
 }
 function openCollege(i, tab) {
   var c = arr(obj(S.view).colleges)[i];
@@ -1148,46 +1387,51 @@ function saveCase(form) {
 }
 
 /* ---------- wiring ---------- */
+function closeTools() { var t = $('tools'); if (t) t.open = false; }
 function doAct(el) {
   var act = el.getAttribute('data-act'), i = +el.getAttribute('data-i'), name = el.getAttribute('data-name');
-  if (act === 'open-receipt') openCollege(i);
+  if (act === 'open-receipt') openCollege(i, el.getAttribute('data-tab'));
   else if (act === 'close-panel') closePanel();
   else if (act === 'tab') pickTab(el.getAttribute('data-tab'));
   else if (act === 'print') window.print();
-  else if (act === 'edit-student') {
-    var p = $('student-panel'); p.hidden = !p.hidden;
-    if (!p.hidden && S.mode !== 'static') $('more-fields').open = true;
-    drawStudentLine();
-    var b = $('student-line').querySelector('button'); if (b) b.focus();
+  else if (act === 'go') go(el.getAttribute('data-to'));
+  else if (act === 'build') run();
+  else if (act === 'toggle-working') setWorking(!document.body.classList.contains('show-working'));
+  else if (act === 'pick-student') { S.pick = i; S.edited = false; fillForm(S.students[i]); drawCards(); var again = $('student-cards').querySelector('[data-i="' + i + '"]'); if (again) again.focus(); }
+  else if (act === 'tool-questions') { closeTools(); if (S.base) openPanel($('receipt'), renderQuestions(S.base)); else notice('Choose a student first.'); }
+  else if (act === 'tool-case') { closeTools(); openPanel($('case-panel'), null, 'input'); loadCaseCount(); }
+  else if (act === 'tool-edit') { closeTools(); openEditor(); }
+  else if (act === 'tool-start') { closeTools(); $('results').hidden = true; $('student-panel').hidden = true; $('opening').hidden = false; S.base = null; drawWaypoints(); notice(''); window.scrollTo(0, 0); }
+  else if (act === 'hide-editor') { $('student-panel').hidden = true; }
+  else if (act === 'more-suggestions') {
+    var hid = all('#ch3 .sugg[data-more]'), show = hid.length && hid[0].hidden;
+    hid.forEach(function (x) { x.hidden = !show; }); el.setAttribute('aria-expanded', show ? 'true' : 'false'); el.textContent = show ? 'See fewer' : 'See ' + hid.length + ' more';
   }
-  else if (act === 'more-warnings') { var mw = $('more-warn'); mw.hidden = !mw.hidden; el.setAttribute('aria-expanded', mw.hidden ? 'false' : 'true'); }
-  else if (act === 'show-suggestions') openPanel($('receipt'), renderSuggestionsPanel(obj(S.base).balance, S.mode !== 'static'));
-  else if (act === 'open-says' || act === 'see-cases') {
+  else if (act === 'see-cases') {
     var cs = arr(obj(S.view).colleges), k = -1;
-    cs.forEach(function (c, j) {
-      var cc = obj(c), hit = act === 'open-says' ? arr(cc.says).length > 0
-        : (num(obj(obj(cc.cases).own).n) || 0) + (num(obj(obj(cc.cases).national).n) || 0) > 0;
-      if (k === -1 && hit) k = j;
-    });
-    openCollege(k === -1 ? 0 : k, act === 'open-says' ? 'says' : 'cases');
+    cs.forEach(function (c, j) { var cc = obj(c); if (k === -1 && (num(obj(obj(cc.cases).own).n) || 0) + (num(obj(obj(cc.cases).national).n) || 0) > 0) k = j; });
+    openCollege(k === -1 ? 0 : k, 'cases');
   }
-  else if (act === 'open-essay') openPanel($('receipt'), renderEssayPanel(S.base));
-  else if (act === 'open-how') openPanel($('receipt'), renderHowPanel(S.base));
-  else if (act === 'open-case') { openPanel($('case-panel'), null, 'input'); loadCaseCount(); }
-  else if (act === 'ask-chance') {
-    var box = $('chance-answer'); box.hidden = !box.hidden; el.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
-    if (!box.hidden) box.scrollIntoView({block: 'nearest'});
-  }
+  else if (act === 'why-no-percent') { var box = $('why-answer'); box.hidden = !box.hidden; el.setAttribute('aria-expanded', box.hidden ? 'false' : 'true'); }
   else if (act === 'reset-score') resetScore();
-  else if (act === 'add-suggestion') { if (addCollege(name)) { el.textContent = 'Added'; el.disabled = true; closePanel(); run(); } }
+  else if (act === 'track') trackStep(name, el.getAttribute('data-status'));
+  else if (act === 'track-outcome') trackOutcome(name, el.getAttribute('data-outcome'));
+  else if (act === 'track-reset') postTrack({reset: true}, '', null);
+  else if (act === 'swap-college') {
+    var from = str(el.getAttribute('data-from')).toLowerCase(), at = -1;
+    S.list.forEach(function (x, j) { if (x.toLowerCase() === from) at = j; });
+    if (at === -1) S.list.push(name); else S.list[at] = name;
+    drawChips(); S.edited = true; closePanel(); run();
+  }
+  else if (act === 'add-suggestion') { if (addCollege(name)) { el.textContent = 'Added'; el.disabled = true; run(); } }
   else if (act === 'quick-add' || act === 'pick-hit') { addCollege(name); }
   else if (act === 'add-typed') {
     var top = $('college-hits').querySelector('button'), typed = $('college-q').value.trim();
     addCollege(top && top.getAttribute('data-name').toLowerCase() === typed.toLowerCase() ? top.getAttribute('data-name') : typed);
   }
   else if (act === 'remove-college') { S.list.splice(i, 1); drawChips(); changed(); var nx = all('#college-chips button')[Math.min(i, S.list.length - 1)]; if (nx) nx.focus(); }
-  else if (act === 'add-activity') { syncActs(); S.acts.push({type: '', role: '', description: ''}); drawActs(); var ins = all('#activities .act-row input'); if (ins.length) ins[ins.length - 3].focus(); }
-  else if (act === 'remove-activity') { syncActs(); S.acts.splice(i, 1); drawActs(); }
+  else if (act === 'add-activity') { syncActs(); S.acts.push({type: '', role: '', description: ''}); drawActs(); var ins = all('#activities .act-row input'); if (ins.length) ins[ins.length - 3].focus(); changed(); }
+  else if (act === 'remove-activity') { syncActs(); S.acts.splice(i, 1); drawActs(); changed(); }
   else if (act === 'toggle-hook') { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); changed(); }
   else if (act === 'pick-major') { $('f-major').value = el.getAttribute('aria-pressed') === 'true' ? '' : el.getAttribute('data-major'); syncMajor(); changed(); }
   else if (act === 'pick-essay') {
@@ -1195,17 +1439,20 @@ function doAct(el) {
     var words = $('f-essay').value.trim() ? $('f-essay').value.trim().split(/\s+/).length : 0;
     $('essay-hint').textContent = i === -1 ? 'No essay will be read.' : 'Essay from ' + studentShort(obj(S.students[i]).label) + ' chosen (' + words + ' words).';
     drawEssayPicks(); changed();
-    var again = $('essay-picks').querySelector('[data-i="' + i + '"]'); if (again) again.focus();
+    var ag = $('essay-picks').querySelector('[data-i="' + i + '"]'); if (ag) ag.focus();
   }
 }
 function boot() {
   $('f-state').innerHTML = '<option value="">Not given</option>' + Object.keys(STATES).map(function (k) { return '<option value="' + k + '">' + esc(STATES[k]) + '</option>'; }).join('');
+  $('ghost').innerHTML = renderGhost();
+  drawWaypoints();
   document.addEventListener('click', function (e) {
     var el = e.target.closest ? e.target.closest('[data-act]') : null;
     if (el && !el.disabled) doAct(el);
+    var t = $('tools'); if (t && t.open && !t.contains(e.target)) t.open = false;
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closePanel();
+    if (e.key === 'Escape') { closePanel(); closeTools(); }
     trapTab(e);
     var t = e.target;
     if ((e.key === 'Enter' || e.key === ' ') && t && t.getAttribute && t.getAttribute('role') === 'button' && t.getAttribute('data-act') && t.tagName.toLowerCase() === 'g') { e.preventDefault(); doAct(t); }
@@ -1219,7 +1466,8 @@ function boot() {
     if (t.id === 'whatif') onWhatIf(t.value);
     else if (t.id === 'f-sat' || t.id === 'f-act' || t.id === 'f-gpa') { showOut(t.id.slice(2)); changed(); }
     else if (t.id === 'f-major') { syncMajor(); changed(); }
-    else if (t.id === 'f-essay') { S.essayPick = -2; drawEssayPicks(); }
+    else if (t.id === 'f-essay') { S.essayPick = -2; drawEssayPicks(); changed(); }
+    else if (t.id === 'f-label') changed();
   });
   document.addEventListener('change', function (e) {
     var t = e.target;
@@ -1228,12 +1476,6 @@ function boot() {
   });
   $('student-form').addEventListener('submit', function (e) { e.preventDefault(); run(); });
   $('case-form').addEventListener('submit', function (e) { e.preventDefault(); saveCase(e.target); });
-  $('student-pick').addEventListener('change', function (e) {
-    var v = e.target.value;
-    fillForm(v === '' ? normaliseStudent({}) : S.students[+v]);
-    if (v === '') $('more-fields').open = true;
-    changed('Student changed. Press Build the list.');
-  });
   var q = $('college-q');
   q.addEventListener('input', function () { $('search-hint').textContent = ''; searchColleges(q.value); });
   q.addEventListener('keydown', function (e) {
@@ -1245,14 +1487,19 @@ function boot() {
       var b = $('college-hits').querySelector('button'); if (b) { e.preventDefault(); b.focus(); }
     } else if (e.key === 'Escape') { clearHits(); }
   });
-  fillForm(normaliseStudent({}));
+  if (typeof IntersectionObserver !== 'undefined') {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting && S.base && S.chapter !== en.target.id) { S.chapter = en.target.id; drawWaypoints(); } });
+    }, {rootMargin: '-35% 0px -55% 0px'});
+    CHAPTERS.forEach(function (c) { io.observe($(c[0])); });
+  }
+  fillForm(normaliseStudent({})); S.edited = false; drawCards();
 
-  var asked = /[?&]fixture=1(&|$)/.test(location.search);
-  if (asked) { loadExample('asked'); return; }
+  if (/[?&]fixture=1(&|$)/.test(location.search)) { loadExample('asked'); return; }
   fetchJSON('api/students').then(function (r) {
     var list = listFrom(r.data, ['students', 'profiles']);
     if (!r.ok || !list.length) throw new Error('no students');
-    S.mode = 'live'; setStudents(list);
+    S.mode = 'live'; setStudents(list); S.edited = false;
   }).catch(function () {
     return loadPreview().catch(function () { return loadExample('offline'); });
   });
