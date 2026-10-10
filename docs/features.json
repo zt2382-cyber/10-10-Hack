@@ -73,11 +73,11 @@
   },
   {
     "id": "groups",
-    "name": "Groups picture",
+    "name": "Clusters picture",
     "status": "works",
     "when": "evening",
-    "what": "For one college, a 3 by 3 grid of rule-defined groups of past applicants (score below, inside or above the published range; activities rating low, middle or high), each with its real finished cases as dots and counts, and the student's own group outlined. A group grows when pressed and lists its cases. Beside it, a three-number check on the computer-made kinds; kind names appear anywhere on the screen only when that check passes.",
-    "where": "Chapter 2, \"Other pictures: Groups\".",
+    "what": "For one college, a 3 by 3 grid of rule-defined clusters of past applicants (score below, inside or above the published range; activities rating low, middle or high), each with its real finished cases as dots and counts, and the student's own cluster outlined. A cluster grows when pressed and lists its cases. Beside it, a three-number check on the computer-made kinds; kind names appear anywhere on the screen only when that check passes.",
+    "where": "Chapter 2, \"Other pictures: Clusters\".",
     "files": "engine/similarity.py, web/app.js, docs/req/GROUPS_REQUIREMENTS.md"
   },
   {

@@ -175,7 +175,7 @@ On every college in `colleges`; `null` for a college outside the data. Requireme
   when the gap rises by 0.02 or more. Never hooks, home state, GPA, or anything about who the student is.
 - The reach / target / likely label is untouched by any of this.
 
-Groups addition (2026-10-10 evening; requirements in `docs/req/GROUPS_REQUIREMENTS.md`). Per college, inside
+Groups addition (2026-10-10 evening; requirements in `docs/req/GROUPS_REQUIREMENTS.md`; the screen calls them **Clusters**). Per college, inside
 `closeness.national` and `closeness.own`, whatever the pool's `status`:
 ```json
 "groups": {
@@ -185,7 +185,7 @@ Groups addition (2026-10-10 evening; requirements in `docs/req/GROUPS_REQUIREMEN
   "cells": [{"score_band": "inside", "activities_band": "mid", "admitted": 9, "waitlisted": 4, "denied": 28,
              "n": 41, "state": "ok", "is_student": true,
              "cases": [["N-1042", 1520, 6.5, "d", "CS", "NONE"]]}],
-  "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+  "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
 },
 "kinds_check": {"separation": 0.319, "shuffled": 0.148, "stability": 0.191, "verdict": "none",
                 "text": "No clear kinds at this college.",

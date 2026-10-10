@@ -458,11 +458,11 @@ ACT_BANDS = ("high", "mid", "low")
 GROUPS_CAVEAT = ("People who were admitted post far more often than people who were denied, so every group looks "
                  "rosier than the real applicant pool.")
 GROUPS_REASON = {
-    "own": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+    "own": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
     "no_range": "This college publishes no middle score range, so there is no written rule to place a score against.",
     "no_cases": "No finished cases for this college in this pool.",
 }
-STUDENT_NOTE = {"activities": "Give an activities rating to place this student.", "score": "No test score was given, so this student has no group."}
+STUDENT_NOTE = {"activities": "Give an activities rating to place this student.", "score": "No test score was given, so this student has no cluster."}
 
 # Run over all 58 colleges in the national file on 2026-10-10: 53 "none", 1 "loose" (Brown), 4 with no kinds. So the
 # kinds are shown by name almost nowhere, and the rule-defined groups carry the picture.

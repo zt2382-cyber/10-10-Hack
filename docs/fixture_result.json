@@ -1094,7 +1094,7 @@
         ]
        }
       ],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": {
       "separation": 0.319,
@@ -1591,7 +1591,7 @@
      "n_waitlisted": 1,
      "groups": {
       "status": "cant_say",
-      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
       "sat25": null,
       "sat75": null,
       "act_mid": 6,
@@ -1602,7 +1602,7 @@
       "capped": false,
       "student_note": "",
       "cells": [],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": null,
      "text": "Not enough shared profile information to measure distance.",
@@ -2215,7 +2215,7 @@
         ]
        }
       ],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": {
       "separation": 0.235,
@@ -2706,7 +2706,7 @@
      "n_waitlisted": 0,
      "groups": {
       "status": "cant_say",
-      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
       "sat25": null,
       "sat75": null,
       "act_mid": 6,
@@ -2717,7 +2717,7 @@
       "capped": false,
       "student_note": "",
       "cells": [],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": null,
      "d_admitted": 0.315,
@@ -3271,7 +3271,7 @@
         ]
        }
       ],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": {
       "separation": 0.289,
@@ -3742,7 +3742,7 @@
      "n_waitlisted": 0,
      "groups": {
       "status": "cant_say",
-      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
       "sat25": null,
       "sat75": null,
       "act_mid": 6,
@@ -3753,7 +3753,7 @@
       "capped": false,
       "student_note": "",
       "cells": [],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": null,
      "d_admitted": 0.364,
@@ -4118,7 +4118,7 @@
       "capped": false,
       "student_note": "",
       "cells": [],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": null,
      "text": "No finished cases for this college in this pool."
@@ -4132,7 +4132,7 @@
      "n_waitlisted": 0,
      "groups": {
       "status": "cant_say",
-      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+      "reason": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
       "sat25": null,
       "sat75": null,
       "act_mid": 6,
@@ -4143,7 +4143,7 @@
       "capped": false,
       "student_note": "",
       "cells": [],
-      "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+      "caveat": "People who were admitted post far more often than people who were denied, so every cluster looks rosier than the real applicant pool."
      },
      "kinds_check": null,
      "text": "No finished cases for this college in this pool.",
