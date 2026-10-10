@@ -175,6 +175,41 @@ On every college in `colleges`; `null` for a college outside the data. Requireme
   when the gap rises by 0.02 or more. Never hooks, home state, GPA, or anything about who the student is.
 - The reach / target / likely label is untouched by any of this.
 
+Groups addition (2026-10-10 evening; requirements in `docs/req/GROUPS_REQUIREMENTS.md`). Per college, inside
+`closeness.national` and `closeness.own`, whatever the pool's `status`:
+```json
+"groups": {
+  "status": "ok", "reason": "", "sat25": 1500, "sat75": 1570,
+  "act_mid": 6, "act_high": 8, "min_n": 5, "few_n": 15,
+  "left_out": 96, "capped": false, "student_note": "",
+  "cells": [{"score_band": "inside", "activities_band": "mid", "admitted": 9, "waitlisted": 4, "denied": 28,
+             "n": 41, "state": "ok", "is_student": true,
+             "cases": [["N-1042", 1520, 6.5, "d", "CS", "NONE"]]}],
+  "caveat": "People who were admitted post far more often than people who were denied, so every group looks rosier than the real applicant pool."
+},
+"kinds_check": {"separation": 0.319, "shuffled": 0.148, "stability": 0.191, "verdict": "none",
+                "text": "No clear kinds at this college.",
+                "needs": {"separation": 0.51, "margin": 0.05, "stability": 0.75, "loose_separation": 0.26, "loose_stability": 0.6}}
+```
+- `groups`: a written rule, no seed. Score band against the college's published `sat25` / `sat75` (at the 25th or
+  75th counts as inside; ACT converted as Closeness does); activities band from the case's rating (`low` under 6,
+  `mid` 6 to under 8, `high` 8 and over). `cells` always has nine entries in a fixed order (rows high, mid, low;
+  columns below, inside, above). `state` is `not_enough` under 5 cases, `few` under 15, else `ok`. Waitlisted cases
+  are counted. Cases without a score or rating are counted in `left_out`. Each case is
+  `[case_id, score, activities, outcome letter a/w/d, major group, hooks]`, closest score to the student first; the
+  college is capped at 900 cases and `capped` says so. `is_student` marks one cell when the student has a score and
+  an `activities_rating`; otherwise `student_note` says what is missing and the grid still draws.
+  `status: "cant_say"` with a plain `reason` when the college publishes no range, for the own pool (its cases carry
+  no activities rating), or when there are no cases. The major filter on the screen recounts from `cases` using
+  `min_n` and `few_n`.
+- `kinds_check`: `null` when there are no kinds. `separation` is the mean silhouette width of the kinds on the same
+  distance `_kinds` uses; `shuffled` the same after shuffling each part's values across cases and refitting;
+  `stability` the lowest kind's mean best Jaccard match over 8 seeded 80% subsamples. `verdict` is `clear` when all
+  three pass (`needs`), `loose` when separation >= 0.26, stability >= 0.6 and it beats shuffled, else `none`. The
+  screen names kinds anywhere (drill-in tab, mind-map leaves, scatter medoid rings) only when the verdict is not
+  `none`. Over the 58 colleges in the file: 53 `none`, 1 `loose`, 4 without kinds.
+- `similarity.method()` gains `groups` and `kinds_check` with these constants, for the About page.
+
 ### `balance` object: `balance.assess(labelled, student) -> dict`
 `labelled` is a list of `{"college": College | None, "name": str, "label": label}`.
 ```json

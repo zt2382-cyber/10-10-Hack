@@ -67,16 +67,25 @@
     "name": "Map picture",
     "status": "works",
     "when": "afternoon",
-    "what": "The student in the middle, a branch per label, a node per college, and under each college its nearest kind of admitted student and its three nearest admitted cases.",
+    "what": "The student in the middle, a branch per label, a node per college, and under each college its nearest kind of admitted student (only when the kinds pass their check) and its three nearest admitted cases.",
     "where": "Chapter 2, \"Other pictures: Map\".",
     "files": "web/app.js"
+  },
+  {
+    "id": "groups",
+    "name": "Groups picture",
+    "status": "works",
+    "when": "evening",
+    "what": "For one college, a 3 by 3 grid of rule-defined groups of past applicants (score below, inside or above the published range; activities rating low, middle or high), each with its real finished cases as dots and counts, and the student's own group outlined. A group grows when pressed and lists its cases. Beside it, a three-number check on the computer-made kinds; kind names appear anywhere on the screen only when that check passes.",
+    "where": "Chapter 2, \"Other pictures: Groups\".",
+    "files": "engine/similarity.py, web/app.js, docs/req/GROUPS_REQUIREMENTS.md"
   },
   {
     "id": "resemble",
     "name": "Scatter, part bars, kinds and changes",
     "status": "works",
     "when": "afternoon",
-    "what": "A scatter of that college's cases by score and activities rating with the student as a star and the three kinds' medoids ringed; a bar per part; three kinds of admitted student found by k-medoids and named from counts; and what would bring the student closer (score, activities, a named major; never hooks, home state or GPA).",
+    "what": "A scatter of that college's cases by score and activities rating with the student as a star and the three kinds' medoids ringed; a bar per part; three kinds of admitted student found by k-medoids and named from counts, shown only when they pass a separation, shuffle and stability check; and what would bring the student closer (score, activities, a named major; never hooks, home state or GPA).",
     "where": "Tap a college, \"Who you resemble\".",
     "files": "engine/similarity.py, web/app.js"
   },
@@ -127,7 +136,7 @@
   },
   {
     "id": "whatif",
-    "name": "\"What if the score were\u2026\" slider",
+    "name": "\"What if the score were…\" slider",
     "status": "works",
     "when": "morning",
     "what": "Moves the student's score and re-labels the whole list as it moves, saying which colleges change at which score. Labels only; nothing else is re-run.",

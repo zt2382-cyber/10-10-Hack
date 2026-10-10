@@ -98,7 +98,7 @@ The shape of the result every part reads and writes is in [`CONTRACT.md`](CONTRA
 
 ### What it does, feature by feature
 <!-- FEATURES_START -->
-Generated from `docs/features.json` by `tools/sync_features.py`; the About page shows the same list. 29 of 32 work today.
+Generated from `docs/features.json` by `tools/sync_features.py`; the About page shows the same list. 30 of 33 work today.
 
 | Feature | What it does | Where | Status |
 |---|---|---|---|
@@ -109,8 +109,9 @@ Generated from `docs/features.json` by `tools/sync_features.py`; the About page 
 | **Example cases, two pools kept apart** | Counts of admitted, not admitted and waitlisted among finished cases like this student, with n and the official admit rate beside them. The school's own cases and the public self-reported pool are never added together, and the public pool's over-count is stated. | Tap a college, "Who you resemble". | Works |
 | **Who you resemble: closer to the admitted or the not admitted** | Per college, the distance from the student to the 7 nearest admitted and the 7 nearest not-admitted cases, over score, activities rating, major group, hooks and residency. A lean, a steady test, the parts that are close or far, and the nearest cases of each. A distance, never a percentage; the label is untouched. | Tap a college, "Who you resemble". | Works |
 | **Rings picture** | The student at the centre, one dot per college as far out as the student is from the people admitted there. Hollow when there are too few cases; on an outer ring when it cannot be placed. | Chapter 2, "Other pictures: Rings". | Works |
-| **Map picture** | The student in the middle, a branch per label, a node per college, and under each college its nearest kind of admitted student and its three nearest admitted cases. | Chapter 2, "Other pictures: Map". | Works |
-| **Scatter, part bars, kinds and changes** | A scatter of that college's cases by score and activities rating with the student as a star and the three kinds' medoids ringed; a bar per part; three kinds of admitted student found by k-medoids and named from counts; and what would bring the student closer (score, activities, a named major; never hooks, home state or GPA). | Tap a college, "Who you resemble". | Works |
+| **Map picture** | The student in the middle, a branch per label, a node per college, and under each college its nearest kind of admitted student (only when the kinds pass their check) and its three nearest admitted cases. | Chapter 2, "Other pictures: Map". | Works |
+| **Groups picture** | For one college, a 3 by 3 grid of rule-defined groups of past applicants (score below, inside or above the published range; activities rating low, middle or high), each with its real finished cases as dots and counts, and the student's own group outlined. A group grows when pressed and lists its cases. Beside it, a three-number check on the computer-made kinds; kind names appear anywhere on the screen only when that check passes. | Chapter 2, "Other pictures: Groups". | Works |
+| **Scatter, part bars, kinds and changes** | A scatter of that college's cases by score and activities rating with the student as a star and the three kinds' medoids ringed; a bar per part; three kinds of admitted student found by k-medoids and named from counts, shown only when they pass a separation, shuffle and stability check; and what would bring the student closer (score, activities, a named major; never hooks, home state or GPA). | Tap a college, "Who you resemble". | Works |
 | **Essay and activity text in closeness** | With a model key, masked essay and activity text are embedded and become two more parts of the distance, compared only where both profiles have text. Vectors stay in memory. Without a key the structured parts carry the comparison. | Tap a college, "Who you resemble", with the working shown. | Works with a key |
 | **Activities rating input** | A 0 to 10 dial for the counselor's own rating of the student's activities, used only by closeness. | Counselor tools, "Change the details". | Works |
 | **What the college says it weighs** | Statements from each college's own Common Data Set form, each with its field, year and source link, checked in code and confirmed against a knowledge base. Common beliefs are checked against the form. | Tap a college, "What the college says". | Works |
@@ -204,6 +205,16 @@ python tests/acceptance/run_acceptance.py
 
 `tools/parse_reddit_posts.py` can turn raw public posts into a wider pool (654 colleges in our run). It is not
 wired in, and its output is kept out of the repository because it holds snippets of people's posts.
+
+### Groups: rule-defined groups of past applicants, and a check on the kinds
+
+A fourth picture, **Groups**, shows one college as a 3 by 3 grid: score below, inside or above the published middle
+range, by activities rating low, middle or high. Each cell holds that college's real finished cases as dots with
+counts, the student's own cell is outlined, and pressing a cell enlarges it and lists its cases. The rule is written
+in code with no seed, so a counselor can recount it by hand. Under the grid, three numbers check the computer-made
+kinds of admitted student (how separate, the same on shuffled data, how stable on resampling); kind names appear
+anywhere on the screen only when that check passes, which on the current file is almost nowhere.
+Requirements: `docs/req/GROUPS_REQUIREMENTS.md`.
 
 ### Essay and activity text in closeness (optional, only with a key)
 

@@ -569,3 +569,55 @@ body.show-working .sugg-why { display: block; overflow: visible; }
 .feat-st { margin-left: auto; font-size: 13px; font-weight: 650; color: var(--mute); }
 .feat-what { font-size: 15.5px; }
 .feat-where { font-size: 14.5px; }
+
+/* groups: one college, a 3 by 3 grid of rule-defined groups (score band by activities band). The pressed cell grows. */
+.groups { display: grid; gap: 12px; }
+.g-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.g-pick { display: inline-flex; align-items: center; gap: 8px; }
+.g-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 650; }
+.g-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; display: inline-block; }
+.g-pill.p-reach { color: var(--reach); } .g-pill.p-target { color: var(--target); } .g-pill.p-likely { color: var(--likely); } .g-pill.p-cant_say, .g-pill.p-outside_data { color: var(--unsure); }
+.pick[aria-pressed="true"] .g-pill { color: var(--card); }
+.g-h { font-size: 18px; font-weight: 700; }
+.g-head { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; justify-content: space-between; }
+.g-filter { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; color: var(--mute); }
+.g-filter select { font: inherit; font-size: 14.5px; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+.g-grid { display: grid; gap: 6px; }
+.g-colh, .g-rowh { font-size: 12.5px; color: var(--mute); line-height: 1.25; }
+.g-colh { text-align: center; padding-bottom: 2px; align-self: end; }
+.g-colh b, .g-rowh b { display: block; color: var(--ink); font-size: 13.5px; }
+.g-rowh { display: flex; flex-direction: column; justify-content: center; }
+.g-cell { font: inherit; text-align: left; color: var(--ink); background: #fff; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 9px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; min-width: 0; min-height: 96px; transition: min-height .18s ease, padding .18s ease; }
+.g-cell:hover { border-color: var(--you); }
+.g-cell.g-me { border: 2px solid var(--you); background: var(--you-soft); }
+.g-cell.g-thin { background: repeating-linear-gradient(45deg, #fff, #fff 6px, var(--hatch) 6px, var(--hatch) 12px); color: var(--mute); }
+.g-cell.g-open { box-shadow: 0 0 0 2.5px var(--ink); min-height: 230px; padding: 14px; }
+.g-tag { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--you); }
+.g-dots { display: flex; flex-wrap: wrap; gap: 2px; }
+.gd { width: 6px; height: 6px; box-sizing: border-box; flex: none; display: inline-block; vertical-align: middle; }
+.gd-a { background: var(--likely); border-radius: 50%; }
+.gd-w { border: 1.5px solid var(--caution); border-radius: 50%; }
+.gd-d { background: var(--unsure); width: 5px; height: 5px; margin: .5px; }
+.g-cell.g-open .g-dots { gap: 3px; }
+.g-cell.g-open .gd { width: 11px; height: 11px; } .g-cell.g-open .gd-w { border-width: 2px; } .g-cell.g-open .gd-d { width: 9px; height: 9px; margin: 1px; }
+.g-counts { font-size: 12.5px; font-variant-numeric: tabular-nums; } .g-counts em { color: var(--mute); }
+.g-cell.g-open .g-counts { font-size: 15.5px; }
+.g-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--mute); }
+.g-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.g-note { background: var(--caution-bg); border-radius: 8px; padding: 9px 12px; font-size: 14.5px; }
+.g-list { display: grid; gap: 6px; }
+.g-list h4 { font-size: 15.5px; }
+.kcheck { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: #fff; display: grid; gap: 8px; }
+.kcheck h4 { font-size: 16px; }
+.k-verdict { font-size: 17px; font-weight: 700; }
+.k-clear { color: var(--likely); } .k-loose { color: var(--caution); }
+.kv3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kv3 div { border-top: 2px solid var(--line); padding-top: 6px; font-size: 14px; }
+.kv3 b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .kv3 small { color: var(--mute); }
+.kv3 .pass { color: var(--likely); } .kv3 .fail { color: var(--mute); }
+@media (max-width: 640px) {
+  .g-colh, .g-rowh { font-size: 11px; } .g-colh b, .g-rowh b { font-size: 12px; }
+  .g-cell { padding: 6px; min-height: 78px; } .g-cell.g-open { min-height: 180px; padding: 10px; }
+  .g-counts { font-size: 11.5px; overflow-wrap: anywhere; }
+  .g-rowh { max-width: 92px; }
+}
