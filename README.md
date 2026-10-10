@@ -18,6 +18,35 @@ It answers four questions:
 
 It never gives a personal chance of admission.
 
+![The first view: one picture of the whole list, three counters, and three levers](docs/screens/first_view.jpg)
+
+![Opening a college: finished cases like this student, the school's own beside the national pool](docs/screens/cases.jpg)
+
+## The product so far (1:10 PM, October 10)
+
+**What a counselor sees.** Pick or enter a student and press "Build the list". The first view is deliberately
+small: how many colleges are reach, target and likely; the single most important warning; and one picture, "Where
+this student stands", with every college's middle score range on a shared line and the student's score drawn
+through all of them. Beside it are three levers: the list itself (suggested colleges that would fill the gaps), a
+"what if the score were..." slider that re-labels the list as it moves, and what each college says matters.
+Pressing a college opens four tabs: why this label, cases like this student, what could change it, and what the
+college says. A footer holds the essay notes, how the answer was made, a one-page sheet to print for the family,
+and "What is the student's chance?", which explains why no percentage is given and points at the evidence instead.
+
+**What works today.**
+- End to end in about six seconds with the essay reader and PRISM switched on.
+- 60 of 60 labels match a hand-worked answer sheet; 177 unit tests pass.
+- The essay reader runs through Nicrron with two models from different makers.
+- PRISM: the guardrail stops an essay with a hidden instruction; college statements come back "confirmed" from the
+  Knowledge Base and a planted false one "not confirmed"; each run and its five steps are recorded.
+- A version that needs no server (`tools/make_static.py`) for sharing a link.
+
+**What is not done.**
+- PRISM's Evaluator is not attached to the essay reader's output yet.
+- The school's own "verified" cases are invented demo data; real ones would come from a counselor or from Nerd Apply.
+- Matching on essays and activities is thin, because the public case file has no essay text.
+- Nobody outside the builders has reviewed the print sheet, dark mode or phone width.
+
 ## How it handles accuracy and uncertainty
 
 - **Code sets every label, count and number.** The only model call reads the essay and returns themes and notes.
