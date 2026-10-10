@@ -102,7 +102,7 @@ Generated from `docs/features.json` by `tools/sync_features.py`; the About page 
 
 | Feature | What it does | Where | Status |
 |---|---|---|---|
-| **One story in four chapters** | Who you are, where you stand, what is in your hands, your plan. Each chapter ends in one obvious next step; a waypoint bar tracks where the reader is. | The whole screen after "Show where they stand". | Works |
+| **One story in five sections** | Who you are, where you stand, what is in your hands, your plan, and Essay Similarity Search. A waypoint bar links the five sections. | The whole screen after "Show where they stand". | Works |
 | **Reach / target / likely label** | Each college gets a label from a written rule in code, from its published admit rate and middle score range. Never from a model. | Chapter 2; tap a college, "How we got this". | Works |
 | **This one is close, and publishers disagree** | Every label is rerun with the score 30 points either way and the admit rate 5 points lower; a label that flips is marked. Five published rulebooks are run on the same score and any disagreement is shown. | Chapter 2 and "How we got this". | Works |
 | **Where you stand: the trail map** | Every college's middle score band on one line, the distance to the student's score written on each bar, and a label beside it. | Chapter 2. | Works |
@@ -133,7 +133,7 @@ Generated from `docs/features.json` by `tools/sync_features.py`; the About page 
 | **Parser for raw public posts** | Turns raw r/collegeresults posts into a wider pool (654 colleges in our run). Not wired in; its output stays out of the repository because it holds snippets of people's posts. |  | Thin |
 | **PRISM Evaluator on the essay notes** | The run's score is read back in code instead. |  | Not done |
 | **Several intended majors in the form** | Closeness can try another major the student named, but the form sends only one; the API accepts major_interests. |  | Not done |
-| **Essay baseline search and activity text comparison** | A student draft searches a standalone reference bank using embeddings when available and local text similarity otherwise. Undergraduate samples are original synthetic essays; licensed graduate references come from OpenEssays with attribution. Missing applicant essay text is omitted from outcome comparisons. | Essay search in the header; input and similar references displayed side by side. | Works |
+| **Essay baseline search and activity text comparison** | A student draft searches a standalone reference bank using embeddings when available and local text similarity otherwise. Undergraduate samples are original synthetic essays; licensed graduate references come from OpenEssays with attribution. Missing applicant essay text is omitted from outcome comparisons. | Section 5, Essay Similarity Search; input and similar references displayed side by side. | Works |
 <!-- FEATURES_END -->
 
 ### Sponsor tools
@@ -314,7 +314,8 @@ structured comparisons continue. Static demo fixtures do not perform live retrie
 
 ## Essay baseline search
 
-Choose **Essay search** in the header, paste the student draft, choose undergraduate
+Open **5 · Essay Similarity Search** in the section navigation after loading a student,
+paste the student draft, choose undergraduate
 or graduate essay type, and press **Find similar essays**. The draft stays beside
 ranked references, with shared words, content similarity, full reference text, and
 source/attribution links. The essay editor stays synchronized with the student form.

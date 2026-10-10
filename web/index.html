@@ -14,7 +14,6 @@
   <header class="top">
     <h1>Counselor Copilot</h1>
     <nav class="top-nav" aria-label="Essay search and about this screen">
-      <a class="linkbtn" href="#essay-bank">Essay search</a>
       <button type="button" class="linkbtn top-about" data-act="tool-about">About</button>
     </nav>
     <div class="top-chips" id="top-chips"></div>
@@ -33,7 +32,7 @@
       </details>
     </div>
   </header>
-  <nav class="waypoints" id="waypoints" aria-label="The four chapters"></nav>
+  <nav class="waypoints" id="waypoints" aria-label="The five sections"></nav>
 
   <div class="page">
     <!-- ============ OPENING: who are we looking at today? ============ -->
@@ -127,7 +126,7 @@
                 <ul class="hits" id="college-hits" role="listbox" aria-label="Matching colleges"></ul>
                 <span class="hint" id="search-hint"></span>
               </fieldset>
-              <fieldset class="field">
+              <fieldset class="field" hidden>
                 <legend>Essay <em>(personal details are masked before it is read)</em></legend>
                 <div class="picks" id="essay-picks"></div>
                 <label class="sr" for="f-essay">Or paste an essay</label>
@@ -154,9 +153,20 @@
       </form>
     </section>
 
-    <section class="card essay-bank" id="essay-bank" aria-labelledby="essay-bank-title">
-      <p class="eyebrow">Essay reference bank</p>
-      <h2 id="essay-bank-title">Find essays like yours</h2>
+    <!-- ============ THE STORY: five sections ============ -->
+    <main id="results" tabindex="-1" hidden>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <section class="chapter card" id="ch1" aria-label="Chapter 1: who you are"></section>
+      <section class="chapter" id="ch2" aria-label="Chapter 2: where you stand">
+        <div id="headline"></div>
+        <div id="picture"></div>
+        <div id="caution"></div>
+      </section>
+      <section class="chapter" id="ch3" aria-label="Chapter 3: what is in your hands"></section>
+      <section class="chapter" id="ch4" aria-label="Chapter 4: your plan"></section>
+    <section class="chapter card essay-bank" id="ch5" aria-labelledby="essay-bank-title">
+      <p class="kicker">5 · Essay Similarity Search</p>
+      <h2 id="essay-bank-title" class="ch-title" tabindex="-1">Essay Similarity Search</h2>
       <p class="quiet">Compare your draft with reference essays. Similarity describes content, not essay quality or admission likelihood.</p>
       <div class="essay-search-grid">
         <form id="baseline-form" class="essay-input">
@@ -175,17 +185,6 @@
       </div>
     </section>
 
-    <!-- ============ THE STORY: four chapters ============ -->
-    <main id="results" tabindex="-1" hidden>
-      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
-      <section class="chapter card" id="ch1" aria-label="Chapter 1: who you are"></section>
-      <section class="chapter" id="ch2" aria-label="Chapter 2: where you stand">
-        <div id="headline"></div>
-        <div id="picture"></div>
-        <div id="caution"></div>
-      </section>
-      <section class="chapter" id="ch3" aria-label="Chapter 3: what is in your hands"></section>
-      <section class="chapter" id="ch4" aria-label="Chapter 4: your plan"></section>
       <section class="working-only" id="working" aria-label="The working"></section>
     </main>
   </div>

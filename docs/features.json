@@ -1,10 +1,10 @@
 [
   {
     "id": "story",
-    "name": "One story in four chapters",
+    "name": "One story in five sections",
     "status": "works",
     "when": "afternoon",
-    "what": "Who you are, where you stand, what is in your hands, your plan. Each chapter ends in one obvious next step; a waypoint bar tracks where the reader is.",
+    "what": "Who you are, where you stand, what is in your hands, your plan, and Essay Similarity Search. A waypoint bar links the five sections.",
     "where": "The whole screen after \"Show where they stand\".",
     "files": "web/app.js, web/index.html"
   },
@@ -284,7 +284,7 @@
     "status": "works",
     "when": "afternoon",
     "what": "A student draft searches a standalone reference bank using embeddings when available and local text similarity otherwise. Undergraduate samples are original synthetic essays; licensed graduate references come from OpenEssays with attribution. Missing applicant essay text is omitted from outcome comparisons.",
-    "where": "Essay search in the header; input and similar references displayed side by side.",
+    "where": "Section 5, Essay Similarity Search; input and similar references displayed side by side.",
     "files": "engine/baseline.py, engine/semantic.py, data/essays/, web/app.js"
   }
 ]
