@@ -206,8 +206,7 @@ body:not(.show-working) .verdicts.working-only { display: none !important; }
 .phit { fill: transparent; stroke: transparent; stroke-width: 2.5; }
 .prow:hover .phit { fill: var(--tint); }
 .prow:focus-visible .phit { stroke: var(--you); fill: var(--tint); }
-.pname { font-size: 16px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--card); stroke-width: 6px; stroke-linejoin: round; }
-.prow:hover .pname, .prow:focus-visible .pname { stroke: var(--tint); }
+.pname { font-size: 16px; font-weight: 600; fill: var(--ink); }
 .pbar { opacity: .85; }
 .pr-reach .pbar, .pr-reach .pdot, .pr-reach .plab-w { fill: var(--reach); }
 .pr-target .pbar, .pr-target .pdot, .pr-target .plab-w { fill: var(--target); }
@@ -436,3 +435,104 @@ body.show-working .sugg-why { display: block; overflow: visible; }
 .track-msg p { margin-top: 4px; }
 .paid { border-left: 5px solid var(--likely); border-radius: 0 12px 12px 0; background: var(--likely-bg); }
 @media (max-width: 720px) { .track-rows li { grid-template-columns: 1fr; } .track-ask { justify-self: start; } }
+
+/* third pass: closeness. yuri's styles follow, with his variable names mapped onto this palette */
+:root { --accent: var(--you); --accent-soft: var(--you-soft); --accent-ink: var(--you-ink); --panel: var(--card); --raised: #fff; --soft: var(--tint); --edge: var(--caution); --edge-bg: var(--caution-bg); }
+.pic-toggle { margin-left: auto; display: flex; gap: 4px; }
+.pick.small { font-size: 14px; min-height: 30px; padding: 3px 11px; }
+
+/* rings: the student at the centre, one dot per college, nearer = more like the people admitted there */
+.rings { min-width: 520px; max-height: 560px; }
+.rguide { fill: none; stroke: var(--soft); stroke-width: 1.2; }
+.router { stroke: var(--line); stroke-dasharray: 5 4; }
+.rguidet { font-size: 12px; fill: var(--mute); }
+.rme { fill: var(--ink); } .rmet { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+.rdot { cursor: pointer; outline: none; }
+.rhit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.rdot:hover .rhit { fill: var(--soft); }
+.rdot:focus-visible .rhit { fill: var(--accent-soft); stroke: var(--accent); }
+.rd-reach .shape { color: var(--reach); fill: var(--reach); }
+.rd-target .shape { color: var(--target); fill: var(--target); }
+.rd-likely .shape { color: var(--likely); fill: var(--likely); }
+.rd-cant_say .shape, .rd-outside_data .shape { color: var(--unsure); fill: var(--unsure); }
+.rd-hollow .shape path, .rd-hollow .shape circle, .rd-hollow .shape rect { fill: var(--panel); stroke: currentColor; stroke-width: 1.8; }
+.rd-out .shape { opacity: .65; }
+.rname { font-size: 13px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.lg-centre { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.lg-hollow { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); }
+.lg-dashed { width: 22px; height: 0; border-top: 2px dashed var(--mute); }
+
+/* mind map: trunk to each label branch, limbs to colleges, a short list of leaves under each college */
+.mindmap { min-width: 620px; }
+.mm-trunk { stroke: var(--ink); stroke-width: 2; }
+.mm-limb { stroke: var(--line); stroke-width: 1.6; }
+.mm-branch rect { fill: var(--raised); stroke: currentColor; stroke-width: 1.6; }
+.mm-branch text { font-size: 13px; font-weight: 700; fill: currentColor; }
+.mm-reach { color: var(--reach); } .mm-target { color: var(--target); } .mm-likely { color: var(--likely); } .mm-other { color: var(--unsure); }
+.mm-leaf { font-size: 11.5px; fill: var(--mute); }
+.mm-leaf-dot { fill: var(--likely); } .mm-leaf-kind { fill: var(--accent); }
+.lg-leaf { width: 8px; height: 8px; border-radius: 50%; background: var(--likely); }
+/* who they resemble: the lean, the scatter, part bars, kinds, changes */
+.lean { border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--raised); margin-bottom: 12px; display: grid; gap: 5px; }
+.lean-h { font-size: 21px; font-weight: 750; }
+.lean-closer_to_admitted { border-color: var(--likely); } .lean-closer_to_denied { border-color: var(--reach); } .lean-in_between { border-color: var(--target); }
+.lean-not_enough, .lean-none, .lean-cant_say { border-style: dashed; border-color: var(--unsure); }
+.scatter { display: block; width: 100%; height: auto; max-width: 700px; font-family: inherit; margin: 6px 0 4px; }
+.sc-grid { stroke: var(--soft); stroke-width: 1; } .sc-axis { stroke: var(--line); stroke-width: 1.2; }
+.sc-tick { font-size: 11px; fill: var(--mute); } .sc-ax { font-size: 12px; fill: var(--mute); font-weight: 650; }
+.sc-a { fill: var(--likely); opacity: .75; } .sc-d { stroke: var(--reach); stroke-width: 1.7; fill: none; } .sc-w { fill: var(--unsure); opacity: .75; }
+.sc-medoid { fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.sc-mk { font-size: 11.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.sc-me { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; } .sc-line { stroke: var(--ink); stroke-width: 2.5; }
+.lg-star { color: var(--ink); font-size: 14px; line-height: 1; }
+.pbars { display: grid; gap: 7px; margin: 8px 0 4px; }
+.pbars li { display: grid; grid-template-columns: 130px minmax(80px, 1fr) 170px; gap: 10px; align-items: center; font-size: 15px; }
+.pb-name { font-weight: 600; }
+.pb-track { display: block; height: 12px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
+.pb-fill { display: block; height: 100%; background: var(--accent); }
+.pb-word { color: var(--ink); }
+.kinds { display: grid; gap: 5px; font-size: 15.5px; }
+.kinds li.nearest { font-weight: 650; }
+.changes { list-style: decimal; padding-left: 22px; display: grid; gap: 8px; font-size: 16px; }
+.changes .quiet { display: block; font-size: 14.5px; }
+/* about: a lead paragraph, a numbered tour with live buttons */
+.about { display: grid; gap: 10px; }
+.about-lead { font-size: 18px; }
+.tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16.5px; }
+.tour .btn { margin: 6px 6px 0 0; }
+.weights th[scope=row] { color: var(--ink); font-weight: 650; white-space: nowrap; }
+.w-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.algo { display: block; width: 100%; height: auto; min-width: 640px; max-width: 760px; font-family: inherit; }
+.al-box rect { fill: var(--raised); stroke: var(--line); stroke-width: 1.4; }
+.al-box text { font-size: 12.5px; fill: var(--ink); }
+.al-box .al-h { font-weight: 700; font-size: 13px; }
+.al-in rect { stroke: var(--target); } .al-data rect { stroke: var(--unsure); stroke-dasharray: 4 3; }
+.al-calc rect { stroke: var(--accent); } .al-out rect { stroke: var(--likely); } .al-side rect { fill: var(--soft); }
+.al-arr { stroke: var(--mute); stroke-width: 1.6; } .al-arrhead { fill: var(--mute); }
+
+.ccheck { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--raised); display: grid; gap: 6px; }
+.ccheck-t { max-width: 420px; } .ccheck-t th[scope=col] { color: var(--mute); font-weight: 600; width: auto; }
+.ccheck-t th[scope=row] { width: 55%; }
+/* adaptations */
+.shape { fill: currentColor; }
+.pic-toggle { margin: 8px 0 0; display: block; }
+.pic-toggle .linkbtn[aria-pressed="true"] { color: var(--ink); text-decoration: none; cursor: default; }
+.rings, .mindmap { min-width: 620px; max-height: 620px; margin: 0 auto; }
+.rmet { fill: var(--you); font-size: 14px; } .rme { fill: var(--you); }
+.rname { font-size: 13.5px; }
+.resemble { display: grid; gap: 10px; margin-bottom: 26px; }
+.resemble .label { margin-top: 8px; }
+.rpool { display: grid; gap: 6px; align-content: start; }
+.rpool .reason { font-size: 19px; margin: 4px 0 0; }
+.pbars li { grid-template-columns: 92px minmax(50px, 1fr) auto; font-size: 14.5px; }
+.pb-fill { background: var(--mute); }
+.near-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.near { display: grid; gap: 4px; font-size: 14.5px; }
+.near li { background: var(--card); border-radius: 8px; padding: 5px 8px; }
+.kinds li.nearest { font-weight: 650; }
+.tagn { font-size: 13.5px; font-weight: 650; border-radius: 999px; padding: 0 9px; background: var(--you-soft); color: var(--you); white-space: nowrap; }
+.caveat-line { border-left: 5px solid var(--caution); background: var(--caution-bg); border-radius: 0 12px 12px 0; padding: 8px 14px; font-size: 15.5px; }
+.counts-h { margin-top: 6px; }
+.howbuilt h4 { margin-top: 18px; }
+.ccheck { margin: 10px 0; }
+@media (max-width: 720px) { .near-two { grid-template-columns: 1fr; } .pbars li { grid-template-columns: 80px 1fr; } }

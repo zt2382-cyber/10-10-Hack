@@ -20,6 +20,7 @@
         <summary>Counselor tools</summary>
         <div class="tools-menu">
           <button type="button" data-act="tool-questions">Questions to ask</button>
+          <button type="button" data-act="tool-how">How we worked this out</button>
           <button type="button" data-act="tool-case" data-tool="case">Add a finished case</button>
           <button type="button" data-act="tool-edit" data-tool="edit">Change the details</button>
           <button type="button" data-act="tool-start">Choose another student</button>
@@ -70,6 +71,12 @@
                 <input type="range" id="f-gpa" min="0" max="4" step="0.1" value="3.5">
                 <output id="o-gpa" for="f-gpa">3.5</output>
                 <label class="tog"><input type="checkbox" id="f-gpa-none"><span>none</span></label>
+              </div>
+              <div class="dial">
+                <label for="f-actv">Activities, your rating <em>(1 to 10; used only for who they resemble)</em></label>
+                <input type="range" id="f-actv" min="1" max="10" step="0.5" value="5">
+                <output id="o-actv" for="f-actv">5</output>
+                <label class="tog"><input type="checkbox" id="f-actv-none" checked><span>none</span></label>
               </div>
               <label class="field">
                 <span>Home state</span>

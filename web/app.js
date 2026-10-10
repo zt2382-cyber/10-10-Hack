@@ -8,7 +8,7 @@
 'use strict';
 
 /* A copy of docs/fixture_result.json, used only when nothing else can be loaded. */
-var FIXTURE = /*FIXTURE_START*/{"run_id":"fixture-0001","generated_at":"2026-10-10T12:30:00-04:00","synthetic":true,"student":{"label":"Student A (SYNTHETIC)","sat":1450,"act":null,"gpa":3.9,"gpa_scale":4.0,"home_state":"NJ","intended_major":"Computer Science","hooks":["first_gen"],"activities":[{"type":"Research","role":"Student researcher","description":"Summer lab program; co-author on a poster"}],"essay_words":612,"college_list":["Cornell University","Purdue University-Main Campus","Rutgers University-New Brunswick","Kenyon College","Some College Not In Our File"]},"steps":[{"step":"retrieve","what":"Looked up 5 colleges and 2,250 finished cases","ms":14,"by":"code"},{"step":"score","what":"Compared the student's SAT of 1450 with each college's published range","ms":2,"by":"code"},{"step":"bucket","what":"Labelled 4 colleges; 1 is outside our data","ms":1,"by":"code"},{"step":"explain","what":"Read the essay for themes and quotes; 3 notes kept, 1 dropped","ms":1840,"by":"anthropic/claude-haiku-4-5"},{"step":"log","what":"Recorded this run in PRISM","ms":220,"by":"code"}],"privacy":{"masked":[{"kind":"name","count":2},{"kind":"email","count":1}],"blocked":false,"reason":"","guard":"local, then PRISM","note":"3 personal details were masked before any model read the essay."},"reader":{"status":"ok","model":"anthropic/claude-haiku-4-5","second_model":"openai/gpt-5.5","tags":{"major_group":"CS","major_group_agreed":true,"activity_types":["research"],"essay_themes":["family","persistence"]},"notes":[{"observation":"The essay centres on translating for a parent at medical appointments.","quote":"I learned the word for kidney before I learned to drive","question":"Does the rest of the application show this responsibility anywhere else?","quote_found":true},{"observation":"It names a specific research task rather than a general interest in science.","quote":"I ran the same assay eleven times before it worked","question":"Can the research mentor's letter confirm this?","quote_found":true}],"dropped":1,"latency_ms":1840},"colleges":[{"id":"190415","name":"Cornell University","state":"NY","control":"private","admit_rate":0.0876,"sat25":1500,"sat75":1570,"act25":33,"act75":35,"cost_year":88140,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"reach_for_everyone","text":"Reach for everyone","rule_id":"R1","rule_text":"This college admits fewer than 15 in 100 applicants, so it is a reach for any student.","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1500,"sat75":1570,"admit_rate":0.0876},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores."],"steady":true,"flips":[],"publishers":[{"name":"BigFuture","label":"reach"},{"name":"Princeton Review","label":"reach"},{"name":"Scoir","label":"reach"},{"name":"Appily","label":"reach"},{"name":"CollegeVine","label":"reach"}],"publishers_disagree":false},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"not_enough","n":4,"admitted":1,"denied":3,"waitlisted":0,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[{"case_id":"S-12","sat":1480,"act":null,"major":"CS","hooks":"first_gen","home_state":"NJ","activities_note":"Robotics captain; state finalist","essay_theme":"immigrant family","outcome":"denied","cycle_year":2025}]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n":23,"admitted":8,"denied":12,"waitlisted":3,"matched_on":["SAT within 50 points","same major group"],"relaxed":["hook status"],"examples":[{"case_id":"N-1042","sat":1460,"act":null,"major":"CS","hooks":"NONE","home_state":"CA","activities_rating":6.5,"outcome":"denied"},{"case_id":"N-377","sat":1440,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"NY","activities_rating":7.5,"outcome":"admitted"},{"case_id":"N-1611","sat":1470,"act":null,"major":"CS","hooks":"NONE","home_state":"TX","activities_rating":5.5,"outcome":"waitlisted"}]},"official_admit_rate":0.0876,"pool_admit_share_all":0.251,"overcount":2.9,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"says":[{"claim_id":"c7_essay","text":"Cornell rates the application essay Very Important.","field":"Common Data Set, section C7","year":"2025-26","source_url":"https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv","numbers":[],"kb":{"text":"Application Essay: Very Important","score":0.83,"doc":"KB_doc1_college_admission_factors_C7.md"},"checked":true}],"myths":[{"belief":"Showing interest (visits, emails) improves the odds.","college_says":"Cornell's form rates level of applicant's interest Not Considered.","source_url":"https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv","year":"2025-26"}],"cost_note":"Sticker cost is about $88,000 a year. What this family would actually pay is not known here.","flags":[]},{"id":"243780","name":"Purdue University-Main Campus","state":"IN","control":"public","admit_rate":0.4995,"sat25":1210,"sat75":1470,"act25":27,"act75":34,"cost_year":22812,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"target","text":"Target","rule_id":"R4","rule_text":"The score is inside the college's middle range (1210 to 1470).","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1210,"sat75":1470,"admit_rate":0.4995},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores.","Computer science at Purdue is harder to get into than the university as a whole; this label is for the university."],"steady":false,"flips":[{"cause":"score 30 points higher","to":"likely"}],"publishers":[{"name":"BigFuture","label":"target"},{"name":"Princeton Review","label":"target"},{"name":"Scoir","label":"likely"},{"name":"Appily","label":"target"},{"name":"CollegeVine","label":"target"}],"publishers_disagree":true},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n":31,"admitted":22,"denied":6,"waitlisted":3,"matched_on":["SAT within 50 points","same major group","same hook status"],"relaxed":[],"examples":[{"case_id":"N-0","sat":1440,"act":null,"major":"CS","hooks":"NONE","home_state":"MI","activities_rating":2.0,"outcome":"admitted"},{"case_id":"N-918","sat":1460,"act":null,"major":"CS","hooks":"NONE","home_state":"IL","activities_rating":6.5,"outcome":"denied"}]},"official_admit_rate":0.4995,"pool_admit_share_all":0.687,"overcount":1.4,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"says":[],"myths":[],"cost_note":"Sticker cost is about $23,000 a year in-state; out-of-state students pay more. What this family would actually pay is not known here.","flags":[]},{"id":"186380","name":"Rutgers University-New Brunswick","state":"NJ","control":"public","admit_rate":0.582,"sat25":1270,"sat75":1480,"act25":28,"act75":33,"cost_year":37000,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"target","text":"Target","rule_id":"R4","rule_text":"The score is inside the college's middle range (1270 to 1480).","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1270,"sat75":1480,"admit_rate":0.582},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores."],"steady":false,"flips":[{"cause":"score 30 points higher","to":"likely"}],"publishers":[{"name":"BigFuture","label":"target"},{"name":"Princeton Review","label":"target"},{"name":"Scoir","label":"likely"},{"name":"Appily","label":"target"},{"name":"CollegeVine","label":"target"}],"publishers_disagree":true},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"ok","n":17,"admitted":13,"denied":3,"waitlisted":1,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[{"case_id":"S-3","sat":1430,"act":null,"major":"ENG","hooks":"none","home_state":"NJ","activities_note":"Varsity track; part-time job","essay_theme":"work","outcome":"admitted","cycle_year":2025}]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"not_enough","n":9,"admitted":7,"denied":1,"waitlisted":1,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[]},"official_admit_rate":0.582,"pool_admit_share_all":0.7,"overcount":1.2,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"says":[],"myths":[],"cost_note":"Sticker cost is about $37,000 a year in-state. What this family would actually pay is not known here.","flags":[]},{"id":"203535","name":"Kenyon College","state":"OH","control":"private","admit_rate":0.31,"sat25":null,"sat75":null,"act25":null,"act75":null,"cost_year":85000,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"cant_say","text":"Can't say","rule_id":"R2","rule_text":"This college publishes no test score range, so there is nothing to compare the student's score with.","score_used":1450,"score_kind":"SAT","inputs":{"sat25":null,"sat75":null,"admit_rate":0.31},"not_used":["GPA","activities","essay"],"caveats":[],"steady":true,"flips":[],"publishers":[],"publishers_disagree":false},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"official_admit_rate":0.31,"pool_admit_share_all":null,"overcount":null,"caveat":"No finished cases for this college in either pool."},"says":[],"myths":[],"cost_note":"Sticker cost is about $85,000 a year. What this family would actually pay is not known here.","flags":[]},{"id":null,"name":"Some College Not In Our File","state":null,"control":null,"admit_rate":null,"sat25":null,"sat75":null,"act25":null,"act75":null,"cost_year":null,"source":null,"in_data":false,"label":{"state":"outside_data","text":"Outside our data","rule_id":"R0","rule_text":"This college is not in the 300-college file, so nothing is said about it.","score_used":null,"score_kind":null,"inputs":{},"not_used":[],"caveats":[],"steady":true,"flips":[],"publishers":[],"publishers_disagree":false},"cases":null,"says":[],"myths":[],"cost_note":null,"flags":[]}],"balance":{"counts":{"reach":1,"target":2,"likely":0,"cant_say":1,"outside_data":1},"warnings":[{"id":"no_likely","text":"There is no likely college on this list."},{"id":"short_list","text":"Only 3 colleges on this list could be labelled."}],"suggestions":[{"id":"185828","name":"New Jersey Institute of Technology","would_be":"likely","admit_rate":0.66,"sat25":1180,"sat75":1400,"cost_year":36000,"tuition_note":"In-state tuition applies","why":"The score is at or above the 75th percentile and the college admits about two in three applicants."},{"id":"204796","name":"Ohio State University-Main Campus","would_be":"target","admit_rate":0.53,"sat25":1300,"sat75":1470,"cost_year":30000,"tuition_note":"Out-of-state tuition applies","why":"The score is inside the middle range and the college admits about half of applicants."}],"cost_notes":[{"name":"Cornell University","text":"Sticker cost is about $88,000 a year. What this family would actually pay is not known here."}]},"checks":{"sentences_shown":14,"sentences_hidden":1,"hidden_reasons":["A number in the sentence was not in its source row."]},"prism":{"status":"off","why":"No PRISM key is set, so nothing was recorded.","session_id":null,"records_sent":0,"guardrail":"local check only","evaluator":null,"kb":"off"},"refusals":["No personal chance of admission is given. The counts above are examples from finished cases, shown beside the official admit rate.","The essay is never rated and never changes a label."]}/*FIXTURE_END*/;
+var FIXTURE = /*FIXTURE_START*/{"run_id":"fixture-0001","generated_at":"2026-10-10T12:30:00-04:00","synthetic":true,"student":{"label":"Student A (SYNTHETIC)","sat":1450,"act":null,"gpa":3.9,"gpa_scale":4.0,"home_state":"NJ","intended_major":"Computer Science","hooks":["first_gen"],"activities":[{"type":"Research","role":"Student researcher","description":"Summer lab program; co-author on a poster"}],"essay_words":612,"college_list":["Cornell University","Purdue University-Main Campus","Rutgers University-New Brunswick","Kenyon College","Some College Not In Our File"]},"steps":[{"step":"retrieve","what":"Looked up 5 colleges and 2,250 finished cases","ms":14,"by":"code"},{"step":"score","what":"Compared the student's SAT of 1450 with each college's published range","ms":2,"by":"code"},{"step":"bucket","what":"Labelled 4 colleges; 1 is outside our data","ms":1,"by":"code"},{"step":"explain","what":"Read the essay for themes and quotes; 3 notes kept, 1 dropped","ms":1840,"by":"anthropic/claude-haiku-4-5"},{"step":"log","what":"Recorded this run in PRISM","ms":220,"by":"code"}],"privacy":{"masked":[{"kind":"name","count":2},{"kind":"email","count":1}],"blocked":false,"reason":"","guard":"local, then PRISM","note":"3 personal details were masked before any model read the essay."},"reader":{"status":"ok","model":"anthropic/claude-haiku-4-5","second_model":"openai/gpt-5.5","tags":{"major_group":"CS","major_group_agreed":true,"activity_types":["research"],"essay_themes":["family","persistence"]},"notes":[{"observation":"The essay centres on translating for a parent at medical appointments.","quote":"I learned the word for kidney before I learned to drive","question":"Does the rest of the application show this responsibility anywhere else?","quote_found":true},{"observation":"It names a specific research task rather than a general interest in science.","quote":"I ran the same assay eleven times before it worked","question":"Can the research mentor's letter confirm this?","quote_found":true}],"dropped":1,"latency_ms":1840},"colleges":[{"id":"190415","name":"Cornell University","state":"NY","control":"private","admit_rate":0.0876,"sat25":1500,"sat75":1570,"act25":33,"act75":35,"cost_year":88140,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"reach_for_everyone","text":"Reach for everyone","rule_id":"R1","rule_text":"This college admits fewer than 15 in 100 applicants, so it is a reach for any student.","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1500,"sat75":1570,"admit_rate":0.0876},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores."],"steady":true,"flips":[],"publishers":[{"name":"BigFuture","label":"reach"},{"name":"Princeton Review","label":"reach"},{"name":"Scoir","label":"reach"},{"name":"Appily","label":"reach"},{"name":"CollegeVine","label":"reach"}],"publishers_disagree":false},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"not_enough","n":4,"admitted":1,"denied":3,"waitlisted":0,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[{"case_id":"S-12","sat":1480,"act":null,"major":"CS","hooks":"first_gen","home_state":"NJ","activities_note":"Robotics captain; state finalist","essay_theme":"immigrant family","outcome":"denied","cycle_year":2025}]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n":23,"admitted":8,"denied":12,"waitlisted":3,"matched_on":["SAT within 50 points","same major group"],"relaxed":["hook status"],"examples":[{"case_id":"N-1042","sat":1460,"act":null,"major":"CS","hooks":"NONE","home_state":"CA","activities_rating":6.5,"outcome":"denied"},{"case_id":"N-377","sat":1440,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"NY","activities_rating":7.5,"outcome":"admitted"},{"case_id":"N-1611","sat":1470,"act":null,"major":"CS","hooks":"NONE","home_state":"TX","activities_rating":5.5,"outcome":"waitlisted"}]},"official_admit_rate":0.0876,"pool_admit_share_all":0.251,"overcount":2.9,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"closeness":{"needed":15,"neighbours":7,"student":{"score":1450,"converted":false,"activities":null},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n_admitted":184,"n_denied":381,"n_waitlisted":126,"d_admitted":0.08,"d_denied":0.039,"gap":-0.041,"lean":"closer_to_denied","text":"Looks more like the people denied here than the people admitted.","steady":false,"flips":[{"cause":"5 nearest instead of 7","to":"in_between"}],"parts":[{"part":"score","distance":0.057,"text":"close"},{"part":"major","distance":0.0,"text":"close"},{"part":"hooks","distance":0.286,"text":"some way off"}],"not_used":["activities rating","GPA","residency (private college)","essay","activity descriptions"],"nearest_admitted":[{"case_id":"N-1296","sat":1440,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":null,"activities_rating":2.0,"outcome":"admitted","distance":0.016,"parts":{"score":0.025,"major":0.0,"hooks":0.0}},{"case_id":"N-150","sat":1430,"act":32,"major":null,"hooks":"FIRST-GEN","home_state":"CO","activities_rating":5.5,"outcome":"admitted","distance":0.041,"parts":{"score":0.05,"hooks":0.0}},{"case_id":"N-223","sat":1430,"act":32,"major":null,"hooks":"FIRST-GEN","home_state":"CO","activities_rating":5.5,"outcome":"admitted","distance":0.041,"parts":{"score":0.05,"hooks":0.0}}],"nearest_denied":[{"case_id":"N-1960","sat":1460,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"FL","activities_rating":5.5,"outcome":"denied","distance":0.016,"parts":{"score":0.025,"major":0.0,"hooks":0.0}},{"case_id":"N-2127","sat":1460,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"FL","activities_rating":7.5,"outcome":"denied","distance":0.016,"parts":{"score":0.025,"major":0.0,"hooks":0.0}},{"case_id":"N-537","sat":1430,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"NY","activities_rating":6.0,"outcome":"denied","distance":0.032,"parts":{"score":0.05,"major":0.0,"hooks":0.0}}],"kinds":[{"kind_id":"K1","name":"Mid score, CS, activities 6.5","size":113,"median_sat":1550,"median_activities":6.5,"top_major":"CS","medoid_case_id":"N-699","distance":0.25,"nearest":false},{"kind_id":"K2","name":"Lower score, CS, activities 6.5 (SAT 1460)","size":60,"median_sat":1460,"median_activities":6.5,"top_major":"CS","medoid_case_id":"N-194","distance":0.025,"nearest":true},{"kind_id":"K3","name":"Lower score, CS, activities 6.5 (SAT 1320)","size":11,"median_sat":1320,"median_activities":6.5,"top_major":"CS","medoid_case_id":"N-770","distance":0.325,"nearest":false}],"changes":[{"change":"Score 100 points higher","gap_before":-0.041,"gap_after":-0.004,"lean_after":"in_between","because":["N-559","N-1049","N-1487"]}],"changes_note":"","points":[{"case_id":"N-5","sat":1580,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-19","sat":1500,"activities":7.5,"outcome":"denied","kind_id":null},{"case_id":"N-37","sat":1430,"activities":5.5,"outcome":"denied","kind_id":null},{"case_id":"N-42","sat":1570,"activities":8.5,"outcome":"denied","kind_id":null},{"case_id":"N-46","sat":630,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-63","sat":1590,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-66","sat":1600,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-87","sat":1460,"activities":7.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-93","sat":1540,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-114","sat":1450,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-123","sat":1460,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-127","sat":1480,"activities":5.0,"outcome":"denied","kind_id":null},{"case_id":"N-144","sat":1560,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-149","sat":1500,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-155","sat":1320,"activities":5.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-166","sat":1440,"activities":7.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-175","sat":1080,"activities":1.5,"outcome":"denied","kind_id":null},{"case_id":"N-189","sat":1450,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-194","sat":1460,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-199","sat":1540,"activities":3.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-203","sat":1540,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-206","sat":1560,"activities":5.5,"outcome":"denied","kind_id":null},{"case_id":"N-209","sat":1540,"activities":6.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-212","sat":1550,"activities":7.5,"outcome":"denied","kind_id":null},{"case_id":"N-214","sat":1570,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-225","sat":1470,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-234","sat":1530,"activities":6.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-237","sat":1400,"activities":5.0,"outcome":"denied","kind_id":null},{"case_id":"N-243","sat":1500,"activities":5.5,"outcome":"denied","kind_id":null},{"case_id":"N-251","sat":1560,"activities":6.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-260","sat":1540,"activities":6.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-268","sat":1540,"activities":8.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-272","sat":1430,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-274","sat":1540,"activities":5.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-279","sat":1540,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-284","sat":1590,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-296","sat":1480,"activities":5.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-303","sat":1400,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-312","sat":1520,"activities":7.5,"outcome":"denied","kind_id":null},{"case_id":"N-318","sat":1560,"activities":7.5,"outcome":"admitted","kind_id":"K1"}]},"own":{"source":"Your school's own finished cases","verified":true,"status":"none","n_admitted":0,"n_denied":2,"n_waitlisted":1,"text":"No finished cases for this college in this pool."},"caveat":"Closeness compares this student with people who chose to post their results. It is not a forecast."},"says":[{"claim_id":"c7_essay","text":"Cornell rates the application essay Very Important.","field":"Common Data Set, section C7","year":"2025-26","source_url":"https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv","numbers":[],"kb":{"text":"Application Essay: Very Important","score":0.83,"doc":"KB_doc1_college_admission_factors_C7.md"},"checked":true}],"myths":[{"belief":"Showing interest (visits, emails) improves the odds.","college_says":"Cornell's form rates level of applicant's interest Not Considered.","source_url":"https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv","year":"2025-26"}],"cost_note":"Sticker cost is about $88,000 a year. What this family would actually pay is not known here.","flags":[]},{"id":"243780","name":"Purdue University-Main Campus","state":"IN","control":"public","admit_rate":0.4995,"sat25":1210,"sat75":1470,"act25":27,"act75":34,"cost_year":22812,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"target","text":"Target","rule_id":"R4","rule_text":"The score is inside the college's middle range (1210 to 1470).","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1210,"sat75":1470,"admit_rate":0.4995},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores.","Computer science at Purdue is harder to get into than the university as a whole; this label is for the university."],"steady":false,"flips":[{"cause":"score 30 points higher","to":"likely"}],"publishers":[{"name":"BigFuture","label":"target"},{"name":"Princeton Review","label":"target"},{"name":"Scoir","label":"likely"},{"name":"Appily","label":"target"},{"name":"CollegeVine","label":"target"}],"publishers_disagree":true},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n":31,"admitted":22,"denied":6,"waitlisted":3,"matched_on":["SAT within 50 points","same major group","same hook status"],"relaxed":[],"examples":[{"case_id":"N-0","sat":1440,"act":null,"major":"CS","hooks":"NONE","home_state":"MI","activities_rating":2.0,"outcome":"admitted"},{"case_id":"N-918","sat":1460,"act":null,"major":"CS","hooks":"NONE","home_state":"IL","activities_rating":6.5,"outcome":"denied"}]},"official_admit_rate":0.4995,"pool_admit_share_all":0.687,"overcount":1.4,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"says":[],"myths":[],"cost_note":"Sticker cost is about $23,000 a year in-state; out-of-state students pay more. What this family would actually pay is not known here.","flags":[],"closeness":{"needed":15,"neighbours":7,"student":{"score":1450,"converted":false,"activities":null},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"ok","n_admitted":231,"n_denied":54,"n_waitlisted":21,"d_admitted":0.09,"d_denied":0.1,"gap":0.01,"lean":"in_between","text":"About as close to the people admitted as to the people denied.","steady":true,"flips":[],"parts":[{"part":"score","distance":0.064,"text":"close"},{"part":"major","distance":0.0,"text":"close"},{"part":"hooks","distance":0.429,"text":"some way off"},{"part":"residency","distance":0.0,"text":"close"}],"not_used":["activities rating","GPA","essay","activity descriptions"],"nearest_admitted":[{"case_id":"N-2104","sat":1460,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":null,"activities_rating":3.5,"outcome":"admitted","distance":0.016,"parts":{"score":0.025,"major":0.0,"hooks":0.0}},{"case_id":"N-1428","sat":1490,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"WA","activities_rating":4.5,"outcome":"admitted","distance":0.056,"parts":{"score":0.1,"major":0.0,"hooks":0.0,"residency":0.0}},{"case_id":"N-1494","sat":1500,"act":31,"major":"CS","hooks":"FIRST-GEN","home_state":"MI","activities_rating":4.5,"outcome":"admitted","distance":0.07,"parts":{"score":0.125,"major":0.0,"hooks":0.0,"residency":0.0}}],"nearest_denied":[{"case_id":"N-1739","sat":1470,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"PA","activities_rating":6.0,"outcome":"denied","distance":0.028,"parts":{"score":0.05,"major":0.0,"hooks":0.0,"residency":0.0}},{"case_id":"N-1740","sat":1470,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"PA","activities_rating":6.5,"outcome":"denied","distance":0.028,"parts":{"score":0.05,"major":0.0,"hooks":0.0,"residency":0.0}},{"case_id":"N-1741","sat":1470,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"PA","activities_rating":6.0,"outcome":"denied","distance":0.028,"parts":{"score":0.05,"major":0.0,"hooks":0.0,"residency":0.0}}],"kinds":[{"kind_id":"K1","name":"High score, CS, activities 7.5","size":95,"median_sat":1570,"median_activities":7.5,"top_major":"CS","medoid_case_id":"N-1789","distance":0.3,"nearest":false},{"kind_id":"K2","name":"Mid score, CS, activities 6.5","size":93,"median_sat":1510,"median_activities":6.5,"top_major":"CS","medoid_case_id":"N-959","distance":0.15,"nearest":true},{"kind_id":"K3","name":"Lower score, ENG, activities 6.5","size":43,"median_sat":1390,"median_activities":6.5,"top_major":"ENG","medoid_case_id":"N-656","distance":0.15,"nearest":false}],"changes":[],"changes_note":"Nothing we can measure here would move this.","points":[{"case_id":"N-0","sat":1440,"activities":2.0,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-8","sat":1580,"activities":6.5,"outcome":"denied","kind_id":null},{"case_id":"N-12","sat":1530,"activities":7.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-42","sat":1570,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-59","sat":1330,"activities":2.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-64","sat":1500,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-71","sat":1590,"activities":2.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-80","sat":1430,"activities":8.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-81","sat":1400,"activities":5.0,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-101","sat":1490,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-104","sat":1560,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-113","sat":1530,"activities":5.0,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-143","sat":1560,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-158","sat":1540,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-166","sat":1440,"activities":7.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-191","sat":1480,"activities":8.2,"outcome":"waitlisted","kind_id":null},{"case_id":"N-210","sat":1540,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-238","sat":1490,"activities":8.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-254","sat":1540,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-258","sat":1540,"activities":5.0,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-262","sat":1530,"activities":7.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-272","sat":1430,"activities":6.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-279","sat":1540,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-290","sat":1450,"activities":7.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-303","sat":1400,"activities":6.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-311","sat":1540,"activities":5.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-318","sat":1560,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-334","sat":1590,"activities":5.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-337","sat":1570,"activities":1.0,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-359","sat":1510,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-363","sat":1480,"activities":4.0,"outcome":"denied","kind_id":null},{"case_id":"N-376","sat":1440,"activities":8.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-389","sat":1550,"activities":9.5,"outcome":"waitlisted","kind_id":null},{"case_id":"N-434","sat":1450,"activities":6.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-480","sat":1280,"activities":1.0,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-497","sat":1420,"activities":5.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-507","sat":1560,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-514","sat":1590,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-538","sat":1520,"activities":5.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-544","sat":1540,"activities":2.5,"outcome":"admitted","kind_id":"K2"}]},"own":{"source":"Your school's own finished cases","verified":true,"status":"not_enough","n_admitted":1,"n_denied":5,"n_waitlisted":0,"d_admitted":0.315,"d_denied":0.517,"gap":0.202,"lean":null,"text":"Not enough finished cases in one of the two groups to say which the student is closer to.","steady":null,"flips":[],"parts":[{"part":"score","distance":0.1,"text":"close"},{"part":"major","distance":1.0,"text":"far"},{"part":"hooks","distance":1.0,"text":"far"},{"part":"residency","distance":0.0,"text":"close"},{"part":"gpa","distance":0.1,"text":"close"}],"not_used":["activities rating","essay","activity descriptions"],"nearest_admitted":[{"case_id":"S-106","sat":1490,"act":null,"major":"BIO","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"admitted","activities_note":"Family business helper; Summer research at a university lab","essay_theme":"service","distance":0.315,"parts":{"score":0.1,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.1}}],"nearest_denied":[{"case_id":"S-5","sat":1380,"act":null,"major":"PSYCH","hooks":"URM","home_state":"NJ","activities_rating":null,"outcome":"denied","activities_note":"Model UN delegate","essay_theme":"mentorship","distance":0.357,"parts":{"score":0.175,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.14}},{"case_id":"S-68","sat":null,"act":26,"major":"CS","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"denied","activities_note":"Art portfolio and school gallery show","essay_theme":"leadership","distance":0.404,"parts":{"score":0.525,"major":0.0,"hooks":1.0,"residency":0.0,"gpa":0.34}},{"case_id":"S-74","sat":1330,"act":null,"major":"ARTS","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"denied","activities_note":"Art portfolio and school gallery show","essay_theme":"community","distance":0.419,"parts":{"score":0.3,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.17}}],"kinds":[],"changes":[],"changes_note":"","points":[{"case_id":"S-5","sat":1380,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-45","sat":1010,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-68","sat":1240,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-74","sat":1330,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-80","sat":1240,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-106","sat":1490,"activities":null,"outcome":"admitted","kind_id":null}]},"caveat":"Closeness compares this student with people who chose to post their results. It is not a forecast."}},{"id":"186380","name":"Rutgers University-New Brunswick","state":"NJ","control":"public","admit_rate":0.582,"sat25":1270,"sat75":1480,"act25":28,"act75":33,"cost_year":37000,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"target","text":"Target","rule_id":"R4","rule_text":"The score is inside the college's middle range (1270 to 1480).","score_used":1450,"score_kind":"SAT","inputs":{"sat25":1270,"sat75":1480,"admit_rate":0.582},"not_used":["GPA","activities","essay"],"caveats":["The score range covers only students who sent scores."],"steady":false,"flips":[{"cause":"score 30 points higher","to":"likely"}],"publishers":[{"name":"BigFuture","label":"target"},{"name":"Princeton Review","label":"target"},{"name":"Scoir","label":"likely"},{"name":"Appily","label":"target"},{"name":"CollegeVine","label":"target"}],"publishers_disagree":true},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"ok","n":17,"admitted":13,"denied":3,"waitlisted":1,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[{"case_id":"S-3","sat":1430,"act":null,"major":"ENG","hooks":"none","home_state":"NJ","activities_note":"Varsity track; part-time job","essay_theme":"work","outcome":"admitted","cycle_year":2025}]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"not_enough","n":9,"admitted":7,"denied":1,"waitlisted":1,"matched_on":["SAT within 100 points"],"relaxed":["hook status","major group","SAT widened to 100"],"examples":[]},"official_admit_rate":0.582,"pool_admit_share_all":0.7,"overcount":1.2,"caveat":"People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."},"says":[],"myths":[],"cost_note":"Sticker cost is about $37,000 a year in-state. What this family would actually pay is not known here.","flags":[],"closeness":{"needed":15,"neighbours":7,"student":{"score":1450,"converted":false,"activities":null},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"not_enough","n_admitted":95,"n_denied":2,"n_waitlisted":1,"d_admitted":0.168,"d_denied":0.431,"gap":0.263,"lean":null,"text":"Not enough finished cases in one of the two groups to say which the student is closer to.","steady":null,"flips":[],"parts":[{"part":"score","distance":0.093,"text":"close"},{"part":"major","distance":0.0,"text":"close"},{"part":"hooks","distance":0.571,"text":"far"},{"part":"residency","distance":1.0,"text":"far"}],"not_used":["activities rating","GPA","essay","activity descriptions"],"nearest_admitted":[{"case_id":"N-1296","sat":1440,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":null,"activities_rating":2.0,"outcome":"admitted","distance":0.016,"parts":{"score":0.025,"major":0.0,"hooks":0.0}},{"case_id":"N-1022","sat":1510,"act":null,"major":null,"hooks":"FIRST-GEN","home_state":null,"activities_rating":6.5,"outcome":"admitted","distance":0.123,"parts":{"score":0.15,"hooks":0.0}},{"case_id":"N-2205","sat":1480,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"FL","activities_rating":3.5,"outcome":"admitted","distance":0.167,"parts":{"score":0.075,"major":0.0,"hooks":0.0,"residency":1.0}}],"nearest_denied":[{"case_id":"N-2194","sat":1480,"act":null,"major":"BUSINESS","hooks":"FIRST-GEN","home_state":"GA","activities_rating":2.5,"outcome":"denied","distance":0.355,"parts":{"score":0.075,"major":1.0,"hooks":0.0,"residency":1.0}},{"case_id":"N-1729","sat":1500,"act":null,"major":"BIO","hooks":"NONE","home_state":"WA","activities_rating":7.5,"outcome":"denied","distance":0.508,"parts":{"score":0.125,"major":1.0,"hooks":1.0,"residency":1.0}}],"kinds":[{"kind_id":"K1","name":"High score, CS, activities 6.5","size":62,"median_sat":1540,"median_activities":6.5,"top_major":"CS","medoid_case_id":"N-1022","distance":0.15,"nearest":false},{"kind_id":"K2","name":"Lower score, CS, activities 5.5","size":21,"median_sat":1460,"median_activities":5.5,"top_major":"CS","medoid_case_id":"N-194","distance":0.025,"nearest":true},{"kind_id":"K3","name":"Lower score, CS, activities 5.2","size":12,"median_sat":1290,"median_activities":5.2,"top_major":"CS","medoid_case_id":"N-643","distance":0.375,"nearest":false}],"changes":[],"changes_note":"","points":[{"case_id":"N-5","sat":1580,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-40","sat":1460,"activities":5.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-42","sat":1570,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-59","sat":1330,"activities":2.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-148","sat":1430,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-152","sat":1500,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-158","sat":1540,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-194","sat":1460,"activities":6.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-206","sat":1560,"activities":5.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-208","sat":1540,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-221","sat":1520,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-222","sat":1450,"activities":2.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-247","sat":1500,"activities":5.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-256","sat":1500,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-307","sat":1550,"activities":5.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-358","sat":1570,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-435","sat":1570,"activities":5.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-448","sat":1500,"activities":3.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-450","sat":1550,"activities":4.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-468","sat":1580,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-520","sat":1540,"activities":3.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-522","sat":1450,"activities":4.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-544","sat":1540,"activities":2.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-591","sat":1520,"activities":3.0,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-612","sat":1500,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-643","sat":1300,"activities":5.0,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-650","sat":1480,"activities":5.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-712","sat":1540,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-722","sat":1590,"activities":8.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-725","sat":1320,"activities":5.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-746","sat":1470,"activities":5.0,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-883","sat":1560,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-889","sat":1230,"activities":4.5,"outcome":"admitted","kind_id":"K3"},{"case_id":"N-914","sat":1540,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-921","sat":1460,"activities":2.5,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-926","sat":1530,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-954","sat":1560,"activities":7.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-983","sat":1440,"activities":1.0,"outcome":"admitted","kind_id":"K2"},{"case_id":"N-1022","sat":1510,"activities":6.5,"outcome":"admitted","kind_id":"K1"},{"case_id":"N-1032","sat":1550,"activities":6.5,"outcome":"admitted","kind_id":"K1"}]},"own":{"source":"Your school's own finished cases","verified":true,"status":"not_enough","n_admitted":4,"n_denied":6,"n_waitlisted":0,"d_admitted":0.364,"d_denied":0.523,"gap":0.159,"lean":null,"text":"Not enough finished cases in one of the two groups to say which the student is closer to.","steady":null,"flips":[],"parts":[{"part":"score","distance":0.163,"text":"some way off"},{"part":"major","distance":1.0,"text":"far"},{"part":"hooks","distance":1.0,"text":"far"},{"part":"residency","distance":0.0,"text":"close"},{"part":"gpa","distance":0.205,"text":"some way off"}],"not_used":["activities rating","essay","activity descriptions"],"nearest_admitted":[{"case_id":"S-105","sat":1490,"act":null,"major":"BIO","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"admitted","activities_note":"Family business helper; Summer research at a university lab","essay_theme":"service","distance":0.315,"parts":{"score":0.1,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.1}},{"case_id":"S-48","sat":1390,"act":null,"major":"POLISCI","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"admitted","activities_note":"Student newspaper editor; Robotics club captain","essay_theme":"curiosity","distance":0.349,"parts":{"score":0.15,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.16}},{"case_id":"S-59","sat":1370,"act":null,"major":"BUSINESS","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"admitted","activities_note":"Family business helper; Summer research at a university lab","essay_theme":"mentorship","distance":0.362,"parts":{"score":0.2,"major":1.0,"hooks":1.0,"residency":0.0,"gpa":0.11}}],"nearest_denied":[{"case_id":"S-66","sat":1350,"act":null,"major":"CS","hooks":"NONE","home_state":"NJ","activities_rating":null,"outcome":"denied","activities_note":"Theater stage crew; Part-time job at a grocery store","essay_theme":"resilience","distance":0.217,"parts":{"score":0.25,"major":0.0,"hooks":1.0,"residency":0.0,"gpa":0.02}},{"case_id":"S-1","sat":1140,"act":null,"major":"CS","hooks":"FIRST-GEN","home_state":"NJ","activities_rating":null,"outcome":"denied","activities_note":"School orchestra first chair; Science Olympiad","essay_theme":"identity","distance":0.409,"parts":{"score":0.775,"major":0.0,"hooks":0.0,"residency":0.0,"gpa":0.3}},{"case_id":"S-42","sat":1340,"act":null,"major":"POLISCI","hooks":"NONE","home_state":"PA","activities_rating":null,"outcome":"denied","activities_note":"Hospital volunteer","essay_theme":"family","distance":0.544,"parts":{"score":0.275,"major":1.0,"hooks":1.0,"residency":1.0,"gpa":0.35}}],"kinds":[],"changes":[],"changes_note":"","points":[{"case_id":"S-1","sat":1140,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-29","sat":1240,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-37","sat":1080,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-42","sat":1340,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-48","sat":1390,"activities":null,"outcome":"admitted","kind_id":null},{"case_id":"S-59","sat":1370,"activities":null,"outcome":"admitted","kind_id":null},{"case_id":"S-61","sat":1330,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-66","sat":1350,"activities":null,"outcome":"denied","kind_id":null},{"case_id":"S-105","sat":1490,"activities":null,"outcome":"admitted","kind_id":null},{"case_id":"S-116","sat":1370,"activities":null,"outcome":"admitted","kind_id":null}]},"caveat":"Closeness compares this student with people who chose to post their results. It is not a forecast."}},{"id":"203535","name":"Kenyon College","state":"OH","control":"private","admit_rate":0.31,"sat25":null,"sat75":null,"act25":null,"act75":null,"cost_year":85000,"source":"US Department of Education, College Scorecard","in_data":true,"label":{"state":"cant_say","text":"Can't say","rule_id":"R2","rule_text":"This college publishes no test score range, so there is nothing to compare the student's score with.","score_used":1450,"score_kind":"SAT","inputs":{"sat25":null,"sat75":null,"admit_rate":0.31},"not_used":["GPA","activities","essay"],"caveats":[],"steady":true,"flips":[],"publishers":[],"publishers_disagree":false},"cases":{"needed":15,"own":{"source":"Your school's own finished cases (SYNTHETIC demo data)","verified":true,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"none","n":0,"admitted":0,"denied":0,"waitlisted":0,"matched_on":[],"relaxed":[],"examples":[]},"official_admit_rate":0.31,"pool_admit_share_all":null,"overcount":null,"caveat":"No finished cases for this college in either pool."},"says":[],"myths":[],"cost_note":"Sticker cost is about $85,000 a year. What this family would actually pay is not known here.","flags":[],"closeness":{"needed":15,"neighbours":7,"student":{"score":1450,"converted":false,"activities":null},"national":{"source":"Self-reported public posts (r/collegeresults)","verified":false,"status":"none","n_admitted":0,"n_denied":0,"n_waitlisted":0,"text":"No finished cases for this college in this pool."},"own":{"source":"Your school's own finished cases","verified":true,"status":"none","n_admitted":0,"n_denied":0,"n_waitlisted":0,"text":"No finished cases for this college in this pool."},"caveat":"Closeness compares this student with people who chose to post their results. It is not a forecast."}},{"id":null,"name":"Some College Not In Our File","state":null,"control":null,"admit_rate":null,"sat25":null,"sat75":null,"act25":null,"act75":null,"cost_year":null,"source":null,"in_data":false,"label":{"state":"outside_data","text":"Outside our data","rule_id":"R0","rule_text":"This college is not in the 300-college file, so nothing is said about it.","score_used":null,"score_kind":null,"inputs":{},"not_used":[],"caveats":[],"steady":true,"flips":[],"publishers":[],"publishers_disagree":false},"cases":null,"closeness":null,"says":[],"myths":[],"cost_note":null,"flags":[]}],"balance":{"counts":{"reach":1,"target":2,"likely":0,"cant_say":1,"outside_data":1},"warnings":[{"id":"no_likely","text":"There is no likely college on this list."},{"id":"short_list","text":"Only 3 colleges on this list could be labelled."}],"suggestions":[{"id":"185828","name":"New Jersey Institute of Technology","would_be":"likely","admit_rate":0.66,"sat25":1180,"sat75":1400,"cost_year":36000,"tuition_note":"In-state tuition applies","why":"The score is at or above the 75th percentile and the college admits about two in three applicants."},{"id":"204796","name":"Ohio State University-Main Campus","would_be":"target","admit_rate":0.53,"sat25":1300,"sat75":1470,"cost_year":30000,"tuition_note":"Out-of-state tuition applies","why":"The score is inside the middle range and the college admits about half of applicants."}],"cost_notes":[{"name":"Cornell University","text":"Sticker cost is about $88,000 a year. What this family would actually pay is not known here."}]},"checks":{"sentences_shown":14,"sentences_hidden":1,"hidden_reasons":["A number in the sentence was not in its source row."]},"prism":{"status":"off","why":"No PRISM key is set, so nothing was recorded.","session_id":null,"records_sent":0,"guardrail":"local check only","evaluator":null,"kb":"off"},"refusals":["No personal chance of admission is given. The counts above are examples from finished cases, shown beside the official admit rate.","The essay is never rated and never changes a label."],"closeness_check":{"generated_at":"2026-10-10T13:57:58-04:00","sampled":400,"used":382,"skipped_small_groups":18,"seed":20261010,"neighbours":7,"lean_gap":0.03,"source":"Self-reported public posts (r/collegeresults)","rows":[{"lean":"closer_to_admitted","admitted":39,"denied":17,"n":56},{"lean":"in_between","admitted":75,"denied":125,"n":200},{"lean":"closer_to_denied","admitted":25,"denied":101,"n":126}],"caveat":"Counted on self-reported public posts, each person hidden before their own lean was computed. People who post are admitted far more often than applicants overall, so this says how the lean sorts posters, not applicants."},"closeness_method":{"parts":[{"part":"score","name":"score","weight":0.45,"distance":"score difference / 400 SAT points, capped at 1","student":"SAT, or ACT converted to the SAT scale","case":"SAT, or ACT converted","pools":"both","required":true},{"part":"activities","name":"activities rating","weight":0.2,"distance":"rating difference / 10","student":"the counselor's 0 to 10 rating (optional)","case":"self-rated activities and awards, 0 to 10","pools":"national only","required":false},{"part":"major","name":"major group","weight":0.15,"distance":"0 same group, 1 different","student":"intended major, or the essay reader's tag when both models agreed","case":"stated major","pools":"both","required":false},{"part":"hooks","name":"hook status","weight":0.1,"distance":"0 same set of hooks, 1 different","student":"first-gen, legacy, under-represented, athlete, or none","case":"the same set","pools":"both","required":false},{"part":"residency","name":"residency","weight":0.1,"distance":"0 if both in-state or both out-of-state for this college, else 1","student":"home state","case":"home state","pools":"both, public colleges only","required":false},{"part":"gpa","name":"GPA","weight":0.2,"distance":"GPA difference / 1 on a 4.0 scale, capped at 1","student":"GPA, converted to a 4.0 scale","case":"GPA in the school's own file","pools":"own only","required":false}],"never_used":["essay text","activity descriptions","race","gender","income","class rank","the essay/recommendation/interview self-rating"],"neighbours":7,"needed":15,"lean_gap":0.03,"change_gain":0.02,"max_changes":3,"score_steps":[30,60,100],"rating_steps":[1,2],"close":0.15,"far":0.5,"steady":{"neighbours":[5,10],"score":[-30,30]},"kinds":{"k":3,"min_admitted":30,"cap":300,"rounds":20,"seed":20261010,"parts":["score","activities","major"],"score_band":40,"rating_band":1.0},"points_cap":300,"check":{"n":400,"seed":20261010},"libraries":{"engine":["csv","json","functools.lru_cache","random","statistics","collections.Counter","pathlib"],"not_used":["numpy","scikit-learn","pandas","text embeddings","any model call"],"screen":["plain HTML, CSS and JavaScript","inline SVG drawn by hand","no chart library, no framework, no build step"]}}}/*FIXTURE_END*/;
 
 /* ====================================================================== */
 /* Part 1: pure helpers                                                    */
@@ -412,11 +412,7 @@ function renderPicture(result, opts) {
   }
   if (lx !== null) {
     var tag = o.whatIf ? 'If your score were ' + m.score : who, tw = tag.length * 9.2, right2 = lx + 22 + tw < W - 10;
-    // The student's line is drawn UNDER the college rows, so names and notes (which carry a paper-coloured halo) stay readable.
-    var lineEl = '<line class="pline" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="42" y2="' + (H - 26) + '"/>';
-    var firstRow = s.indexOf('<g class="prow');
-    s = firstRow > -1 ? s.slice(0, firstRow) + lineEl + s.slice(firstRow) : s + lineEl;
-    s += '<g class="pstudent" aria-hidden="true">' + personGlyph(p(lx), 30) +
+    s += '<g class="pstudent" aria-hidden="true"><line class="pline" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="42" y2="' + (H - 26) + '"/>' + personGlyph(p(lx), 30) +
       '<text class="pyou" x="' + p(right2 ? lx + 22 : lx - 22) + '" y="30"' + (right2 ? '' : ' text-anchor="end"') + '>' + esc(tag) + '</text></g>';
   }
   return s + '</svg>';
@@ -427,12 +423,24 @@ function didYouMean(c, canSwap) {
   return '<p class="calm meant">“' + esc(c.name) + '” is not in our data. Did you mean <b>' + esc(c.suggestion) + '</b>? ' +
     (canSwap === false ? '' : '<button type="button" class="btn small" data-act="swap-college" data-from="' + esc(c.name) + '" data-name="' + esc(c.suggestion) + '">Use ' + esc(c.suggestion) + '</button>') + '</p>';
 }
+var PIC_VIEWS = [['trail', 'Trail map'], ['rings', 'Rings'], ['map', 'Map']];
 function renderPictureCard(result, opts) {
-  var m = pictureModel(result, opts), canSwap = obj(opts).canSwap;
+  var o = obj(opts), m = pictureModel(result, opts), canSwap = o.canSwap, from = o.closenessFrom || result, can = hasCloseness(from);
+  var view = (o.view === 'rings' || o.view === 'map') && can ? o.view : 'trail';
+  var toggle = can ? '<p class="pic-toggle quiet small" role="group" aria-label="Other pictures">Other pictures: ' + PIC_VIEWS.map(function (v) {
+    return '<button type="button" class="linkbtn" data-act="pic-view" data-view="' + v[0] + '" aria-pressed="' + (v[0] === view ? 'true' : 'false') + '">' + v[1] + '</button>';
+  }).join(' <span aria-hidden="true">·</span> ') + '</p>' : '';
+  if (view !== 'trail') {
+    return '<div class="card pic-card"><div class="pic-scroll">' + (view === 'rings' ? renderRings(from) : renderMindMap(from, o.focus)) + '</div>' +
+      '<p class="pic-foot"><span class="quiet">' + (view === 'rings'
+        ? 'You are at the centre. A college nearer the centre has admitted more students who look like you. Hollow: too few cases. Outer ring: cannot be placed. Distance is a resemblance, not the label and not a forecast.'
+        : 'You are in the middle, with a branch for each label. Under each college: the kind of admitted student closest to you, and the nearest admitted cases.') +
+      (o.stale ? ' From the last full run.' : '') + '</span><span class="tap">Tap a college to see how we got this.</span></p>' + toggle + '</div>';
+  }
   return '<div class="card pic-card">' + arr(obj(result).colleges).map(function (c) { return didYouMean(c, canSwap); }).join('') +
     '<div class="pic-scroll">' + renderPicture(result, opts) + '</div>' +
     '<p class="pic-foot"><span class="quiet">Each bar is where the middle half of a college\'s students scored.' + (m.score === null ? ' There is no line for you, because no test score was entered.' : ' The line is you.') + '</span>' +
-    '<span class="tap">Tap a college to see how we got this.</span></p></div>';
+    '<span class="tap">Tap a college to see how we got this.</span></p>' + toggle + '</div>';
 }
 
 /* ---------- Chapter 3: what is in your hands ---------- */
@@ -612,6 +620,407 @@ function renderPlan(result) {
   return h;
 }
 
+/* ====== closeness: how much a student resembles the people admitted and the people not admitted ======
+   The rendering below this line down to "end of lifted code" is yuri's, lifted from the earlier screen and adapted
+   to this palette and wording. A lean is a resemblance, never a forecast. */
+function stateText(label) { return labelPhrase(label, true); }
+function shape(key, extra) {
+  return '<svg class="shape sh-' + esc(key) + '" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"' + (extra || '') + '><circle cx="8" cy="8" r="6"/></svg>';
+}
+function closenessOf(c) {
+  var n = obj(obj(obj(c).closeness).national);
+  return str(n.status) ? n : null;
+}
+function f2(v) { return (Math.round(v * 100) / 100).toString(); }
+function ringsModel(result) {
+  var rows = arr(obj(result).colleges).map(function (c, i) {
+    c = obj(c);
+    var L = obj(c.label), g = groupOf(L.state), n = closenessOf(c), d = n ? num(n.d_admitted) : null;
+    var placed = n !== null && d !== null && (n.status === 'ok' || n.status === 'not_enough');
+    return {i: i, c: c, L: L, g: g, n: n, d: d, placed: placed, hollow: placed && n.status !== 'ok'};
+  });
+  rows.sort(function (a, b) { return ORDER.indexOf(a.g) - ORDER.indexOf(b.g) || str(a.c.name).localeCompare(str(b.c.name)); });
+  return rows;
+}
+function renderRings(result) {
+  var rows = ringsModel(result), st = obj(obj(result).student), score = num(st.sat) !== null ? num(st.sat) : num(st.act);
+  var W = 880, H = 560, CX = 440, CY = 280, R0 = 40, R1 = 200, DMAX = 0.6, ROUT = R0 + R1 + 24;
+  function rad(d) { return R0 + R1 * Math.min(Math.max(d, 0) / DMAX, 1); }
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var n = rows.length, placed = rows.filter(function (x) { return x.placed; }).length;
+  var s = '<svg class="pic rings" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' +
+    esc('Rings: ' + n + ' ' + plural(n, 'college', 'colleges') + ' around the student. Nearer the centre means more like the people admitted there. ' +
+        placed + ' placed' + (n - placed > 0 ? '; ' + (n - placed) + ' on the outer ring with too few cases to place' : '') + '. Distance is not the label.') + '">';
+  [0.2, 0.4, 0.6].forEach(function (d) { s += '<circle class="rguide" cx="' + CX + '" cy="' + CY + '" r="' + p(rad(d)) + '"/>'; });
+  s += '<circle class="rguide router" cx="' + CX + '" cy="' + CY + '" r="' + ROUT + '"/>' +
+    '<text class="rguidet" x="' + CX + '" y="' + (CY - ROUT - 5) + '" text-anchor="middle">not enough cases to place</text>';
+  s += '<g class="rcentre" aria-hidden="true"><circle class="rme" cx="' + CX + '" cy="' + CY + '" r="9"/>' +
+    '<text class="rmet" x="' + CX + '" y="' + (CY + 25) + '" text-anchor="middle">You' + (score !== null ? ', ' + score : '') + '</text></g>';
+  if (!n) s += '<text class="pnone" x="' + CX + '" y="' + (CY - 30) + '" text-anchor="middle">No colleges on this list yet.</text>';
+  rows.forEach(function (x, k) {
+    var ang = -Math.PI / 2 + k * 2 * Math.PI / Math.max(n, 1), rr = x.placed ? rad(x.d) : ROUT;
+    var cx = CX + rr * Math.cos(ang), cy = CY + rr * Math.sin(ang), right = Math.cos(ang) >= -0.01;
+    var name = str(x.c.name) || 'Unnamed college', nn = x.n || {};
+    var say = name + '. ' + stateText(x.L) + '. ' +
+      (x.placed ? str(nn.text) + ' Distance to the nearest admitted ' + f2(x.d) + (num(nn.d_denied) !== null ? ', to the nearest denied ' + f2(num(nn.d_denied)) : '') + '.' +
+                  (x.hollow ? ' Too few cases, so this is rough.' : '')
+                : (x.n ? str(nn.text) : 'No closeness data for this college.')) + ' Open the details.';
+    s += '<g class="rdot rd-' + x.g + (x.hollow ? ' rd-hollow' : '') + (x.placed ? '' : ' rd-out') + '" data-act="open-receipt" data-i="' + x.i +
+      '" tabindex="0" role="button" aria-label="' + esc(say) + '"><title>' + esc(name) + '</title>' +
+      '<circle class="rhit" cx="' + p(cx) + '" cy="' + p(cy) + '" r="15"/>' +
+      shape(x.g, ' x="' + p(cx - 8) + '" y="' + p(cy - 8) + '"') +
+      '<text class="rname" x="' + p(cx + (right ? 13 : -13)) + '" y="' + p(cy + 4.5) + '" text-anchor="' + (right ? 'start' : 'end') + '">' +
+      esc(clip(shortName(name), 24)) + '</text></g>';
+  });
+  return s + '</svg>';
+}
+/* ---------- Level 1: mind map. Student in the middle, a branch per label, a node per college, leaves under each. ---------- */
+var MAP_MAX_LEAVES = 12;   /* above this many colleges, leaves show only for the college last pressed */
+function mindMapModel(result, focus) {
+  var rows = ringsModel(result), groups = {reach: [], target: [], likely: [], other: []};
+  rows.forEach(function (x) { groups[groups[x.g] ? x.g : 'other'].push(x); });
+  var showLeaves = rows.length <= MAP_MAX_LEAVES;
+  function leavesFor(x) {
+    var out = [], n = x.n || {};
+    if (!showLeaves && focus !== x.i) return out;
+    var kind = arr(n.kinds).map(obj).filter(function (q) { return q.nearest === true; })[0];
+    if (kind) out.push({text: 'Kind: ' + clip(str(kind.name), 30), kind: 'kind'});
+    arr(n.nearest_admitted).map(obj).slice(0, 3).forEach(function (e) { if (str(e.case_id)) out.push({text: str(e.case_id) + ' admitted', kind: 'case'}); });
+    return out;
+  }
+  /* reach down the left, target down the right, likely along the bottom, "can't say" along the top when present */
+  var BX = 150, NX = 330, BY = 150, NY = 300, GAP = 205, LINE = 14, PAD = 28;
+  var branches = [], nodes = [], lines = [];
+  [['reach', 'left'], ['target', 'right'], ['likely', 'bottom'], ['other', 'top']].forEach(function (sp) {
+    var k = sp[0], side = sp[1], items = groups[k];
+    if (k === 'other' && !items.length) return;
+    var bx = side === 'left' ? -BX : (side === 'right' ? BX : 0), by = side === 'bottom' ? BY : (side === 'top' ? -BY : 0);
+    branches.push({key: k, x: bx, y: by, title: k === 'other' ? "Can't say" : cap(k), n: items.length});
+    lines.push({x1: 0, y1: 0, x2: bx, y2: by, kind: 'trunk'});
+    var q = items.map(function (x) { return {row: x, leaves: leavesFor(x)}; });
+    if (side === 'left' || side === 'right') {
+      var hs = q.map(function (e) { return PAD + LINE * e.leaves.length; }), total = hs.reduce(function (a, b) { return a + b; }, 0), y = -total / 2;
+      q.forEach(function (e, j) {
+        var nx = side === 'left' ? -NX : NX, ny = y + 12;
+        nodes.push({x: nx, y: ny, right: side === 'right', row: e.row, leaves: e.leaves});
+        lines.push({x1: bx, y1: by, x2: nx, y2: ny, kind: 'limb'});
+        y += hs[j];
+      });
+    } else {
+      var x0 = -(q.length - 1) * GAP / 2;
+      q.forEach(function (e, j) {
+        var nx = x0 + j * GAP, ny = side === 'bottom' ? NY : -NY;
+        nodes.push({x: nx, y: ny, right: true, row: e.row, leaves: e.leaves});
+        lines.push({x1: bx, y1: by, x2: nx, y2: ny, kind: 'limb'});
+      });
+    }
+  });
+  return {branches: branches, nodes: nodes, lines: lines, showLeaves: showLeaves, n: rows.length};
+}
+function renderMindMap(result, focus) {
+  var m = mindMapModel(result, focus), st = obj(obj(result).student), score = num(st.sat) !== null ? num(st.sat) : num(st.act);
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var xs = [-120, 120], ys = [-40, 40];
+  m.branches.forEach(function (b) { xs.push(b.x - 70, b.x + 70); ys.push(b.y - 16, b.y + 16); });
+  m.nodes.forEach(function (q) {
+    xs.push(q.right ? q.x + 235 : q.x - 235, q.x);
+    ys.push(q.y - 16, q.y + 24 + 14 * q.leaves.length);
+  });
+  var X0 = Math.min.apply(null, xs) - 12, X1 = Math.max.apply(null, xs) + 12, Y0 = Math.min.apply(null, ys) - 12, Y1 = Math.max.apply(null, ys) + 12;
+  var W = X1 - X0, H = Y1 - Y0;
+  var s = '<svg class="pic mindmap" viewBox="' + p(X0) + ' ' + p(Y0) + ' ' + p(W) + ' ' + p(H) + '" width="' + p(W) + '" height="' + p(H) + '" role="group" aria-label="' +
+    esc('Mind map: the student in the middle, ' + m.branches.map(function (b) { return b.title.toLowerCase() + ' (' + b.n + ')'; }).join(', ') +
+        ', a node per college' + (m.showLeaves ? ', and under each college its nearest kind of admitted student and its nearest admitted cases.' :
+        '. With more than ' + MAP_MAX_LEAVES + ' colleges, the nearest kind and cases show only for the college last pressed.')) + '">';
+  m.lines.forEach(function (l) { s += '<line class="mm-' + l.kind + '" x1="' + p(l.x1) + '" y1="' + p(l.y1) + '" x2="' + p(l.x2) + '" y2="' + p(l.y2) + '"/>'; });
+  m.branches.forEach(function (b) {
+    var t = b.title + ' (' + b.n + ')', w = t.length * 7.6 + 22;
+    s += '<g class="mm-branch mm-' + b.key + '" aria-hidden="true"><rect x="' + p(b.x - w / 2) + '" y="' + p(b.y - 13) + '" width="' + p(w) + '" height="26" rx="13"/>' +
+      '<text x="' + p(b.x) + '" y="' + p(b.y + 4.5) + '" text-anchor="middle">' + esc(t) + '</text></g>';
+  });
+  s += '<g class="rcentre" aria-hidden="true"><circle class="rme" cx="0" cy="0" r="11"/><text class="rmet" x="0" y="-19" text-anchor="middle">You' + (score !== null ? ', ' + score : '') + '</text></g>';
+  if (!m.n) s += '<text class="pnone" x="0" y="-50" text-anchor="middle">No colleges on this list yet.</text>';
+  m.nodes.forEach(function (q) {
+    var x = q.row, name = str(x.c.name) || 'Unnamed college', nn = x.n || {}, dir = q.right ? 1 : -1, anchor = q.right ? 'start' : 'end';
+    var kind = arr(nn.kinds).map(obj).filter(function (k) { return k.nearest === true; })[0];
+    var say = name + '. ' + stateText(x.L) + '. ' + (x.n ? str(nn.text) + ' ' : '') +
+      (kind ? 'Nearest kind of admitted student: ' + str(kind.name) + '. ' : '') +
+      (arr(nn.nearest_admitted).length ? 'Nearest admitted cases: ' + arr(nn.nearest_admitted).map(function (e) { return str(obj(e).case_id); }).join(', ') + '. ' : '') + 'Open the details.';
+    s += '<g class="rdot mm-node rd-' + x.g + (x.hollow ? ' rd-hollow' : '') + '" data-act="open-receipt" data-i="' + x.i + '" tabindex="0" role="button" aria-label="' + esc(say) + '"><title>' + esc(name) + '</title>' +
+      '<circle class="rhit" cx="' + p(q.x) + '" cy="' + p(q.y) + '" r="14"/>' + shape(x.g, ' x="' + p(q.x - 8) + '" y="' + p(q.y - 8) + '"') +
+      '<text class="rname" x="' + p(q.x + 13 * dir) + '" y="' + p(q.y + 4.5) + '" text-anchor="' + anchor + '">' + esc(clip(shortName(name), 26)) + '</text>';
+    q.leaves.forEach(function (l, k) {
+      var ly = q.y + 20 + 14 * k;
+      s += '<circle class="mm-leaf-dot mm-leaf-' + l.kind + '" cx="' + p(q.x + 17 * dir) + '" cy="' + p(ly - 3.5) + '" r="2.6"/>' +
+        '<text class="mm-leaf" x="' + p(q.x + 24 * dir) + '" y="' + p(ly) + '" text-anchor="' + anchor + '">' + esc(l.text) + '</text>';
+    });
+    s += '</g>';
+  });
+  return s + '</svg>';
+}
+var LEAN_WORD = {closer_to_admitted: 'Looks more like the students admitted', closer_to_denied: 'Looks more like the students not admitted', in_between: 'In between the two groups'};
+var PART_NAME = {score: 'Score', activities: 'Activities', major: 'Major', hooks: 'Background', residency: 'Home state', gpa: 'GPA'};
+function leanWord(v) { return LEAN_WORD[str(v)] || str(v).replace(/_/g, ' '); }
+function starPath(cx, cy, r) {
+  var pts = [];
+  for (var i = 0; i < 10; i++) {
+    var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+    pts.push((Math.round((cx + rr * Math.cos(a)) * 10) / 10) + ',' + (Math.round((cy + rr * Math.sin(a)) * 10) / 10));
+  }
+  return pts.join(' ');
+}
+/* score across, activities rating up; circle = admitted, cross = denied, diamond = waitlisted; kinds' medoids ringed; student = star */
+function renderScatter(pool, student) {
+  var n = obj(pool), st = obj(student), pts = arr(n.points).map(obj).filter(function (p) { return num(p.sat) !== null; });
+  if (!pts.length) return '';
+  var drawn = pts.filter(function (p) { return num(p.activities) !== null; }), skipped = pts.length - drawn.length;
+  var sScore = num(st.score), sAct = num(st.activities);
+  var W = 640, H = 300, L = 46, R = 14, T = 16, B = 36;
+  var xs = drawn.map(function (p) { return num(p.sat); }); if (sScore !== null) xs.push(sScore);
+  if (!xs.length) return '';
+  var xmin = Math.max(400, Math.floor((Math.min.apply(null, xs) - 40) / 50) * 50), xmax = Math.min(1600, Math.ceil((Math.max.apply(null, xs) + 40) / 50) * 50);
+  if (xmax - xmin < 100) { xmin = Math.max(400, xmin - 50); xmax = Math.min(1600, xmax + 50); }
+  function sx(v) { return L + (v - xmin) / (xmax - xmin) * (W - L - R); }
+  function sy(v) { return T + (10 - v) / 10 * (H - T - B); }
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var medoid = {}; arr(n.kinds).map(obj).forEach(function (k) { if (str(k.medoid_case_id)) medoid[str(k.medoid_case_id)] = str(k.kind_id); });
+  var counts = {admitted: 0, denied: 0, waitlisted: 0}; drawn.forEach(function (q) { if (counts[q.outcome] !== undefined) counts[q.outcome]++; });
+  var say = 'Scatter of ' + drawn.length + ' ' + plural(drawn.length, 'case', 'cases') + ' at this college: score across, activities rating up. ' +
+    counts.admitted + ' admitted as circles, ' + counts.denied + ' denied as crosses, ' + counts.waitlisted + ' waitlisted as diamonds. ' +
+    (sScore !== null ? (sAct !== null ? 'The student is the star at score ' + sScore + ' and rating ' + sAct + '. ' : 'The student is the vertical line at score ' + sScore + '; no activities rating was given. ') : 'The student has no score, so is not drawn. ') +
+    (arr(n.kinds).length ? 'The medoid of each kind of admitted student is ringed and labelled. ' : '') +
+    (skipped ? skipped + ' ' + plural(skipped, 'case has', 'cases have') + ' no activities rating and ' + plural(skipped, 'is', 'are') + ' not drawn.' : '');
+  var s = '<svg class="scatter" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(say) + '">';
+  var step = (xmax - xmin) > 600 ? 200 : 100, t;
+  for (t = Math.ceil(xmin / step) * step; t <= xmax; t += step) {
+    s += '<line class="sc-grid" x1="' + p(sx(t)) + '" x2="' + p(sx(t)) + '" y1="' + T + '" y2="' + (H - B) + '"/>' +
+      '<text class="sc-tick" x="' + p(sx(t)) + '" y="' + (H - B + 14) + '" text-anchor="middle">' + t + '</text>';
+  }
+  for (t = 0; t <= 10; t += 2) {
+    s += '<line class="sc-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + p(sy(t)) + '" y2="' + p(sy(t)) + '"/>' +
+      '<text class="sc-tick" x="' + (L - 6) + '" y="' + p(sy(t) + 4) + '" text-anchor="end">' + t + '</text>';
+  }
+  s += '<line class="sc-axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/><line class="sc-axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/>' +
+    '<text class="sc-ax" x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">Score (SAT scale)</text>' +
+    '<text class="sc-ax" x="' + (L + 4) + '" y="' + (T - 4) + '">Activities rating</text>';
+  drawn.forEach(function (q) {
+    var x = sx(num(q.sat)), y = sy(num(q.activities)), o = str(q.outcome);
+    if (o === 'admitted') s += '<circle class="sc-a" cx="' + p(x) + '" cy="' + p(y) + '" r="4"/>';
+    else if (o === 'denied') s += '<path class="sc-d" d="M' + p(x - 3.5) + ' ' + p(y - 3.5) + 'l7 7M' + p(x + 3.5) + ' ' + p(y - 3.5) + 'l-7 7"/>';
+    else s += '<rect class="sc-w" x="' + p(x - 3) + '" y="' + p(y - 3) + '" width="6" height="6" transform="rotate(45 ' + p(x) + ' ' + p(y) + ')"/>';
+    if (medoid[str(q.case_id)]) s += '<circle class="sc-medoid" cx="' + p(x) + '" cy="' + p(y) + '" r="9"/><text class="sc-mk" x="' + p(x + 11) + '" y="' + p(y - 8) + '">' + esc(medoid[str(q.case_id)]) + '</text>';
+  });
+  if (sScore !== null) {
+    var lx = sx(sScore);
+    if (sAct !== null) s += '<polygon class="sc-me" points="' + starPath(lx, sy(sAct), 9) + '"/>';
+    else s += '<line class="sc-line" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+    s += '<text class="sc-mk" x="' + p(Math.min(lx + 8, W - R - 50)) + '" y="' + (T + 11) + '">Student</text>';
+  }
+  return s + '</svg>';
+}
+function renderPartBars(parts) {
+  var ps = arr(parts).map(obj).filter(function (q) { return str(q.part) && num(q.distance) !== null; });
+  if (!ps.length) return '<p class="quiet">No parts to compare.</p>';
+  return '<ul class="pbars" aria-label="How close you are to the nearest admitted students, part by part">' + ps.map(function (q) {
+    var d = Math.max(0, Math.min(1, num(q.distance)));
+    return '<li><span class="pb-name">' + esc(PART_NAME[str(q.part)] || cap(q.part)) + '</span>' +
+      '<span class="pb-track" aria-hidden="true"><span class="pb-fill" style="width:' + Math.round(d * 100) + '%"></span></span>' +
+      '<span class="pb-word">' + esc(str(q.text)) + ' <span class="quiet working-only">(' + f2(d) + ')</span></span></li>';
+  }).join('') + '</ul>';
+}
+function renderClosenessCheck(cc) {
+  var c = obj(cc), rows = arr(c.rows).map(obj).filter(function (r) { return str(r.lean); });
+  if (!rows.length) return '';
+  return '<div class="ccheck"><p><b>Does the resemblance hold up? Checked on ' + (num(c.used) || 0) + ' past decisions.</b> Each person was hidden in turn, the resemblance worked out without them, and then their real result counted. These are counts of past posters, not odds for anyone.</p>' +
+    '<table class="kv ccheck-t"><thead><tr><th scope="col">Resemblance</th><th scope="col">Were admitted</th><th scope="col">Were not admitted</th></tr></thead><tbody>' +
+    rows.map(function (r) { return '<tr><th scope="row">' + esc(leanWord(r.lean)) + '</th><td>' + (num(r.admitted) || 0) + '</td><td>' + (num(r.denied) || 0) + '</td></tr>'; }).join('') +
+    '</tbody></table>' + (str(c.caveat) ? '<p class="quiet small">' + esc(c.caveat) + '</p>' : '') + '</div>';
+}
+var METHOD_FALLBACK = {
+  parts: [
+    {part: 'score', name: 'score', weight: 0.45, distance: 'score difference / 400 SAT points, capped at 1', student: 'SAT, or ACT converted to the SAT scale', case: 'SAT, or ACT converted', pools: 'both', required: true},
+    {part: 'activities', name: 'activities rating', weight: 0.2, distance: 'rating difference / 10', student: "the counselor's 0 to 10 rating (optional)", case: 'self-rated activities and awards, 0 to 10', pools: 'national only'},
+    {part: 'major', name: 'major group', weight: 0.15, distance: '0 same group, 1 different', student: "intended major, or the essay reader's tag when both models agreed", case: 'stated major', pools: 'both'},
+    {part: 'hooks', name: 'hook status', weight: 0.1, distance: '0 same set of hooks, 1 different', student: 'first-gen, legacy, under-represented, athlete, or none', case: 'the same set', pools: 'both'},
+    {part: 'residency', name: 'residency', weight: 0.1, distance: '0 if both in-state or both out-of-state for this college, else 1', student: 'home state', case: 'home state', pools: 'both, public colleges only'},
+    {part: 'gpa', name: 'GPA', weight: 0.2, distance: 'GPA difference / 1 on a 4.0 scale, capped at 1', student: 'GPA, converted to a 4.0 scale', case: "GPA in the school's own file", pools: 'own only'}
+  ],
+  never_used: ['essay text', 'activity descriptions', 'race', 'gender', 'income', 'class rank', 'the essay/recommendation/interview self-rating'],
+  neighbours: 7, needed: 15, lean_gap: 0.03, change_gain: 0.02, max_changes: 3, score_steps: [30, 60, 100], rating_steps: [1, 2], close: 0.15, far: 0.5,
+  steady: {neighbours: [5, 10], score: [-30, 30]},
+  kinds: {k: 3, min_admitted: 30, cap: 300, rounds: 20, seed: 20261010, parts: ['score', 'activities', 'major'], score_band: 40, rating_band: 1},
+  points_cap: 300, check: {n: 400, seed: 20261010},
+  libraries: {engine: ['csv', 'json', 'functools.lru_cache', 'random', 'statistics', 'collections.Counter', 'pathlib'],
+              not_used: ['numpy', 'scikit-learn', 'pandas', 'text embeddings', 'any model call'],
+              screen: ['plain HTML, CSS and JavaScript', 'inline SVG drawn by hand', 'no chart library, no framework, no build step']}
+};
+function methodOf(result) { var m = obj(obj(result).closeness_method); return arr(m.parts).length ? m : METHOD_FALLBACK; }
+function renderWeightsTable(m) {
+  var parts = arr(m.parts).map(obj);
+  var h = '<div class="table-wrap"><table class="cases-table weights" aria-label="Parts of the distance and their weights"><thead><tr>' +
+    '<th scope="col">Part</th><th scope="col">Weight</th><th scope="col">Distance, 0 same to 1 far</th><th scope="col">Student side</th><th scope="col">Case side</th><th scope="col">Pools</th></tr></thead><tbody>';
+  h += parts.map(function (p) {
+    return '<tr><th scope="row">' + esc(cap(p.name)) + (p.required ? ' <span class="quiet">(required)</span>' : '') + '</th><td class="w-num">' + esc(f2(num(p.weight) || 0)) + '</td><td>' + esc(p.distance) + '</td>' +
+      '<td>' + esc(p.student) + '</td><td>' + esc(p['case']) + '</td><td>' + esc(p.pools) + '</td></tr>';
+  }).join('');
+  h += '</tbody></table></div>';
+  /* the shares that apply in practice, after renormalising over the parts present */
+  function share(keys) {
+    var tot = 0, out = [];
+    parts.forEach(function (p) { if (keys.indexOf(p.part) !== -1) tot += num(p.weight) || 0; });
+    parts.forEach(function (p) { if (keys.indexOf(p.part) !== -1) out.push(cap(p.name) + ' ' + Math.round((num(p.weight) || 0) / tot * 100) + '%'); });
+    return out.join(', ');
+  }
+  h += '<p class="small">Only the parts both sides have are used, and the weights are renormalised over them. In practice:</p><ul class="plain small">' +
+    '<li>National pool, private college, no activities rating entered: ' + esc(share(['score', 'major', 'hooks'])) + '.</li>' +
+    '<li>National pool, public college, activities rating entered: ' + esc(share(['score', 'activities', 'major', 'hooks', 'residency'])) + '.</li>' +
+    '<li>The school\'s own pool (no rating in that file), private college: ' + esc(share(['score', 'major', 'hooks', 'gpa'])) + '.</li></ul>';
+  if (arr(m.never_used).length) h += '<p class="small"><b>Never used:</b> ' + esc(arr(m.never_used).map(str).join(', ')) + '.</p>';
+  return h;
+}
+/* The algorithm as boxes and arrows. Text first: the aria-label says the same thing in one paragraph. */
+function renderAlgorithmDiagram(m) {
+  var k = num(m.neighbours) || 7, gap = num(m.lean_gap) || 0.03, kd = obj(m.kinds), gain = num(m.change_gain) || 0.02;
+  var W = 760, H = 500;
+  var say = 'How closeness is computed. The student input becomes a view: score, activities rating, major group, hooks, home state, GPA. ' +
+    'One college\'s finished cases, from two pools kept apart, are split into admitted, denied and waitlisted. The distance to each case is the weighted mean of the parts both sides have. ' +
+    'The mean distance to the ' + k + ' nearest admitted and to the ' + k + ' nearest denied gives a gap; a gap of ' + gap + ' or more leans to admitted, ' + (-gap) + ' or less to denied, else in between. ' +
+    'Three side checks: the steady test reruns with ' + arr(obj(m.steady).neighbours).join(' and ') + ' nearest and the score 30 points either way; changes try a higher score, a higher activities rating or a named major and keep those that raise the gap by ' + gain + ' or more; ' +
+    'kinds group the admitted cases into ' + (num(kd.k) || 3) + ' with k-medoids. No model is called anywhere.';
+  var s = '<svg class="algo" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(say) + '">' +
+    '<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5 0 10z" class="al-arrhead"/></marker></defs>';
+  function box(x, y, w, h, lines, cls) {
+    var out = '<g class="al-box ' + (cls || '') + '"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="8"/>';
+    lines.forEach(function (t, i) { out += '<text x="' + (x + 12) + '" y="' + (y + 20 + i * 16) + '"' + (i === 0 ? ' class="al-h"' : '') + '>' + esc(t) + '</text>'; });
+    return out + '</g>';
+  }
+  function arrow(x1, y1, x2, y2) { return '<line class="al-arr" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" marker-end="url(#arr)"/>'; }
+  s += box(10, 10, 220, 78, ['1. Student input', 'SAT or ACT, GPA, major, hooks,', 'home state, activities rating', '(the essay is never read here)'], 'al-in');
+  s += arrow(230, 49, 268, 49);
+  s += box(270, 10, 230, 78, ['2. Student view, built once', 'score (ACT converted), rating,', 'major group (or reader tag if', 'both models agreed), hooks, state'], 'al-in');
+  s += box(520, 10, 230, 78, ['3. One college\'s cases', 'two pools, never merged:', 'national (self-reported) and', 'own (the school\'s, verified)'], 'al-data');
+  s += arrow(635, 88, 635, 118);
+  s += box(520, 120, 230, 62, ['4. Split, scored cases only', 'admitted | denied', 'waitlisted: counted, not compared'], 'al-data');
+  s += arrow(385, 88, 385, 118);
+  s += box(270, 120, 230, 62, ['5. Distance to each case', 'weighted mean of the parts', 'both sides have (table above)'], 'al-calc');
+  s += arrow(520, 151, 502, 151);
+  s += arrow(385, 182, 385, 212);
+  s += box(270, 214, 230, 62, ['6. ' + k + ' nearest of each group', 'd_admitted = mean distance', 'd_denied = mean distance'], 'al-calc');
+  s += arrow(385, 276, 385, 306);
+  s += box(270, 308, 230, 78, ['7. gap = d_denied − d_admitted', 'lean: gap ≥ ' + gap + ' closer to admitted', 'gap ≤ ' + (-gap) + ' closer to denied', 'else in between'], 'al-out');
+  s += arrow(500, 347, 518, 347);
+  s += box(520, 308, 230, 78, ['8. Status gates', 'ok: both groups ≥ ' + (num(m.needed) || 15), 'not enough: either 1 to ' + ((num(m.needed) || 15) - 1) + ' (no lean given)', 'none / can\'t say (no score)'], 'al-out');
+  s += arrow(270, 347, 252, 347);
+  s += box(10, 120, 220, 266, ['Side checks, same maths', '', 'Steady test: rerun with', arr(obj(m.steady).neighbours).join(' and ') + ' nearest, score ±30', '', 'Changes: score +' + arr(m.score_steps).join('/+') + ',', 'rating +' + arr(m.rating_steps).join('/+') + ', a named major;', 'keep if gap rises ≥ ' + gain + ';', 'never hooks, state, GPA', '', 'Kinds: k-medoids, k = ' + (num(kd.k) || 3) + ',', 'admitted cases, seed ' + (num(kd.seed) || ''), '≤ ' + (num(kd.cap) || 300) + ' cases, ' + (num(kd.rounds) || 20) + ' rounds;', 'named from medians only'], 'al-side');
+  s += box(10, 400, 740, 90, ['9. Output, all numbers set by code', 'lean + text, d_admitted, d_denied, gap, steady/flips, parts (close or far), not_used, 3 nearest admitted and 3 nearest denied with per-part', 'distances, kinds with the nearest marked, up to 3 changes, up to ' + (num(m.points_cap) || 300) + ' points for the scatter. The reach / target / likely label is untouched.', 'Holds-up check: ' + (num(obj(m.check).n) || 400) + ' past posters, each hidden in turn, counted by lean and real outcome.'], 'al-out');
+  s += arrow(385, 386, 385, 398);
+  return s + '</svg>';
+}
+function renderHowBuilt(m) {
+  var lib = obj(m.libraries), kd = obj(m.kinds), h = '';
+  h += '<h4>How closeness was built</h4>';
+  h += '<p><b>The distance.</b> Two people are compared part by part. Each part gives a number from 0 (the same) to 1 (as far as it gets); the parts are combined as a weighted mean, ' +
+    'and only the parts both people have count. A student with no test score has no distance at all, so the answer is "can\'t say", not a guess. ' +
+    'The distance to a group is the mean distance to its ' + (num(m.neighbours) || 7) + ' nearest members, which is less jumpy than the single nearest and less blurred than the whole group.</p>';
+  h += '<h4>Parts and weights</h4>' + renderWeightsTable(m);
+  h += '<h4>The algorithm</h4><div class="pic-scroll">' + renderAlgorithmDiagram(m) + '</div>';
+  h += '<h4>Libraries</h4><ul class="plain">' +
+    '<li><b>Engine (Python, standard library only):</b> ' + esc(arr(lib.engine).map(str).join(', ')) + '. Not used: ' + esc(arr(lib.not_used).map(str).join(', ')) + '.</li>' +
+    '<li><b>Screen:</b> ' + esc(arr(lib.screen).map(str).join('; ')) + '.</li>' +
+    '<li><b>Kinds:</b> k-medoids written in plain Python: pick ' + (num(kd.k) || 3) + ' seeded starting cases, assign every admitted case to its nearest, move each medoid to the member with the least total distance, repeat up to ' + (num(kd.rounds) || 20) + ' rounds or until nothing moves. A medoid is a real case, so each kind is described by counting its members.</li></ul>';
+  h += '<h4>Choices made, and why</h4><ul class="plain">' +
+    '<li><b>A distance, not a probability.</b> The pool is people who chose to post; a percentage from it would be wrong twice over. A distance says "like" or "unlike" and nothing more.</li>' +
+    '<li><b>Weights are starting values.</b> Score carries the most because it is the one part every case has and the one the labels already use; the rest are split by how often the data has them. Nothing was fitted.</li>' +
+    '<li><b>' + (num(m.neighbours) || 7) + ' neighbours, ' + (num(m.needed) || 15) + ' needed.</b> The same "needed" as the cases tab, so "not enough" means the same thing everywhere.</li>' +
+    '<li><b>Lean threshold ' + (num(m.lean_gap) || 0.03) + '.</b> Set by printing the gap for the six demo students: about half their colleges land clearly one way, the rest in between, and the direction matched their lists.</li>' +
+    '<li><b>Steady test.</b> Copied from the label edge test: an answer that flips with 5 instead of 7 neighbours, or 30 score points, is shown as "on the edge" rather than hidden.</li>' +
+    '<li><b>Residency only at public colleges,</b> and listed as not used at private ones, so the counselor sees it was considered.</li>' +
+    '<li><b>Kinds named from medians,</b> "High / Mid / Lower score" relative to that college\'s own admitted median (±' + (num(kd.score_band) || 40) + ' points), so the words mean something at MIT and at Arizona State alike; two kinds that would read the same get their median score added.</li>' +
+    '<li><b>Changes never touch who the student is.</b> Hooks, home state and GPA are matched on but never varied, and no wording suggests inventing or inflating anything.</li>' +
+    '<li><b>Everything is deterministic:</b> fixed seeds, sorted inputs, ties broken by case number. The same student gives the same answer every time, and the holds-up table can be regenerated and compared.</li>' +
+    '<li><b>Cut order under the two-hour budget:</b> the lean sentence, nearest cases, changes and rings were built first; the check table, kinds, mind-map leaves and the scatter were the things to drop if time ran out. None had to be.</li></ul>';
+  return h;
+}
+/* ====== end of lifted code ====== */
+function hasCloseness(result) { return arr(obj(result).colleges).some(function (c) { return !!obj(c).closeness; }); }
+function nearList(cases, emptyText) {
+  var cs = arr(cases).map(obj).slice(0, 3);
+  if (!cs.length) return '<p class="quiet small">' + esc(emptyText) + '</p>';
+  return '<ul class="near">' + cs.map(function (e) {
+    var bits = [num(e.sat) !== null ? 'SAT ' + num(e.sat) : (num(e.act) !== null ? 'ACT ' + num(e.act) : ''), majorText(e.major || e.major_group),
+      hookText(e.hooks) && hookText(e.hooks) !== 'None' ? hookText(e.hooks) : '', str(e.home_state), num(e.activities_rating) !== null ? 'activities ' + num(e.activities_rating) : ''].filter(Boolean);
+    return '<li>' + esc(bits.join(' · ') || 'A past student') + '<span class="working-only quiet small"> ' + esc(str(e.case_id)) + (num(e.distance) !== null ? ', distance ' + f2(num(e.distance)) : '') + '</span></li>';
+  }).join('') + '</ul>';
+}
+function renderResemblePool(pool, cl, which) {
+  var q = obj(pool), st = str(q.status), ok = st === 'ok', k = num(obj(cl).neighbours) || 7;
+  var h = '<div class="pool rpool pool-' + which + '"><h4>' + (which === 'own' ? 'Your school' : 'Students nationwide') + '</h4><p class="quiet small">' +
+    (q.invented === true ? '<span class="tagx">Invented for this demo</span> Not real students.'
+      : (which === 'own' ? (q.verified === true ? 'Past students, checked by a counselor.' : 'Not checked by a counselor.') : 'Students who posted their own results online. Not checked.')) + '</p>';
+  if (!pool) return h + '<p class="calm">No past students to compare with here.</p></div>';
+  if (ok) h += '<p class="reason">' + esc(str(q.text) || leanWord(q.lean) + '.') + '</p>';
+  else if (st === 'not_enough') h += '<p class="calm">Too few cases here to compare yet. We would rather tell you that than guess.' + (str(q.text) ? ' <span class="quiet">' + esc(q.text) + '</span>' : '') + '</p>';
+  else h += '<p class="calm">' + esc(str(q.text) || 'No past students to compare with here.') + '</p>';
+  if (ok && q.steady === false) {
+    var flips = arr(q.flips).map(obj).filter(function (f) { return str(f.cause); });
+    h += '<p class="quiet small">This one is close to the line' + (flips.length ? ': ' + esc(flips.map(function (f) { return str(f.cause) + ' gives "' + leanWord(f.to).toLowerCase() + '"'; }).join('; ')) : '') + '.</p>';
+  }
+  if (ok || st === 'not_enough') {
+    if (arr(q.parts).length) h += '<p class="label">Close or some way off, part by part</p>' + renderPartBars(q.parts);
+    h += '<div class="near-two"><div><p class="label">Nearest who were admitted</p>' + nearList(q.nearest_admitted, 'None to show.') + '</div>' +
+      '<div><p class="label">Nearest who were not admitted</p>' + nearList(q.nearest_denied, 'None to show.') + '</div></div>';
+    var sc = which === 'national' ? renderScatter(q, obj(cl).student) : '';
+    if (sc) h += '<details class="more"><summary>Every case here, as a picture</summary>' + sc +
+      '<p class="quiet small">Circle: admitted. Cross: not admitted. Diamond: waitlisted. The star or line is you.</p></details>';
+  }
+  h += '<div class="working-only working-box">' + (str(q.source) ? '<p class="src">' + esc(q.source) + '</p>' : '') +
+    '<p class="small">' + (num(q.n_admitted) || 0) + ' admitted, ' + (num(q.n_denied) || 0) + ' not admitted, ' + (num(q.n_waitlisted) || 0) + ' waitlisted with a score.' +
+    (num(q.d_admitted) !== null && num(q.d_denied) !== null ? ' Distance to the ' + k + ' nearest admitted ' + f2(num(q.d_admitted)) + ', to the ' + k + ' nearest not admitted ' + f2(num(q.d_denied)) +
+      (num(q.gap) !== null ? ' (gap ' + f2(num(q.gap)) + ')' : '') + '. 0 is the same person; 1 is as far as it gets.' : '') +
+    (ok ? (q.steady === true ? ' Steady: the same answer with 5 or 10 nearest cases and with the score 30 points either way.' : '') : '') + '</p>' +
+    (arr(q.not_used).length ? '<p class="small quiet">Not used: ' + esc(arr(q.not_used).map(str).join('; ')) + '.</p>' : '') + '</div>';
+  return h + '</div>';
+}
+/* "Who you resemble": leads the tab. Both pools kept apart; then kinds; then what would bring you closer; the caveat always. */
+function renderResemble(c) {
+  c = obj(c);
+  if (!c.closeness) return '';
+  var cl = obj(c.closeness), n = obj(cl.national), o = obj(cl.own), h = '<div class="resemble">';
+  h += '<h3 class="section">Who you resemble</h3>' + (c.closeness_stale === true ? '<p class="quiet small stale">From the last full run.</p>' : '');
+  h += '<div class="pools">' + renderResemblePool(cl.own, cl, 'own') + renderResemblePool(cl.national, cl, 'national') + '</div>';
+  var kinds = arr(n.kinds).map(obj).concat(arr(o.kinds).map(obj)).filter(function (q) { return str(q.name); });
+  if (kinds.length) {
+    h += '<p class="label">Kinds of student admitted here</p><ul class="kinds">' + kinds.map(function (q) {
+      return '<li' + (q.nearest === true ? ' class="nearest"' : '') + '>' + esc(q.name) + ' <span class="quiet">(' + (num(q.size) || 0) + ' ' + plural(num(q.size) || 0, 'student', 'students') + ')</span>' +
+        (q.nearest === true ? ' <span class="tagn">closest to you</span>' : '') +
+        '<span class="working-only quiet small"> ' + esc(str(q.kind_id)) + (num(q.distance) !== null ? ', distance ' + f2(num(q.distance)) : '') + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  var ch = [];
+  [[n, 'Students nationwide'], [o, 'Your school']].forEach(function (pp) {
+    arr(pp[0].changes).map(obj).filter(function (q) { return str(q.change); }).forEach(function (q) { ch.push({q: q, pool: pp[1]}); });
+  });
+  h += '<p class="label">What would bring you closer</p>';
+  if (ch.length) {
+    h += '<ol class="changes">' + ch.slice(0, 4).map(function (x) {
+      var q = x.q;
+      return '<li><b>' + esc(q.change) + '.</b> ' + (str(q.lean_after) ? 'Then: ' + esc(leanWord(q.lean_after).toLowerCase()) + '. ' : '') + '<span class="quiet small">Compared with: ' + esc(x.pool.toLowerCase()) + '.</span>' +
+        '<span class="working-only quiet small"> Gap ' + f2(num(q.gap_before) || 0) + ' to ' + f2(num(q.gap_after) || 0) + (arr(q.because).length ? '; nearest admitted would be ' + esc(arr(q.because).map(str).join(', ')) : '') + '.</span></li>';
+    }).join('') + '</ol>';
+  } else h += '<p class="calm">' + esc(str(n.changes_note) || str(o.changes_note) || 'Nothing we can measure here would move this.') + '</p>';
+  h += '<p class="quiet small">Only the score, the activities rating and a named major are ever varied. Nothing about who you are.</p>';
+  h += '<p class="caveat-line">' + esc(str(cl.caveat) || 'Closeness is a distance to past cases. It is not a forecast.') + '</p>';
+  return h + '</div>';
+}
+function renderHowWorked(result) {
+  var r = obj(result);
+  return panelHead('How we worked this out') + '<section class="rc-sec howbuilt">' +
+    '<p class="reason">Two things are worked out for each college, both by code, with no model deciding anything.</p>' +
+    '<ul class="plain"><li><b>The label</b> (reach, target, likely) comes from your score against the college\'s published range and its admit rate.</li>' +
+    '<li><b>Who you resemble</b> comes from how close you are to past students who were admitted and who were not. It is a resemblance, not a forecast.</li></ul>' +
+    (renderClosenessCheck(r.closeness_check) || '') + renderHowBuilt(methodOf(r)) + '</section>';
+}
+
 /* ---------- keep track, and pay it forward ---------- */
 var TRACK_STEPS = [['considering', 'Considering'], ['applying', 'Applying'], ['submitted', 'Submitted'], ['result', 'Result']];
 var TRACK_OUT = [['admitted', 'Admitted'], ['denied', 'Not admitted'], ['waitlisted', 'Waitlisted']];
@@ -777,9 +1186,9 @@ function renderPool(pool, cases, which) {
 }
 function renderCasesTab(c) {
   c = obj(c);
-  if (!c.cases) return '<p class="calm">No past students with a known result here yet.</p>';
-  var cs = obj(c.cases);
-  return '<p class="reason">Real students with scores like yours, and how it went for them.</p>' +
+  if (!c.cases) return renderResemble(c) + '<p class="calm">No past students with a known result here yet.</p>';
+  var cs = obj(c.cases), res = renderResemble(c);
+  return res + (res ? '<h3 class="section counts-h">The counts</h3>' : '') + '<p class="' + (res ? 'quiet' : 'reason') + '">Real students with scores like yours, and how it went for them.</p>' +
     '<div class="pools">' + renderPool(cs.own, cs, 'own') + renderPool(cs.national, cs, 'national') + '</div>' +
     '<p class="quiet small">Two separate groups, never added together. These are examples, not odds.</p>';
 }
@@ -827,7 +1236,7 @@ function renderSaysTab(c) {
   if (str(c.cost_note)) h += '<p class="cost"><b>Cost.</b> ' + esc(c.cost_note) + '</p>';
   return h;
 }
-var TABS = [['why', 'How we got this'], ['cases', 'Students like you'], ['levers', 'What could change it'], ['says', 'What the college says']];
+var TABS = [['why', 'How we got this'], ['cases', 'Who you resemble'], ['levers', 'What could change it'], ['says', 'What the college says']];
 function renderDrill(c, tab) {
   c = obj(c);
   var L = obj(c.label), g = groupOf(L.state), active = TABS.some(function (t) { return t[0] === tab; }) ? tab : 'why';
@@ -894,6 +1303,8 @@ function renderWorking(result) {
     h += '<p><b>Run record:</b> ' + esc(str(pr.status) || 'unknown') + (str(pr.why) ? '. ' + esc(pr.why) : '') +
       (num(pr.records_sent) ? ' ' + num(pr.records_sent) + ' ' + plural(num(pr.records_sent), 'record', 'records') + ' sent.' : '') + (str(pr.guardrail) ? ' Essay guard: ' + esc(pr.guardrail) + '.' : '') + '</p>';
   }
+  h += renderClosenessCheck(r.closeness_check);
+  if (r.closeness_check || r.closeness_method) h += '<p><button type="button" class="linkbtn" data-act="tool-how">How we worked this out</button></p>';
   arr(r.refusals).map(str).filter(Boolean).forEach(function (t) { h += '<p class="quiet small">' + esc(t) + '</p>'; });
   return h + '</div>';
 }
@@ -985,7 +1396,7 @@ function normaliseStudent(s) {
   return {
     label: str(first(s.label, s.name, s.id)), index: num(s.index),
     sat: num(first(s.sat, s.sat_total)), act: num(first(s.act, s.act_composite)),
-    gpa: num(first(s.gpa, s.gpa_value)), gpa_scale: num(first(s.gpa_scale, s.gpa_scale_max)),
+    gpa: num(first(s.gpa, s.gpa_value)), gpa_scale: num(first(s.gpa_scale, s.gpa_scale_max)), activities_rating: num(s.activities_rating),
     home_state: str(first(s.home_state, s.state)), intended_major: str(first(s.intended_major, s.major)),
     hooks: arr(s.hooks).map(str).filter(function (h) { return h && h.toLowerCase() !== 'none'; }),
     activities: arr(s.activities).map(function (a) {
@@ -1021,6 +1432,9 @@ var api = {
   changesBetween: changesBetween, moveSentence: moveSentence, ladderSentence: ladderSentence, renderHands: renderHands,
   planLines: planLines, renderPlan: renderPlan, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
+  renderResemble: renderResemble, renderResemblePool: renderResemblePool, renderRings: renderRings, renderMindMap: renderMindMap,
+  renderScatter: renderScatter, renderPartBars: renderPartBars, renderClosenessCheck: renderClosenessCheck, renderHowBuilt: renderHowBuilt,
+  renderHowWorked: renderHowWorked, methodOf: methodOf, hasCloseness: hasCloseness, leanWord: leanWord,
   renderTracker: renderTracker, renderFit: renderFit, didYouMean: didYouMean, coverageLine: coverageLine,
   renderQuestions: renderQuestions, renderWorking: renderWorking, verdictMarks: verdictMarks, renderFamily: renderFamily,
   renderCollegeChips: renderCollegeChips, renderQuickAdds: renderQuickAdds, renderEssayPicks: renderEssayPicks,
@@ -1068,7 +1482,8 @@ function notice(text) {
 /* ---------- drawing the story ---------- */
 function picOpts() {
   var sl = obj(S.slider);
-  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, canSwap: S.mode !== 'static'};
+  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, canSwap: S.mode !== 'static',
+          view: S.picView || 'trail', focus: S.picFocus, closenessFrom: hasCloseness(S.view) ? S.view : S.base, stale: !hasCloseness(S.view) && S.view !== S.base};
 }
 function drawView() {
   $('headline').innerHTML = renderHeadline(S.view, S.whatIf);
@@ -1101,7 +1516,7 @@ function go(id) {
 }
 function inputFromStudent(st) {
   var s = normaliseStudent(st);
-  return {label: s.label || 'Student', sat: s.sat, act: s.act, gpa: s.gpa, gpa_scale: s.gpa_scale, home_state: s.home_state || null,
+  return {label: s.label || 'Student', sat: s.sat, act: s.act, gpa: s.gpa, gpa_scale: s.gpa_scale, activities_rating: s.activities_rating, home_state: s.home_state || null,
           intended_major: s.intended_major || null, hooks: s.hooks.length ? s.hooks : ['none'], activities: s.activities, essay: '', college_list: s.college_list};
 }
 
@@ -1216,6 +1631,7 @@ function fillForm(s) {
   s = s || normaliseStudent({});
   $('f-label').value = s.label || '';
   setSlider('sat', s.sat, 1200); setSlider('act', s.act, 24); setSlider('gpa', s.gpa === null ? null : Math.min(4, s.gpa), 3.5);
+  setSlider('actv', s.activities_rating === undefined ? null : s.activities_rating, 5);
   $('f-state').value = (s.home_state || '').toUpperCase();
   $('f-major').value = s.intended_major || ''; syncMajor();
   $('f-essay').value = s.essay || '';
@@ -1246,7 +1662,7 @@ function readForm() {
   function sv(k) { return $('f-' + k + '-none').checked ? null : num($('f-' + k).value); }
   var hooks = all('[data-act="toggle-hook"][aria-pressed="true"]').map(function (b) { return b.getAttribute('data-hook'); });
   return {
-    label: $('f-label').value.trim() || 'Student', sat: sv('sat'), act: sv('act'), gpa: sv('gpa'), gpa_scale: 4.0,
+    label: $('f-label').value.trim() || 'Student', sat: sv('sat'), act: sv('act'), gpa: sv('gpa'), gpa_scale: 4.0, activities_rating: sv('actv'),
     home_state: $('f-state').value || null, intended_major: $('f-major').value.trim() || null,
     hooks: hooks.length ? hooks : ['none'],
     activities: S.acts.filter(function (a) { return a.type || a.role || a.description; }),
@@ -1345,6 +1761,11 @@ function closePanel() {
 function openCollege(i, tab) {
   var c = arr(obj(S.view).colleges)[i];
   if (!c) return;
+  if (!obj(c).closeness && S.view !== S.base) {   /* a labels-only what-if run: keep the closeness from the last full run */
+    var old = arr(obj(S.base).colleges).map(obj).filter(function (x) { return str(x.name) === str(obj(c).name); })[0];
+    if (old && old.closeness) c = Object.assign({}, c, {closeness: old.closeness, closeness_stale: true});
+  }
+  S.picFocus = i;
   openPanel($('receipt'), renderDrill(c, tab), tab ? '#tab-' + tab : null);
 }
 function pickTab(name) {
@@ -1414,6 +1835,8 @@ function doAct(el) {
   }
   else if (act === 'why-no-percent') { var box = $('why-answer'); box.hidden = !box.hidden; el.setAttribute('aria-expanded', box.hidden ? 'false' : 'true'); }
   else if (act === 'reset-score') resetScore();
+  else if (act === 'pic-view') { S.picView = el.getAttribute('data-view'); $('picture').innerHTML = renderPictureCard(S.view, picOpts()); var pv = $('picture').querySelector('[data-view="' + S.picView + '"]'); if (pv) pv.focus(); }
+  else if (act === 'tool-how') { closeTools(); openPanel($('receipt'), renderHowWorked(S.base)); }
   else if (act === 'track') trackStep(name, el.getAttribute('data-status'));
   else if (act === 'track-outcome') trackOutcome(name, el.getAttribute('data-outcome'));
   else if (act === 'track-reset') postTrack({reset: true}, '', null);
@@ -1464,14 +1887,14 @@ function boot() {
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (t.id === 'whatif') onWhatIf(t.value);
-    else if (t.id === 'f-sat' || t.id === 'f-act' || t.id === 'f-gpa') { showOut(t.id.slice(2)); changed(); }
+    else if (t.id === 'f-sat' || t.id === 'f-act' || t.id === 'f-gpa' || t.id === 'f-actv') { showOut(t.id.slice(2)); changed(); }
     else if (t.id === 'f-major') { syncMajor(); changed(); }
     else if (t.id === 'f-essay') { S.essayPick = -2; drawEssayPicks(); changed(); }
     else if (t.id === 'f-label') changed();
   });
   document.addEventListener('change', function (e) {
     var t = e.target;
-    if (/^f-(sat|act|gpa)-none$/.test(t.id)) { showOut(t.id.slice(2, -5)); changed(); }
+    if (/^f-(sat|act|gpa|actv)-none$/.test(t.id)) { showOut(t.id.slice(2, -5)); changed(); }
     else if (t.id === 'f-state') changed();
   });
   $('student-form').addEventListener('submit', function (e) { e.preventDefault(); run(); });

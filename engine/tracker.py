@@ -64,9 +64,10 @@ def set_status(student_key: str, student: dict, college: dict, status: str, outc
                     "hooks": ",".join(h for h in (student.get("hooks") or []) if h != "none") or "none",
                     "home_state": student.get("home_state"), "college": college["name"], "outcome": outcome,
                     "activities_note": "", "essay_theme": "", "verified_by": "counselor"}
-            if demo:
-                case["synthetic"] = "DEMO"
-            added = caselog.add_case(case)
+            try:
+                added = caselog.add_case(case, demo=demo)   # demo cases are stored as DEMO and can be cleared
+            except TypeError:
+                added = caselog.add_case(case)
             if isinstance(added, dict) and added.get("error"):
                 out["note"] = "The result was saved, but no case was added: " + added["error"]
             else:
