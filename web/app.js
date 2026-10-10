@@ -316,7 +316,72 @@ function renderRings(result) {
   });
   return s + '</svg>';
 }
-var PIC_VIEWS = [['ranges', 'Score ranges'], ['rings', 'Rings']];
+/* ---------- Level 1: mind map. Student in the middle, a branch per label, a node per college, leaves under each. ---------- */
+var MAP_MAX_LEAVES = 12;   /* above this many colleges, leaves show only for the college last pressed */
+function mindMapModel(result, focus) {
+  var rows = ringsModel(result), groups = {}, keys = ['reach', 'target', 'likely'];
+  rows.forEach(function (x) { var g = (x.g === 'reach' || x.g === 'target' || x.g === 'likely') ? x.g : 'other'; (groups[g] = groups[g] || []).push(x); });
+  if (groups.other) keys.push('other');
+  var angles = keys.length === 4 ? [-135, -45, 45, 135] : [-150, -30, 90];
+  var RB = 120, RC = 190, STEP = 30, showLeaves = rows.length <= MAP_MAX_LEAVES;
+  var branches = [], nodes = [], lines = [];
+  keys.forEach(function (k, bi) {
+    var a = angles[bi] * Math.PI / 180, bx = RB * Math.cos(a), by = RB * Math.sin(a), items = groups[k] || [];
+    branches.push({key: k, x: bx, y: by, title: k === 'other' ? "Can't say" : cap(k), n: items.length});
+    lines.push({x1: 0, y1: 0, x2: bx, y2: by, kind: 'trunk'});
+    items.forEach(function (x, j) {
+      var ca = a + (j - (items.length - 1) / 2) * STEP * Math.PI / 180, cx = bx + RC * Math.cos(ca), cy = by + RC * Math.sin(ca);
+      var leaves = [], n = x.n || {};
+      if (showLeaves || focus === x.i) {
+        var kind = arr(n.kinds).map(obj).filter(function (q) { return q.nearest === true; })[0];
+        if (kind) leaves.push({text: 'Kind: ' + clip(str(kind.name), 30), kind: 'kind'});
+        arr(n.nearest_admitted).map(obj).slice(0, 3).forEach(function (e) { if (str(e.case_id)) leaves.push({text: str(e.case_id) + ' admitted', kind: 'case'}); });
+      }
+      nodes.push({x: cx, y: cy, right: Math.cos(ca) >= -0.01, row: x, leaves: leaves});
+      lines.push({x1: bx, y1: by, x2: cx, y2: cy, kind: 'limb'});
+    });
+  });
+  return {branches: branches, nodes: nodes, lines: lines, showLeaves: showLeaves, n: rows.length};
+}
+function renderMindMap(result, focus) {
+  var m = mindMapModel(result, focus), st = obj(obj(result).student), score = num(st.sat) !== null ? num(st.sat) : num(st.act);
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var xs = [0], ys = [0];
+  m.branches.concat(m.nodes).forEach(function (q) { xs.push(q.x); ys.push(q.y); });
+  m.nodes.forEach(function (q) { ys.push(q.y + 16 + 14 * q.leaves.length); });
+  var X0 = Math.min.apply(null, xs) - 190, X1 = Math.max.apply(null, xs) + 190, Y0 = Math.min.apply(null, ys) - 40, Y1 = Math.max.apply(null, ys) + 30;
+  var W = X1 - X0, H = Y1 - Y0;
+  var s = '<svg class="pic mindmap" viewBox="' + p(X0) + ' ' + p(Y0) + ' ' + p(W) + ' ' + p(H) + '" width="' + p(W) + '" height="' + p(H) + '" role="group" aria-label="' +
+    esc('Mind map: the student in the middle, ' + m.branches.map(function (b) { return b.title.toLowerCase() + ' (' + b.n + ')'; }).join(', ') +
+        ', a node per college' + (m.showLeaves ? ', and under each college its nearest kind of admitted student and its nearest admitted cases.' :
+        '. With more than ' + MAP_MAX_LEAVES + ' colleges, the nearest kind and cases show only for the college last pressed.')) + '">';
+  m.lines.forEach(function (l) { s += '<line class="mm-' + l.kind + '" x1="' + p(l.x1) + '" y1="' + p(l.y1) + '" x2="' + p(l.x2) + '" y2="' + p(l.y2) + '"/>'; });
+  m.branches.forEach(function (b) {
+    var t = b.title + ' (' + b.n + ')', w = t.length * 7.6 + 22;
+    s += '<g class="mm-branch mm-' + b.key + '" aria-hidden="true"><rect x="' + p(b.x - w / 2) + '" y="' + p(b.y - 13) + '" width="' + p(w) + '" height="26" rx="13"/>' +
+      '<text x="' + p(b.x) + '" y="' + p(b.y + 4.5) + '" text-anchor="middle">' + esc(t) + '</text></g>';
+  });
+  s += '<g class="rcentre" aria-hidden="true"><circle class="rme" cx="0" cy="0" r="11"/><text class="rmet" x="0" y="27" text-anchor="middle">Student' + (score !== null ? ' ' + score : '') + '</text></g>';
+  if (!m.n) s += '<text class="pnone" x="0" y="-60" text-anchor="middle">No colleges on this list yet.</text>';
+  m.nodes.forEach(function (q) {
+    var x = q.row, name = str(x.c.name) || 'Unnamed college', nn = x.n || {}, dir = q.right ? 1 : -1, anchor = q.right ? 'start' : 'end';
+    var kind = arr(nn.kinds).map(obj).filter(function (k) { return k.nearest === true; })[0];
+    var say = name + '. ' + stateText(x.L) + '. ' + (x.n ? str(nn.text) + ' ' : '') +
+      (kind ? 'Nearest kind of admitted student: ' + str(kind.name) + '. ' : '') +
+      (arr(nn.nearest_admitted).length ? 'Nearest admitted cases: ' + arr(nn.nearest_admitted).map(function (e) { return str(obj(e).case_id); }).join(', ') + '. ' : '') + 'Open the details.';
+    s += '<g class="rdot mm-node rd-' + x.g + (x.hollow ? ' rd-hollow' : '') + '" data-act="open-receipt" data-i="' + x.i + '" tabindex="0" role="button" aria-label="' + esc(say) + '"><title>' + esc(name) + '</title>' +
+      '<circle class="rhit" cx="' + p(q.x) + '" cy="' + p(q.y) + '" r="14"/>' + shape(x.g, ' x="' + p(q.x - 8) + '" y="' + p(q.y - 8) + '"') +
+      '<text class="rname" x="' + p(q.x + 13 * dir) + '" y="' + p(q.y + 4.5) + '" text-anchor="' + anchor + '">' + esc(clip(shortName(name), 24)) + '</text>';
+    q.leaves.forEach(function (l, k) {
+      var ly = q.y + 20 + 14 * k;
+      s += '<circle class="mm-leaf-dot mm-leaf-' + l.kind + '" cx="' + p(q.x + 17 * dir) + '" cy="' + p(ly - 3.5) + '" r="2.6"/>' +
+        '<text class="mm-leaf" x="' + p(q.x + 24 * dir) + '" y="' + p(ly) + '" text-anchor="' + anchor + '">' + esc(l.text) + '</text>';
+    });
+    s += '</g>';
+  });
+  return s + '</svg>';
+}
+var PIC_VIEWS = [['ranges', 'Score ranges'], ['rings', 'Rings'], ['map', 'Mind map']];
 function picView(opts) {
   var v = str(obj(opts).view);
   return PIC_VIEWS.some(function (x) { return x[0] === v; }) ? v : 'ranges';
@@ -336,6 +401,13 @@ function renderPictureCard(result, opts) {
       '<li><span class="lg-hollow"></span>hollow: too few cases, rough</li>' +
       '<li><span class="lg-dashed"></span>outer ring: cannot be placed</li>' +
       '<li class="lg-tip">Press a dot to see why. Distance is not the label.</li></ul>';
+  } else if (view === 'map') {
+    body = renderMindMap(result, num(obj(opts).focus));
+    legend = '<ul class="legend" aria-label="How to read the mind map">' +
+      '<li><span class="lg-centre"></span>the student, in the middle</li>' +
+      '<li>a branch per label, a node per college</li>' +
+      '<li><span class="lg-leaf"></span>under each college: its nearest kind of admitted student and its nearest admitted cases</li>' +
+      '<li class="lg-tip">Press a college to see why.</li></ul>';
   } else {
     body = renderPicture(result, opts);
     legend = '<ul class="legend" aria-label="How to read the picture">' +
@@ -896,6 +968,7 @@ var api = {
   renderTopChips: renderTopChips, renderStudentLine: renderStudentLine, renderCounters: renderCounters, warningTexts: warningTexts,
   pictureModel: pictureModel, renderPicture: renderPicture, renderPictureCard: renderPictureCard, ladderLines: ladderLines,
   closenessOf: closenessOf, ringsModel: ringsModel, renderRings: renderRings, picView: picView, PIC_VIEWS: PIC_VIEWS,
+  mindMapModel: mindMapModel, renderMindMap: renderMindMap,
   renderLeversCard: renderLeversCard, renderSuggestionsPanel: renderSuggestionsPanel, renderFootLinks: renderFootLinks,
   renderChanceAnswer: renderChanceAnswer, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
@@ -917,7 +990,7 @@ var OFTEN = ['Rutgers University-New Brunswick', 'Purdue University-Main Campus'
 var PREVIEW_LINE = 'Shared preview: saved runs for six invented students. Run it on a laptop to edit.';
 /* mode: 'live' (server answers), 'static' (shared preview from saved files), 'example' (the embedded example). */
 var S = {mode: 'live', base: null, view: null, whatIf: null, slider: null, students: [], manifest: null, runIndex: null,
-         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, picView: 'ranges'};
+         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, picView: 'ranges', lastOpened: null};
 function $(id) { return document.getElementById(id); }
 function all(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
 
@@ -944,7 +1017,7 @@ function notice(text) {
 /* ---------- drawing the first view ---------- */
 function picOpts() {
   var sl = obj(S.slider);
-  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, view: S.picView};
+  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, view: S.picView, focus: S.lastOpened};
 }
 function drawView() {
   $('counters').innerHTML = renderCounters(obj(S.view).balance, S.whatIf !== null);
@@ -1174,6 +1247,7 @@ function closePanel() {
 function openCollege(i, tab) {
   var c = arr(obj(S.view).colleges)[i];
   if (!c) return;
+  S.lastOpened = i;
   openPanel($('receipt'), renderDrill(c, tab), tab ? '#tab-' + tab : null);
 }
 function pickTab(name) {
