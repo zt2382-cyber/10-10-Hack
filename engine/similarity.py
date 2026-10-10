@@ -264,6 +264,52 @@ def _points(groups, kind_of=None):
              "kind_id": (kind_of or {}).get(v["case_id"])} for v in allv]
 
 
+# ---------------------------------------------------------------- R4. what would bring the student closer
+
+CHANGE_GAIN = 0.02        # a change is kept only if it raises the gap by this much
+MAX_CHANGES = 3
+SCORE_STEPS = (30, 60, 100)
+RATING_STEPS = (1, 2)
+NOTHING_HELPS = "Nothing we can measure here would move this."
+
+
+def _tries(sv):
+    """The changes R4 allows, each alone. Never hooks, home state, GPA, or anything about who the student is."""
+    tried, seen = [], set()
+    for pts in SCORE_STEPS:
+        s2 = min(1600, sv["score"] + pts)
+        if s2 == sv["score"] or ("score", s2) in seen:
+            continue
+        seen.add(("score", s2))
+        tried.append((f"Score {s2 - sv['score']} points higher", dict(sv, score=s2)))
+    if sv["activities"] is not None:
+        for up in RATING_STEPS:
+            r2 = min(10.0, sv["activities"] + up)
+            if r2 == sv["activities"] or ("activities", r2) in seen:
+                continue
+            seen.add(("activities", r2))
+            tried.append((f"Activities rating {r2 - sv['activities']:g} higher "
+                          "(deeper involvement in the activities already listed)", dict(sv, activities=r2)))
+    if len(sv["major_interests"]) > 1:
+        for g in sv["major_interests"]:
+            if g != sv["major_group"]:
+                tried.append((f"Intended major in the {g} group (an interest the student named)",
+                              dict(sv, major_group=g)))
+    return tried
+
+
+def _changes(sv, groups, college, base_gap):
+    out = []
+    for change, sv2 in _tries(sv):
+        _, _, gap, na, _ = _gap(sv2, groups, college)
+        if gap is None or gap - base_gap < CHANGE_GAIN:
+            continue
+        out.append({"change": change, "gap_before": round(base_gap, 3), "gap_after": round(gap, 3),
+                    "lean_after": _lean(gap), "because": [cv["case_id"] for _, cv, _ in na[:MAX_NEAREST]]})
+    out.sort(key=lambda c: -c["gap_after"])
+    return out[:MAX_CHANGES]
+
+
 def _pool(sv, groups, college, source, verified, own):
     adm, den, wl = groups
     out = {"source": source, "verified": verified, "status": None,
@@ -295,7 +341,8 @@ def _pool(sv, groups, college, source, verified, own):
     out["nearest_admitted"] = [_example(d, cv, p, own) for d, cv, p in na[:MAX_NEAREST]]
     out["nearest_denied"] = [_example(d, cv, p, own) for d, cv, p in nd[:MAX_NEAREST]]
     out["kinds"] = []
-    out["changes"] = []
+    out["changes"] = _changes(sv, groups, college, gap) if lean else []
+    out["changes_note"] = "" if out["changes"] or not lean else NOTHING_HELPS
     out["points"] = _points(groups)
     return out
 

@@ -299,5 +299,73 @@ class ClosenessTests(unittest.TestCase):
                 self.assertNotIn(w, text.lower())
 
 
+class ChangesTests(unittest.TestCase):
+    NEVER = ("hook", "legacy", "first-gen", "first_gen", "athlete", "urm", "state", "gpa", "grade", "income", "race",
+             "gender", "invent", "inflat", "exaggerat") + FORBIDDEN
+
+    def ok_pools(self):
+        for nm, s in (("Cornell University", STUDENT), ("Purdue University-Main Campus", dict(STUDENT, activities_rating=5)),
+                      ("New York University", dict(STUDENT, sat=1350, intended_major="Psychology", home_state="NY")),
+                      ("Tufts University", dict(STUDENT, sat=1350, major_interests=["Psychology", "Biology"]))):
+            n = S.closeness(s, col(nm))["national"]
+            if n["status"] == "ok":
+                yield nm, s, n
+
+    def test_shape_order_and_gain(self):
+        seen_any = False
+        for nm, s, n in self.ok_pools():
+            ch = n["changes"]
+            self.assertLessEqual(len(ch), 3)
+            self.assertEqual([c["gap_after"] for c in ch], sorted((c["gap_after"] for c in ch), reverse=True))
+            for c in ch:
+                seen_any = True
+                self.assertEqual(set(c), {"change", "gap_before", "gap_after", "lean_after", "because"})
+                self.assertAlmostEqual(c["gap_before"], n["gap"], places=3)
+                self.assertGreaterEqual(c["gap_after"] - c["gap_before"], S.CHANGE_GAIN - 1e-6)
+                self.assertIn(c["lean_after"], ("closer_to_admitted", "closer_to_denied", "in_between"))
+                self.assertTrue(1 <= len(c["because"]) <= 3)
+                self.assertTrue(all(i.startswith("N-") for i in c["because"]))
+            self.assertEqual(n["changes_note"], "" if ch else S.NOTHING_HELPS)
+        self.assertTrue(seen_any, "expected at least one college with a change that helps")
+
+    def test_never_touches_who_the_student_is(self):
+        for nm, s, n in self.ok_pools():
+            for c in n["changes"]:
+                low = c["change"].lower()
+                for bad in self.NEVER:
+                    self.assertNotIn(bad, low, c["change"])
+        for bad in self.NEVER:
+            self.assertNotIn(bad, S.NOTHING_HELPS.lower())
+
+    def test_tries_cover_only_score_activities_and_named_majors(self):
+        c = col("Cornell University")
+        sv = S._student_view(STUDENT, c)
+        kinds = [t[0].split()[0] for t in S._tries(sv)]
+        self.assertEqual(kinds, ["Score", "Score", "Score"])   # no rating, one major: score only
+        sv = S._student_view(dict(STUDENT, activities_rating=9.5), c)
+        names = [t[0] for t in S._tries(sv)]
+        self.assertEqual(sum(1 for n in names if n.startswith("Activities")), 1)   # 9.5 -> 10 once, not twice
+        self.assertIn("deeper involvement in the activities already listed", names[-1])
+        sv = S._student_view(dict(STUDENT, sat=1600), c)
+        self.assertFalse(any(n.startswith("Score") for n, _ in S._tries(sv)))
+        sv = S._student_view(dict(STUDENT, sat=1580), c)
+        scores = [v["score"] for n, v in S._tries(sv) if n.startswith("Score")]
+        self.assertEqual(scores, [1600])   # 30, 60 and 100 all cap at 1600: tried once
+        sv = S._student_view(dict(STUDENT, major_interests=["Computer Science", "Biology"]), c)
+        majors = [(n, v) for n, v in S._tries(sv) if n.startswith("Intended major")]
+        self.assertEqual(len(majors), 1)
+        self.assertEqual(majors[0][1]["major_group"], "BIO")
+        self.assertIn("BIO", majors[0][0])
+        for _, v in S._tries(sv):   # nothing about who the student is ever moves
+            self.assertEqual(v["hooks"], sv["hooks"])
+            self.assertEqual(v["home_state"], sv["home_state"])
+            self.assertEqual(v["gpa"], sv["gpa"])
+
+    def test_no_changes_when_status_is_not_ok(self):
+        n = S.closeness(STUDENT, college_by_case_name("CLAREMONT MCKENNA"))["national"]
+        self.assertEqual(n["changes"], [])
+        self.assertEqual(n["changes_note"], "")
+
+
 if __name__ == "__main__":
     unittest.main()
