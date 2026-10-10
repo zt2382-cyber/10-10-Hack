@@ -527,12 +527,39 @@ function renderPool(pool, cases, which) {
   }
   return h + '</div>';
 }
+function renderHolistic(c) {
+  var cl = obj(c.closeness);
+  if (!c.closeness) return '';
+  var names = {score: 'Test score', activities: 'Activities rating', major: 'Major', hooks: 'Hooks',
+    residency: 'Residency', gpa: 'GPA', essay: 'Essay content', activity_text: 'Activity descriptions'};
+  var h = '<h3>Whole profile comparison</h3><p class="quiet">' + esc(cl.caveat) + '</p>';
+  ['own', 'national'].forEach(function (key) {
+    var p = obj(cl[key]);
+    h += '<h4>' + (key === 'own' ? 'Your school' : 'National') + '</h4><p>' + esc(p.text) + '</p>';
+    if (arr(p.parts).length) {
+      h += '<ul>' + arr(p.parts).map(function (part) {
+        return '<li>' + esc(names[part.part] || part.part) + ': ' + esc(part.text) + '</li>';
+      }).join('') + '</ul>';
+      h += '<p class="quiet small">Not compared: ' + esc(arr(p.not_used).join(', ')) + '.</p>';
+      h += '<details class="more"><summary>Nearest admitted and denied cases</summary><h4>Admitted</h4>' +
+        examplesTable(p.nearest_admitted) + '<h4>Denied</h4>' + examplesTable(p.nearest_denied) + '</details>';
+    }
+  });
+  var matches = arr(cl.essay_retrieval), report = obj(cl.semantic);
+  h += '<p class="quiet small">Essay comparison: ' + esc(report.status) +
+    (str(report.note) ? '. ' + esc(report.note) : '') + '</p>';
+  if (matches.length) h += '<h4>Similar essay content</h4><ol>' + matches.map(function (r) {
+    return '<li>' + esc(r.case_id) + ' — ' + (r.text_kind === 'full_essay' ? 'full essay' : 'theme summary') +
+      ', content distance ' + esc(r.distance) + ' (lower is closer)</li>';
+  }).join('') + '</ol>';
+  return h;
+}
 function renderCasesTab(c) {
   c = obj(c);
   if (!c.cases) return '<p class="state-box">No finished cases.</p>';
   var cs = obj(c.cases);
   return '<div class="pools">' + renderPool(cs.own, cs, 'own') + renderPool(cs.national, cs, 'national') + '</div>' +
-    '<p class="quiet small">Two separate pools, never added together. These are examples, not odds.</p>';
+    '<p class="quiet small">Two separate pools, never added together. These are examples, not odds.</p>' + renderHolistic(c);
 }
 var LEVER_ICON = {
   score: '<path d="M8 1.5 12 6H9.3v4H12l-4 4.5L4 10h2.7V6H4z"/>',

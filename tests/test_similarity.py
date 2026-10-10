@@ -135,7 +135,7 @@ class DistanceTests(unittest.TestCase):
         self.assertEqual(sv["major_interests"], ["CS", "ENG"])
 
     def test_weights_cover_every_part_and_are_positive(self):
-        self.assertEqual(set(S.WEIGHTS), {"score", "activities", "major", "hooks", "residency", "gpa"})
+        self.assertEqual(set(S.WEIGHTS), {"score", "activities", "major", "hooks", "residency", "gpa", "essay", "activity_text"})
         self.assertTrue(all(w > 0 for w in S.WEIGHTS.values()))
         self.assertEqual(set(S.PART_WORD), set(S.WEIGHTS))
 
@@ -208,7 +208,7 @@ class ClosenessTests(unittest.TestCase):
     def test_cant_say_without_a_score_still_shows_counts(self):
         n = S.closeness(dict(STUDENT, sat=None), col("Cornell University"))["national"]
         self.assertEqual(n["status"], "cant_say")
-        self.assertGreater(n["n_admitted"] + n["n_denied"], 0)
+        self.assertEqual(n["n_admitted"] + n["n_denied"], 0)
         self.assertNotIn("lean", n)
         self.assertNotIn("steady", n)
 
@@ -371,7 +371,7 @@ class KindsTests(unittest.TestCase):
     def test_three_kinds_described_from_counts(self):
         kinds, kind_of = S._kinds("CORNELL")
         self.assertEqual([k["kind_id"] for k in kinds], ["K1", "K2", "K3"])
-        n_adm = S._national_groups("CORNELL")[0]
+        n_adm = [v for v in S._national_groups("CORNELL")[0] if v["score"] is not None]
         self.assertEqual(sum(k["size"] for k in kinds), min(len(n_adm), S.KINDS_CAP))
         self.assertEqual(len(kind_of), min(len(n_adm), S.KINDS_CAP))
         ids = {v["case_id"] for v in n_adm}

@@ -49,7 +49,7 @@ and "What is the student's chance?", which explains why no percentage is given a
 
 ## How it handles accuracy and uncertainty
 
-- **Code sets every label, count and number.** The only model call reads the essay and returns themes and notes.
+- **Code sets every label, count and number.** Models read masked text for themes and notes, and produce optional semantic vectors for retrieval.
   Every note must carry a word-for-word quote; code drops any note whose quote is not in the essay.
 - **"Not sure" is a normal answer.** The screen says "Can't say" when a college publishes no score range, "Not
   enough cases: 4 of the 15 needed" when the sample is small, "Outside our data" for a college not in the file,
@@ -118,3 +118,36 @@ part agreed to before building · `docs/` setup notes and an example result.
 - College statements cover 24 of the 300 colleges.
 - Cost is the sticker price. What a family would pay is not known here.
 - PRISM's Evaluator is not attached yet; the run's score is read back in code instead.
+
+## Essay retrieval and whole profile similarity
+
+Live runs embed masked essay and activity text through the existing Nicrron gateway
+(`openai/text-embedding-3-small`). The Cases panel shows nearest cases, comparison
+fields and essay retrieval results. No additional dependencies are required.
+
+Similarity combines test score, GPA, activities rating, major, hooks, public-college
+residency, essay content and activity descriptions when both profiles have them.
+Weights are declared in `engine/similarity.py` and renormalized over shared fields.
+They are starting values, not fitted or validated admission predictors. A comparison
+requires a shared academic, activity or text feature; demographics alone do not suffice.
+Test scores are optional for similarity. The published-number college labels still
+use their existing rules. Essay content distance is not an essay quality score.
+
+The public dataset contains no full essays. School cases currently provide brief
+`essay_theme` summaries and `activities_note` descriptions; retrieval marks summary
+comparisons explicitly. To connect full historical essays, create
+`data/cases/essay_corpus.json` as an array joined to existing case IDs:
+
+```json
+[
+  {"case_id": "S-1", "essay": "Historical essay text", "activities_note": "Activity description"},
+  {"case_id": "N-123", "essay": "Historical essay text"}
+]
+```
+
+Only records for the selected colleges are embedded. Corpus text passes the same
+local privacy mask and instruction check. Blocked essays are excluded. Vectors stay
+in a bounded in-memory cache keyed by model and masked content hash, and are never
+returned to the browser or written to disk. `use_model=False` disables embeddings.
+Gateway failures omit missing vectors and expose an unavailable/partial status;
+structured comparisons continue. Static demo fixtures do not perform live retrieval.
