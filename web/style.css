@@ -184,6 +184,29 @@ main:focus { outline: none; }
 .pline { stroke: var(--ink); stroke-width: 2.5; }
 .pline-base { stroke: var(--mute); stroke-width: 1.5; stroke-dasharray: 3 4; pointer-events: none; }
 .ptagbg { fill: var(--ink); } .ptag { fill: var(--panel); font-size: 12.5px; font-weight: 700; }
+.pic-toggle { margin-left: auto; display: flex; gap: 4px; }
+.pick.small { font-size: 14px; min-height: 30px; padding: 3px 11px; }
+
+/* rings: the student at the centre, one dot per college, nearer = more like the people admitted there */
+.rings { min-width: 520px; max-height: 560px; }
+.rguide { fill: none; stroke: var(--soft); stroke-width: 1.2; }
+.router { stroke: var(--line); stroke-dasharray: 5 4; }
+.rguidet { font-size: 12px; fill: var(--mute); }
+.rme { fill: var(--ink); } .rmet { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+.rdot { cursor: pointer; outline: none; }
+.rhit { fill: transparent; stroke: transparent; stroke-width: 2; }
+.rdot:hover .rhit { fill: var(--soft); }
+.rdot:focus-visible .rhit { fill: var(--accent-soft); stroke: var(--accent); }
+.rd-reach .shape { color: var(--reach); fill: var(--reach); }
+.rd-target .shape { color: var(--target); fill: var(--target); }
+.rd-likely .shape { color: var(--likely); fill: var(--likely); }
+.rd-cant_say .shape, .rd-outside_data .shape { color: var(--unsure); fill: var(--unsure); }
+.rd-hollow .shape path, .rd-hollow .shape circle, .rd-hollow .shape rect { fill: var(--panel); stroke: currentColor; stroke-width: 1.8; }
+.rd-out .shape { opacity: .65; }
+.rname { font-size: 13px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.lg-centre { width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.lg-hollow { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink); }
+.lg-dashed { width: 22px; height: 0; border-top: 2px dashed var(--mute); }
 .legend { display: flex; gap: 4px 18px; flex-wrap: wrap; font-size: 13.5px; color: var(--mute); margin-top: 4px; align-items: center; }
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .lg-bar { width: 22px; height: 9px; border-radius: 5px; background: var(--target); opacity: .9; }

@@ -268,17 +268,84 @@ function renderPicture(result, opts) {
   }
   return s + '</svg>';
 }
+/* ---------- Level 1: rings. Distance from the centre = how far the student is from the people admitted there. ---------- */
+function closenessOf(c) {
+  var n = obj(obj(obj(c).closeness).national);
+  return str(n.status) ? n : null;
+}
+function f2(v) { return (Math.round(v * 100) / 100).toString(); }
+function ringsModel(result) {
+  var rows = arr(obj(result).colleges).map(function (c, i) {
+    c = obj(c);
+    var L = obj(c.label), g = groupOf(L.state), n = closenessOf(c), d = n ? num(n.d_admitted) : null;
+    var placed = n !== null && d !== null && (n.status === 'ok' || n.status === 'not_enough');
+    return {i: i, c: c, L: L, g: g, n: n, d: d, placed: placed, hollow: placed && n.status !== 'ok'};
+  });
+  rows.sort(function (a, b) { return ORDER.indexOf(a.g) - ORDER.indexOf(b.g) || str(a.c.name).localeCompare(str(b.c.name)); });
+  return rows;
+}
+function renderRings(result) {
+  var rows = ringsModel(result), st = obj(obj(result).student), score = num(st.sat) !== null ? num(st.sat) : num(st.act);
+  var W = 880, H = 560, CX = 440, CY = 280, R0 = 40, R1 = 200, DMAX = 0.6, ROUT = R0 + R1 + 24;
+  function rad(d) { return R0 + R1 * Math.min(Math.max(d, 0) / DMAX, 1); }
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var n = rows.length, placed = rows.filter(function (x) { return x.placed; }).length;
+  var s = '<svg class="pic rings" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' +
+    esc('Rings: ' + n + ' ' + plural(n, 'college', 'colleges') + ' around the student. Nearer the centre means more like the people admitted there. ' +
+        placed + ' placed' + (n - placed > 0 ? '; ' + (n - placed) + ' on the outer ring with too few cases to place' : '') + '. Distance is not the label.') + '">';
+  [0.2, 0.4, 0.6].forEach(function (d) { s += '<circle class="rguide" cx="' + CX + '" cy="' + CY + '" r="' + p(rad(d)) + '"/>'; });
+  s += '<circle class="rguide router" cx="' + CX + '" cy="' + CY + '" r="' + ROUT + '"/>' +
+    '<text class="rguidet" x="' + CX + '" y="' + (CY - ROUT - 5) + '" text-anchor="middle">not enough cases to place</text>';
+  s += '<g class="rcentre" aria-hidden="true"><circle class="rme" cx="' + CX + '" cy="' + CY + '" r="9"/>' +
+    '<text class="rmet" x="' + CX + '" y="' + (CY + 25) + '" text-anchor="middle">Student' + (score !== null ? ' ' + score : '') + '</text></g>';
+  if (!n) s += '<text class="pnone" x="' + CX + '" y="' + (CY - 30) + '" text-anchor="middle">No colleges on this list yet.</text>';
+  rows.forEach(function (x, k) {
+    var ang = -Math.PI / 2 + k * 2 * Math.PI / Math.max(n, 1), rr = x.placed ? rad(x.d) : ROUT;
+    var cx = CX + rr * Math.cos(ang), cy = CY + rr * Math.sin(ang), right = Math.cos(ang) >= -0.01;
+    var name = str(x.c.name) || 'Unnamed college', nn = x.n || {};
+    var say = name + '. ' + stateText(x.L) + '. ' +
+      (x.placed ? str(nn.text) + ' Distance to the nearest admitted ' + f2(x.d) + (num(nn.d_denied) !== null ? ', to the nearest denied ' + f2(num(nn.d_denied)) : '') + '.' +
+                  (x.hollow ? ' Too few cases, so this is rough.' : '')
+                : (x.n ? str(nn.text) : 'No closeness data for this college.')) + ' Open the details.';
+    s += '<g class="rdot rd-' + x.g + (x.hollow ? ' rd-hollow' : '') + (x.placed ? '' : ' rd-out') + '" data-act="open-receipt" data-i="' + x.i +
+      '" tabindex="0" role="button" aria-label="' + esc(say) + '"><title>' + esc(name) + '</title>' +
+      '<circle class="rhit" cx="' + p(cx) + '" cy="' + p(cy) + '" r="15"/>' +
+      shape(x.g, ' x="' + p(cx - 8) + '" y="' + p(cy - 8) + '"') +
+      '<text class="rname" x="' + p(cx + (right ? 13 : -13)) + '" y="' + p(cy + 4.5) + '" text-anchor="' + (right ? 'start' : 'end') + '">' +
+      esc(clip(shortName(name), 24)) + '</text></g>';
+  });
+  return s + '</svg>';
+}
+var PIC_VIEWS = [['ranges', 'Score ranges'], ['rings', 'Rings']];
+function picView(opts) {
+  var v = str(obj(opts).view);
+  return PIC_VIEWS.some(function (x) { return x[0] === v; }) ? v : 'ranges';
+}
 function renderPictureCard(result, opts) {
-  var m = pictureModel(result, opts);
-  return '<div class="panel pic-card"><div class="pic-head"><h2>Where this student stands</h2>' +
-    (m.score === null ? '<span class="quiet">No test score entered, so there is no line.</span>' : '') + '</div>' +
-    '<div class="pic-scroll">' + renderPicture(result, opts) + '</div>' +
-    '<ul class="legend" aria-label="How to read the picture">' +
-    '<li><span class="lg-bar"></span>the college\'s middle score range</li>' +
-    '<li><span class="lg-line"></span>the student\'s score</li>' +
-    '<li><i class="cd cd-admitted"></i>admitted <i class="cd cd-denied"></i>denied <i class="cd cd-waitlisted"></i>waitlisted, national cases</li>' +
-    '<li><span class="lg-ring"></span>your school has cases</li>' +
-    '<li class="lg-tip">Press a row to see why.</li></ul></div>';
+  var m = pictureModel(result, opts), view = picView(opts), body, legend;
+  var head = '<div class="pic-head"><h2>Where this student stands</h2>' +
+    (m.score === null && view === 'ranges' ? '<span class="quiet">No test score entered, so there is no line.</span>' : '') +
+    '<div class="pic-toggle" role="group" aria-label="Which picture">' + PIC_VIEWS.map(function (v) {
+      return '<button type="button" class="pick small" data-act="pic-view" data-view="' + v[0] + '" aria-pressed="' + (v[0] === view ? 'true' : 'false') + '">' + esc(v[1]) + '</button>';
+    }).join('') + '</div></div>';
+  if (view === 'rings') {
+    body = renderRings(result);
+    legend = '<ul class="legend" aria-label="How to read the rings">' +
+      '<li><span class="lg-centre"></span>the student, at the centre</li>' +
+      '<li>nearer the centre: more like the people admitted there</li>' +
+      '<li><span class="lg-hollow"></span>hollow: too few cases, rough</li>' +
+      '<li><span class="lg-dashed"></span>outer ring: cannot be placed</li>' +
+      '<li class="lg-tip">Press a dot to see why. Distance is not the label.</li></ul>';
+  } else {
+    body = renderPicture(result, opts);
+    legend = '<ul class="legend" aria-label="How to read the picture">' +
+      '<li><span class="lg-bar"></span>the college\'s middle score range</li>' +
+      '<li><span class="lg-line"></span>the student\'s score</li>' +
+      '<li><i class="cd cd-admitted"></i>admitted <i class="cd cd-denied"></i>denied <i class="cd cd-waitlisted"></i>waitlisted, national cases</li>' +
+      '<li><span class="lg-ring"></span>your school has cases</li>' +
+      '<li class="lg-tip">Press a row to see why.</li></ul>';
+  }
+  return '<div class="panel pic-card">' + head + '<div class="pic-scroll">' + body + '</div>' + legend + '</div>';
 }
 
 /* ---------- Level 1: the three levers ---------- */
@@ -828,6 +895,7 @@ var api = {
   esc: esc, inHundred: inHundred, rateFull: rateFull, moneyAbout: moneyAbout, duration: duration, groupOf: groupOf,
   renderTopChips: renderTopChips, renderStudentLine: renderStudentLine, renderCounters: renderCounters, warningTexts: warningTexts,
   pictureModel: pictureModel, renderPicture: renderPicture, renderPictureCard: renderPictureCard, ladderLines: ladderLines,
+  closenessOf: closenessOf, ringsModel: ringsModel, renderRings: renderRings, picView: picView, PIC_VIEWS: PIC_VIEWS,
   renderLeversCard: renderLeversCard, renderSuggestionsPanel: renderSuggestionsPanel, renderFootLinks: renderFootLinks,
   renderChanceAnswer: renderChanceAnswer, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
@@ -849,7 +917,7 @@ var OFTEN = ['Rutgers University-New Brunswick', 'Purdue University-Main Campus'
 var PREVIEW_LINE = 'Shared preview: saved runs for six invented students. Run it on a laptop to edit.';
 /* mode: 'live' (server answers), 'static' (shared preview from saved files), 'example' (the embedded example). */
 var S = {mode: 'live', base: null, view: null, whatIf: null, slider: null, students: [], manifest: null, runIndex: null,
-         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null};
+         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, picView: 'ranges'};
 function $(id) { return document.getElementById(id); }
 function all(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
 
@@ -876,7 +944,7 @@ function notice(text) {
 /* ---------- drawing the first view ---------- */
 function picOpts() {
   var sl = obj(S.slider);
-  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind};
+  return {score: S.whatIf, base: num(sl.base), scoreMin: num(sl.lo), scoreMax: num(sl.hi), whatIf: S.whatIf !== null, kind: sl.disabled ? null : sl.kind, view: S.picView};
 }
 function drawView() {
   $('counters').innerHTML = renderCounters(obj(S.view).balance, S.whatIf !== null);
@@ -1179,6 +1247,11 @@ function doAct(el) {
     if (!box.hidden) box.scrollIntoView({block: 'nearest'});
   }
   else if (act === 'reset-score') resetScore();
+  else if (act === 'pic-view') {
+    S.picView = picView({view: el.getAttribute('data-view')});
+    $('picture').innerHTML = renderPictureCard(S.view, picOpts());
+    var pb = $('picture').querySelector('[data-view="' + S.picView + '"]'); if (pb) pb.focus();
+  }
   else if (act === 'add-suggestion') { if (addCollege(name)) { el.textContent = 'Added'; el.disabled = true; closePanel(); run(); } }
   else if (act === 'quick-add' || act === 'pick-hit') { addCollege(name); }
   else if (act === 'add-typed') {
