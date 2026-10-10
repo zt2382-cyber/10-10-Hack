@@ -67,7 +67,7 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(catalogue('<script>self.__next_f.push('+payload+')</script>'), rows)
 
     def test_live_licensed_bank_is_attributed_and_has_no_undergraduate_entries(self):
-        rows=json.loads((baseline.BANK_DIR/'openessays_bank.json').read_text())
+        rows=json.loads((baseline.BANK_DIR/'openessays_bank.json').read_text(encoding='utf-8'))
         self.assertEqual(len(rows),12)
         for row in rows:
             self.assertEqual(row['license'],'CC_BY_NC_SA_4_0')
