@@ -362,6 +362,12 @@ main:focus { outline: none; }
 .why { font-size: 16px; }
 .sugg .btn { align-self: flex-start; margin-top: auto; }
 
+/* about: a lead paragraph, a numbered tour with live buttons */
+.about { display: grid; gap: 10px; }
+.about-lead { font-size: 18px; }
+.tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16.5px; }
+.tour .btn { margin: 6px 6px 0 0; }
+
 /* essay notes and how this was made (inside the drawer) */
 .notes { display: grid; gap: 14px; margin: 12px 0; }
 .notes li { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--raised); }

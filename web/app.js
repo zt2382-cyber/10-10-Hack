@@ -510,7 +510,7 @@ function renderSuggestionsPanel(balance, canAdd) {
 }
 function renderFootLinks(result, mode) {
   var n = arr(obj(obj(result).reader).notes).length;
-  var links = [['open-essay', 'Essay notes (' + n + ')'], ['open-how', 'How this was made']];
+  var links = [['open-about', 'About this screen'], ['open-essay', 'Essay notes (' + n + ')'], ['open-how', 'How this was made']];
   if (mode !== 'static') links.push(['open-case', 'Add a finished case']);
   links.push(['print', 'Print for the family'], ['ask-chance', "What is the student's chance?"]);
   return links.map(function (l) {
@@ -993,6 +993,46 @@ function renderStopBanner(privacy, reader) {
     '<p class="verdicts">' + verdictMarks(pv) + '<span class="quiet">The labels below are set without the essay, as always.</span></p>' +
     (why ? '<details class="more"><summary>Why</summary><p>' + esc(why) + '</p></details>' : '') + '</div>';
 }
+/* ---------- about: what this is, a tour with live buttons, the rules it keeps ---------- */
+function renderAboutPanel(result, mode) {
+  var r = obj(result), cs = arr(r.colleges).map(obj), nIn = cs.filter(function (c) { return c.in_data; }).length;
+  var withClose = cs.filter(function (c) { return closenessOf(c) && closenessOf(c).status === 'ok'; }).length;
+  var first = cs.filter(function (c) { return closenessOf(c) && closenessOf(c).status === 'ok'; })[0];
+  function tourBtn(act, text, extra) { return '<button type="button" class="btn small" data-act="' + act + '"' + (extra || '') + '>' + esc(text) + '</button>'; }
+  var h = panelHead('Start here', 'About this screen') + '<section class="rc-sec about">';
+  h += '<p class="about-lead">A screen for a college counselor in a meeting with a family. Enter one student and the colleges under discussion. ' +
+    'Code sets every label, count and number from published data and finished cases. A model only reads the essay, and only after personal details are masked. ' +
+    '<b>It never gives a personal chance of admission.</b></p>';
+  h += '<h4>A two-minute tour</h4><ol class="tour">';
+  h += '<li><b>The first view.</b> Three counters say how many colleges are reach, target and likely, and the one warning that matters most. ' +
+    'The picture "Where this student stands" puts every college\'s middle score range on one line with the student\'s score drawn through them.' +
+    (cs.length ? '' : ' <span class="quiet">Pick a demo student and press Build the list to see it.</span>') + '</li>';
+  h += '<li><b>Rings and the mind map (new today).</b> Two more pictures of the same list. In the rings, the student is at the centre and each college sits as far out as the student is from the people admitted there. ' +
+    'The mind map hangs the colleges off three branches and shows, under each, the kind of admitted student they are nearest to and the three nearest admitted cases. ' +
+    (cs.length ? tourBtn('tour-rings', 'Show the rings') + ' ' + tourBtn('tour-map', 'Show the mind map') + ' ' + tourBtn('tour-ranges', 'Back to score ranges') : '') + '</li>';
+  h += '<li><b>Press a college.</b> Five tabs: why this label (the written rule and its inputs), cases like this student (two pools, never merged), ' +
+    'who they resemble (new today), what could change it, and what the college itself says it weighs. ' +
+    (first ? tourBtn('tour-resemble', 'Open "' + shortName(first.name) + '", who they resemble', ' data-i="' + cs.indexOf(first) + '"') : '') + '</li>';
+  h += '<li><b>The levers.</b> Beside the picture: the list itself (suggested fills), a "what if the score were…" slider that re-labels the list as it moves, and what each college says matters.</li>';
+  h += '<li><b>Check the work.</b> "How this was made" lists the five steps, what code did and what a model did, the sentences hidden by checks, and the closeness check table. ' +
+    tourBtn('open-how', 'Open "How this was made"') + '</li>';
+  h += '<li><b>Ask the forbidden question.</b> "What is the student\'s chance?" in the footer explains why no percentage is given and points at the evidence instead.</li>';
+  h += '</ol>';
+  h += '<h4>What closeness is, and is not</h4><ul class="plain">' +
+    '<li>For each college: does this student look more like the people admitted there, or the people denied? Measured as a <b>distance</b> over score, activities rating, major group, hooks and residency. Nothing else.</li>' +
+    '<li>It never reads the essay or activity text, never changes a label, and never becomes a percentage. "Not enough cases" and "can\'t say" are normal answers.</li>' +
+    '<li>"What would bring the student closer" only ever tries a higher score, deeper involvement in the activities already listed, or another major the student named. Never hooks, home state or GPA.</li>' +
+    '<li>Checked on 400 past posters with each one hidden in turn; the counts are under "How this was made", with the caveat that people who post are admitted far more often than applicants.</li></ul>';
+  h += '<h4>What is real and what is invented</h4><ul class="plain">' +
+    '<li><b>Real:</b> 300 colleges\' admit rates, score ranges and costs (US Department of Education); what 24 colleges say they weigh (their own Common Data Set); a national pool of self-reported results from public posts, with no names.</li>' +
+    '<li><b>Invented, stamped SYNTHETIC:</b> the six demo students and essays, and the school\'s own "verified" cases.</li></ul>';
+  if (cs.length) {
+    h += '<p class="quiet small">This run: ' + cs.length + ' ' + plural(cs.length, 'college', 'colleges') + ', ' + nIn + ' in our data, ' + withClose + ' with enough cases for closeness.' +
+      (mode === 'static' ? ' Shared preview: saved runs, no server.' : '') + '</p>';
+  }
+  h += '<p class="quiet small">Built on 10 October 2026 at a one-day hackathon. Python standard library and plain HTML, CSS and JavaScript; no build step. Source and tests sit beside this page.</p>';
+  return h + '</section>';
+}
 function renderEssayPanel(result) { return panelHead('For the counselor', 'Essay notes') + '<section class="rc-sec">' + renderEssay(obj(result).reader, obj(result).privacy) + '</section>'; }
 function renderHowPanel(result) {
   var r = obj(result);
@@ -1135,6 +1175,7 @@ var api = {
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
   renderResembleTab: renderResembleTab, renderScatter: renderScatter, renderPartBars: renderPartBars, TABS: TABS,
   renderEssay: renderEssay, renderHow: renderHow, renderStopBanner: renderStopBanner, verdictMarks: verdictMarks, renderEssayPanel: renderEssayPanel, renderHowPanel: renderHowPanel,
+  renderAboutPanel: renderAboutPanel,
   renderFamily: renderFamily, renderCollegeChips: renderCollegeChips, renderQuickAdds: renderQuickAdds, renderEssayPicks: renderEssayPicks,
   renderActivityRows: renderActivityRows, renderHits: renderHits, listFrom: listFrom, normaliseStudent: normaliseStudent,
   sliderSpec: sliderSpec, hookText: hookText, FIXTURE: FIXTURE
@@ -1152,7 +1193,8 @@ var OFTEN = ['Rutgers University-New Brunswick', 'Purdue University-Main Campus'
 var PREVIEW_LINE = 'Shared preview: saved runs for six invented students. Run it on a laptop to edit.';
 /* mode: 'live' (server answers), 'static' (shared preview from saved files), 'example' (the embedded example). */
 var S = {mode: 'live', base: null, view: null, whatIf: null, slider: null, students: [], manifest: null, runIndex: null,
-         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, picView: 'ranges', lastOpened: null};
+         list: [], acts: [], lastInput: null, essayPick: -2, lastFocus: null, openEl: null, seq: 0, timer: null, picView: 'ranges', lastOpened: null,
+         aboutOffered: false};
 function $(id) { return document.getElementById(id); }
 function all(sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); }
 
@@ -1200,6 +1242,7 @@ function showResult(result) {
   $('chance-answer').hidden = true; $('chance-answer').innerHTML = renderChanceAnswer(obj(result).refusals);
   $('family').innerHTML = renderFamily(result);
   drawQuick();
+  maybeOpenAbout();
 }
 function inputFromStudent(st) {
   var s = normaliseStudent(st);
@@ -1407,6 +1450,18 @@ function closePanel() {
   S.openEl.hidden = true; S.openEl = null; $('backdrop').hidden = true; document.body.classList.remove('drawer-open');
   if (S.lastFocus && S.lastFocus.focus && document.contains(S.lastFocus)) S.lastFocus.focus(); else $('results').focus();
 }
+function openAbout() {
+  openPanel($('receipt'), renderAboutPanel(S.base, S.mode));
+  try { localStorage.setItem('cc-about-seen', '1'); } catch (e) { /* private window or storage off: the page still works */ }
+}
+/* The about page opens by itself on a first visit, or whenever the address has ?about=1. */
+function maybeOpenAbout() {
+  if (S.aboutOffered) return;
+  S.aboutOffered = true;
+  var asked = /[?&]about=1(&|$)/.test(location.search), seen = false;
+  try { seen = localStorage.getItem('cc-about-seen') === '1'; } catch (e) { seen = true; }
+  if (asked || !seen) openAbout();
+}
 function openCollege(i, tab) {
   var c = arr(obj(S.view).colleges)[i];
   if (!c) return;
@@ -1476,6 +1531,13 @@ function doAct(el) {
     });
     openCollege(k === -1 ? 0 : k, act === 'open-says' ? 'says' : 'cases');
   }
+  else if (act === 'open-about') openAbout();
+  else if (act === 'tour-rings' || act === 'tour-map' || act === 'tour-ranges') {
+    S.picView = act === 'tour-rings' ? 'rings' : (act === 'tour-map' ? 'map' : 'ranges');
+    closePanel();
+    if (S.view) { $('picture').innerHTML = renderPictureCard(S.view, picOpts()); $('picture').scrollIntoView({block: 'start'}); var tb = $('picture').querySelector('[data-view="' + S.picView + '"]'); if (tb) tb.focus(); }
+  }
+  else if (act === 'tour-resemble') { closePanel(); openCollege(i, 'resemble'); }
   else if (act === 'open-essay') openPanel($('receipt'), renderEssayPanel(S.base));
   else if (act === 'open-how') openPanel($('receipt'), renderHowPanel(S.base));
   else if (act === 'open-case') { openPanel($('case-panel'), null, 'input'); loadCaseCount(); }
