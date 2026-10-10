@@ -46,6 +46,9 @@ a { color: var(--accent); text-underline-offset: 3px; }
 /* ---------- top bar: name, stamp, the student in one line ---------- */
 .top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 9px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .top h1 { font-size: 21px; letter-spacing: -.01em; white-space: nowrap; }
+.top-nav { display: flex; gap: 2px 10px; align-items: center; }
+.top-nav .linkbtn { font-size: 15px; text-decoration: none; padding: 4px 6px; }
+.top-nav .linkbtn:hover { text-decoration: underline; }
 .top-chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .stamp { display: inline-block; border: 2px solid var(--ink); color: var(--ink); font-weight: 800; font-size: 12.5px; letter-spacing: .14em; padding: 1px 9px; border-radius: 3px; transform: rotate(-2deg); background: var(--panel); }
 .chip { display: inline-block; border: 1px solid var(--line); background: var(--raised); border-radius: 999px; padding: 2px 12px; font-size: 14px; }
@@ -367,6 +370,12 @@ main:focus { outline: none; }
 .about-lead { font-size: 18px; }
 .tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16.5px; }
 .tour .btn { margin: 6px 6px 0 0; }
+.srcs { display: grid; gap: 10px; }
+.src-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--raised); display: grid; gap: 4px; }
+.src-name { font-weight: 700; font-size: 17px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.src-what { font-size: 15.5px; }
+.src-files { font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.src-h { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); font-weight: 650; margin-top: 4px; }
 .weights th[scope=row] { color: var(--ink); font-weight: 650; white-space: nowrap; }
 .w-num { font-variant-numeric: tabular-nums; font-weight: 700; }
 .algo { display: block; width: 100%; height: auto; min-width: 640px; max-width: 760px; font-family: inherit; }
