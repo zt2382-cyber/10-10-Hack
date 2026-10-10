@@ -103,9 +103,9 @@
     "name": "Activities rating input",
     "status": "works",
     "when": "afternoon",
-    "what": "A 0 to 10 dial for the counselor's own rating of the student's activities, used only by closeness.",
+    "what": "A 0 to 10 dial for the counselor's own rating of the student's activities, used only by closeness and the clusters. When the dial is not set, a written rule estimates a rating from the activities listed (count, a leading role, recognition beyond the school, sustained commitment) and the screen says so.",
     "where": "Counselor tools, \"Change the details\".",
-    "files": "web/index.html"
+    "files": "web/index.html, engine/similarity.py"
   },
   {
     "id": "says",

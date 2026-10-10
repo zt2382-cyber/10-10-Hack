@@ -209,6 +209,11 @@ Groups addition (2026-10-10 evening; requirements in `docs/req/GROUPS_REQUIREMEN
   screen names kinds anywhere (drill-in tab, mind-map leaves, scatter medoid rings) only when the verdict is not
   `none`. Over the 58 colleges in the file: 53 `none`, 1 `loose`, 4 without kinds.
 - `similarity.method()` gains `groups` and `kinds_check` with these constants, for the About page.
+- `student` gains `activities_from` (`"counselor"` when the dial was set, `"estimated"` when the rating came from the
+  activity list, `null` when there is neither), `activities_why` (the rule's reasons, e.g. `["2 activities listed",
+  "a leading role"]`) and `activities_rule` (the rule in words: 4 for one activity, +1 per further activity up to 4,
+  +1 for a leading role, +1 for recognition beyond the school, +1 for sustained commitment, never over 10). The
+  estimate feeds closeness and the clusters alike; the counselor's own rating always replaces it.
 
 ### `balance` object: `balance.assess(labelled, student) -> dict`
 `labelled` is a list of `{"college": College | None, "name": str, "label": label}`.

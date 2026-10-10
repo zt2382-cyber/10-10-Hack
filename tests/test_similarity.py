@@ -175,7 +175,10 @@ class ClosenessTests(unittest.TestCase):
             self.assertIn("to", f)
         self.assertTrue(r["own"]["verified"])
         self.assertIn("not a forecast", r["caveat"])
-        self.assertEqual(r["student"], {"score": 1450, "converted": False, "activities": None})
+        self.assertEqual({k: r["student"][k] for k in ("score", "converted", "activities", "activities_from")},
+                         {"score": 1450, "converted": False, "activities": None, "activities_from": None})
+        self.assertEqual(r["student"]["activities_why"], [])
+        self.assertEqual(r["student"]["activities_rule"], S.ESTIMATE_RULE)
 
     def test_lean_follows_gap_and_threshold(self):
         self.assertEqual(S._lean(S.LEAN_GAP), "closer_to_admitted")
@@ -534,6 +537,45 @@ class GroupsTests(unittest.TestCase):
                 self.assertNotIn(w, text.lower())
 
 
+class EstimateTests(unittest.TestCase):
+    def test_no_activities_means_no_estimate(self):
+        self.assertEqual(S.estimate_rating([]), (None, []))
+        self.assertEqual(S.estimate_rating(None), (None, []))
+        sv = S._student_view(STUDENT, col("Cornell University"))
+        self.assertEqual((sv["activities"], sv["activities_from"]), (None, None))
+
+    def test_rule_counts_activities_leadership_recognition_and_commitment(self):
+        one = [{"type": "Athletics", "role": "Varsity swimmer", "description": "Four years"}]
+        self.assertEqual(S.estimate_rating(one), (5.0, ["1 activity listed", "sustained commitment"]))
+        plain = [{"type": "Chess", "role": "Member", "description": ""}]
+        self.assertEqual(S.estimate_rating(plain)[0], 4.0)
+        two = [{"type": "Research", "role": "Student researcher", "description": "Summer lab program; co-author on a poster"},
+               {"type": "Robotics", "role": "Team captain", "description": "State finalist two years"}]
+        r, why = S.estimate_rating(two)
+        self.assertEqual(r, 8.0)
+        self.assertEqual(why, ["2 activities listed", "a leading role", "recognition beyond the school", "sustained commitment"])
+        many = [{"type": f"Club {i}", "role": "Member", "description": ""} for i in range(9)]
+        self.assertEqual(S.estimate_rating(many)[0], S.ESTIMATE_BASE + S.ESTIMATE_MAX_COUNTED - 1)
+        self.assertLessEqual(S.estimate_rating(many + two)[0], 10)
+
+    def test_counselor_rating_wins_and_estimate_places_the_student(self):
+        two = [{"type": "Research", "role": "Student researcher", "description": "Summer lab program; co-author on a poster"},
+               {"type": "Robotics", "role": "Team captain", "description": "State finalist two years"}]
+        c = col("Cornell University")
+        est = S._student_view(dict(STUDENT, activities=two), c)
+        self.assertEqual((est["activities"], est["activities_from"]), (8.0, "estimated"))
+        own = S._student_view(dict(STUDENT, activities=two, activities_rating=3), c)
+        self.assertEqual((own["activities"], own["activities_from"], own["activities_why"]), (3.0, "counselor", []))
+        r = S.closeness(dict(STUDENT, activities=two), c)
+        self.assertEqual(r["student"]["activities_from"], "estimated")
+        mine = [x for x in r["national"]["groups"]["cells"] if x["is_student"]]
+        self.assertEqual([(m["score_band"], m["activities_band"]) for m in mine], [("below", "high")])
+        self.assertEqual(r["national"]["groups"]["student_note"], "")
+        for text in strings(r["student"]):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+
+
 class KindsCheckTests(unittest.TestCase):
     def setUp(self):
         self.orig = S._national_groups
@@ -592,6 +634,7 @@ class MethodTests(unittest.TestCase):
         self.assertEqual(m["groups"], {"act_mid": S.ACT_MID, "act_high": S.ACT_HIGH, "min_n": S.GROUP_MIN, "few_n": S.GROUP_FEW, "cap": S.GROUPS_CAP})
         self.assertEqual(m["kinds_check"]["separation"], S.KINDS_SEPARATION)
         self.assertEqual(m["kinds_check"]["stability"], S.KINDS_STABILITY)
+        self.assertEqual(m["activities_estimate"]["rule"], S.ESTIMATE_RULE)
         self.assertEqual({p["part"]: p["weight"] for p in m["parts"]}, S.WEIGHTS)
         self.assertEqual(m["neighbours"], S.NEIGHBOURS)
         self.assertEqual(m["lean_gap"], S.LEAN_GAP)

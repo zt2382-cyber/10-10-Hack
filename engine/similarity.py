@@ -68,7 +68,7 @@ def method() -> dict:
             {"part": "score", "name": PART_WORD["score"], "weight": WEIGHTS["score"], "distance": f"score difference / {SCORE_SPAN} SAT points, capped at 1",
              "student": "SAT, or ACT converted to the SAT scale", "case": "SAT, or ACT converted", "pools": "both", "required": False},
             {"part": "activities", "name": PART_WORD["activities"], "weight": WEIGHTS["activities"], "distance": f"rating difference / {RATING_SPAN:g}",
-             "student": "the counselor's 0 to 10 rating (optional)", "case": "self-rated activities and awards, 0 to 10", "pools": "national only", "required": False},
+             "student": "the counselor's 0 to 10 rating, or an estimate from the activity list by a written rule", "case": "self-rated activities and awards, 0 to 10", "pools": "national only", "required": False},
             {"part": "major", "name": PART_WORD["major"], "weight": WEIGHTS["major"], "distance": "0 same group, 1 different",
              "student": "intended major, or the essay reader's tag when both models agreed", "case": "stated major", "pools": "both", "required": False},
             {"part": "hooks", "name": PART_WORD["hooks"], "weight": WEIGHTS["hooks"], "distance": "0 same set of hooks, 1 different",
@@ -93,6 +93,8 @@ def method() -> dict:
         "kinds": {"k": KINDS, "min_admitted": KINDS_MIN, "cap": KINDS_CAP, "rounds": KINDS_ROUNDS, "seed": KINDS_SEED,
                   "parts": list(KIND_PARTS), "score_band": KIND_SCORE_BAND, "rating_band": KIND_RATING_BAND},
         "groups": {"act_mid": ACT_MID, "act_high": ACT_HIGH, "min_n": GROUP_MIN, "few_n": GROUP_FEW, "cap": GROUPS_CAP},
+        "activities_estimate": {"rule": ESTIMATE_RULE, "base": ESTIMATE_BASE, "max_counted": ESTIMATE_MAX_COUNTED,
+                                "lead_words": list(LEAD_WORDS), "recognition_words": list(RECOGNITION_WORDS), "sustained_words": list(SUSTAINED_WORDS)},
         "kinds_check": {"separation": KINDS_SEPARATION, "margin": KINDS_MARGIN, "stability": KINDS_STABILITY,
                         "loose_separation": KINDS_LOOSE_SEPARATION, "loose_stability": KINDS_LOOSE_STABILITY,
                         "subsamples": KINDS_SUBSAMPLES, "subsample_share": KINDS_SUBSAMPLE_SHARE},
@@ -125,6 +127,42 @@ def _gpa(v, scale=None):
     return g * 4.0 / s
 
 
+# An activities rating estimated from the activity list, used only when the counselor has not set the dial. A written
+# rule, no model, pitched to the self-reported pool's scale (its median is 6.5; most posters say 6 or 8). The reasons
+# are returned so the screen can say exactly why, and the counselor's own rating always replaces it.
+ESTIMATE_BASE = 4             # one activity listed
+ESTIMATE_MAX_COUNTED = 4      # +1 for each further activity, up to this many
+LEAD_WORDS = ("captain", "president", "founder", "co-founder", "founded", "started", "lead", "leader", "editor", "chair",
+              "head", "director", "organiser", "organizer", "coordinator", "manager")
+RECOGNITION_WORDS = ("state", "national", "international", "regional", "finalist", "semifinalist", "champion", "winner",
+                     "award", "published", "co-author", "poster", "medal", "qualifier", "all-state", "honor", "honour",
+                     "scholar", "first place", "second place", "third place")
+SUSTAINED_WORDS = ("years", "since grade", "every week", "every weekday", "every day", "daily", "hours a week",
+                   "hours per week", "hrs/week", "hrs a week", "a week for", "year-round")
+ESTIMATE_RULE = (f"{ESTIMATE_BASE} for one activity, +1 for each further activity up to {ESTIMATE_MAX_COUNTED}, +1 for a leading role, "
+                 "+1 for recognition beyond the school, +1 for sustained commitment (years, or weekly hours); never over 10.")
+
+
+def estimate_rating(activities):
+    """(rating 1 to 10 or None, reasons). None when no activity is listed."""
+    acts = [a for a in (activities or []) if isinstance(a, dict)]
+    if not acts:
+        return None, []
+    n = min(len(acts), ESTIMATE_MAX_COUNTED)
+    rating = ESTIMATE_BASE + (n - 1)
+    why = [f"{len(acts)} {'activity' if len(acts) == 1 else 'activities'} listed"]
+    text = " ".join(str(a.get(k) or "") for a in acts for k in ("type", "role", "description")).lower()
+    words = set(text.replace("-", " ").replace(",", " ").replace(";", " ").replace(".", " ").split())
+    def has(ws):
+        return any((w in words) if " " not in w and "-" not in w else (w in text) for w in ws)
+    for ws, reason in ((LEAD_WORDS, "a leading role"), (RECOGNITION_WORDS, "recognition beyond the school"),
+                       (SUSTAINED_WORDS, "sustained commitment")):
+        if has(ws):
+            rating += 1
+            why.append(reason)
+    return float(min(10, max(1, rating))), why
+
+
 def _student_view(student, college, tags=None) -> dict:
     """The student's side, built once: the same score, group and hook rules as cases.find_similar."""
     student, tags = student or {}, tags or {}
@@ -141,7 +179,11 @@ def _student_view(student, college, tags=None) -> dict:
     if not interests and group:
         interests = [group]
     home = str(student.get("home_state") or "").strip().upper() or None
-    return {"score": score, "converted": converted, "activities": _rating(student.get("activities_rating")),
+    rating, rating_from, why = _rating(student.get("activities_rating")), "counselor", []
+    if rating is None:
+        rating, why = estimate_rating(student.get("activities"))
+        rating_from = "estimated" if rating is not None else None
+    return {"score": score, "converted": converted, "activities": rating, "activities_from": rating_from, "activities_why": why,
             "major_group": group, "major_interests": interests,
             "hooks": frozenset(_cases._hooks_from_student(student.get("hooks"))),
             "home_state": home, "gpa": _gpa(student.get("gpa"), student.get("gpa_scale"))}
@@ -455,7 +497,7 @@ GROUP_FEW = 15          # under this: shown, marked "few"
 GROUPS_CAP = 900        # most cases listed per college; past this the list is spread evenly through the file order
 SCORE_BANDS = ("below", "inside", "above")
 ACT_BANDS = ("high", "mid", "low")
-GROUPS_CAVEAT = ("People who were admitted post far more often than people who were denied, so every group looks "
+GROUPS_CAVEAT = ("People who were admitted post far more often than people who were denied, so every cluster looks "
                  "rosier than the real applicant pool.")
 GROUPS_REASON = {
     "own": "The school's own cases carry no activities rating, so they cannot be placed in these clusters.",
@@ -751,7 +793,9 @@ def closeness(student, college, tags=None, semantic_context=None) -> dict:
             "essay_retrieval": [r for r in context.get("retrieval", []) if r["case_id"] in ids][:6],
             "weights": dict(WEIGHTS),
             "needed": NEEDED, "neighbours": NEIGHBOURS,
-            "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
+            "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"],
+                        "activities_from": sv.get("activities_from"), "activities_why": list(sv.get("activities_why") or []),
+                        "activities_rule": ESTIMATE_RULE},
             "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds,
                               kinds_check=_kinds_check(short) if short and kinds[0] else None),
             "own": own_pool,
