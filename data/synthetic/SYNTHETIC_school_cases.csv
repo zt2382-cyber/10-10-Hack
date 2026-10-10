@@ -1,0 +1,121 @@
+synthetic,case_id,cycle_year,sat,act,gpa,major_group,hooks,home_state,activities_note,essay_theme,college,outcome,verified_by
+SYNTHETIC,S-1,2025,1140,,3.6,CS,first_gen,NJ,School orchestra first chair; Science Olympiad,identity,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-2,2025,1140,,3.6,CS,first_gen,NJ,School orchestra first chair; Science Olympiad,identity,University of Delaware,denied,counselor
+SYNTHETIC,S-3,2025,1140,,3.6,CS,first_gen,NJ,School orchestra first chair; Science Olympiad,identity,Stony Brook University,waitlisted,counselor
+SYNTHETIC,S-4,2024,1380,,3.76,PSYCH,urm,NJ,Model UN delegate,mentorship,Lehigh University,denied,counselor
+SYNTHETIC,S-5,2024,1380,,3.76,PSYCH,urm,NJ,Model UN delegate,mentorship,Purdue University-Main Campus,denied,counselor
+SYNTHETIC,S-6,2024,1380,,3.76,PSYCH,urm,NJ,Model UN delegate,mentorship,University of Pittsburgh-Pittsburgh Campus,denied,counselor
+SYNTHETIC,S-7,2024,1380,,3.76,PSYCH,urm,NJ,Model UN delegate,mentorship,Carnegie Mellon University,denied,counselor
+SYNTHETIC,S-8,2025,1320,,3.86,ENG,none,NJ,School orchestra first chair; Robotics club captain,service,Virginia Polytechnic Institute and State University,denied,counselor
+SYNTHETIC,S-9,2025,1320,,3.86,ENG,none,NJ,School orchestra first chair; Robotics club captain,service,University of Delaware,admitted,counselor
+SYNTHETIC,S-10,2025,1320,,3.86,ENG,none,NJ,School orchestra first chair; Robotics club captain,service,Binghamton University,denied,counselor
+SYNTHETIC,S-11,2025,1320,,3.86,ENG,none,NJ,School orchestra first chair; Robotics club captain,service,Princeton University,waitlisted,counselor
+SYNTHETIC,S-12,2024,1210,,3.76,CS,none,NJ,Summer research at a university lab; Robotics club captain,immigration,Carnegie Mellon University,denied,counselor
+SYNTHETIC,S-13,2024,1210,,3.76,CS,none,NJ,Summer research at a university lab; Robotics club captain,immigration,University of Maryland-College Park,denied,counselor
+SYNTHETIC,S-14,2024,1530,,4.0,CS,none,NJ,Robotics club captain,family,University of Michigan-Ann Arbor,denied,counselor
+SYNTHETIC,S-15,2024,1530,,4.0,CS,none,NJ,Robotics club captain,family,New York University,waitlisted,counselor
+SYNTHETIC,S-16,2025,,29,3.65,CS,first_gen,NJ,Science Olympiad,resilience,University of Maryland-College Park,denied,counselor
+SYNTHETIC,S-17,2025,,29,3.65,CS,first_gen,NJ,Science Olympiad,resilience,University of Delaware,admitted,counselor
+SYNTHETIC,S-18,2025,,29,3.65,CS,first_gen,NJ,Science Olympiad,resilience,Lehigh University,denied,counselor
+SYNTHETIC,S-19,2025,,29,3.65,CS,first_gen,NJ,Science Olympiad,resilience,University of Pennsylvania,denied,counselor
+SYNTHETIC,S-20,2024,1230,,3.09,ENG,none,NJ,Model UN delegate; Church youth group leader,persistence,Princeton University,denied,counselor
+SYNTHETIC,S-21,2024,1230,,3.09,ENG,none,NJ,Model UN delegate; Church youth group leader,persistence,Columbia University in the City of New York,denied,counselor
+SYNTHETIC,S-22,2025,1260,,3.56,ENG,none,NJ,Varsity soccer,immigration,University of Massachusetts-Amherst,denied,counselor
+SYNTHETIC,S-23,2025,1260,,3.56,ENG,none,NJ,Varsity soccer,immigration,Carnegie Mellon University,waitlisted,counselor
+SYNTHETIC,S-24,2025,1260,,3.56,ENG,none,NJ,Varsity soccer,immigration,University of Pittsburgh-Pittsburgh Campus,denied,counselor
+SYNTHETIC,S-25,2025,1120,,3.46,PREMED,none,NJ,Art portfolio and school gallery show,family,Rowan University,admitted,counselor
+SYNTHETIC,S-26,2025,1120,,3.46,PREMED,none,NJ,Art portfolio and school gallery show,family,University of Massachusetts-Amherst,denied,counselor
+SYNTHETIC,S-27,2025,1120,,3.46,PREMED,none,NJ,Art portfolio and school gallery show,family,Boston University,denied,counselor
+SYNTHETIC,S-28,2025,1120,,3.46,PREMED,none,NJ,Art portfolio and school gallery show,family,Lehigh University,denied,counselor
+SYNTHETIC,S-29,2024,1240,,3.46,POLISCI,none,NJ,Model UN delegate; Student newspaper editor,identity,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-30,2024,1240,,3.46,POLISCI,none,NJ,Model UN delegate; Student newspaper editor,identity,Binghamton University,denied,counselor
+SYNTHETIC,S-31,2024,1300,,3.66,BUSINESS,none,NJ,Summer research at a university lab,mentorship,University of Pennsylvania,denied,counselor
+SYNTHETIC,S-32,2024,1300,,3.66,BUSINESS,none,NJ,Summer research at a university lab,mentorship,Montclair State University,admitted,counselor
+SYNTHETIC,S-33,2024,1070,,3.5,CS,none,NJ,Food pantry volunteer; Volunteer tutor for younger students,immigration,Binghamton University,denied,counselor
+SYNTHETIC,S-34,2024,1070,,3.5,CS,none,NJ,Food pantry volunteer; Volunteer tutor for younger students,immigration,University of Michigan-Ann Arbor,waitlisted,counselor
+SYNTHETIC,S-35,2025,1080,,3.23,ENG,none,NJ,Debate team,curiosity,Rowan University,denied,counselor
+SYNTHETIC,S-36,2025,1080,,3.23,ENG,none,NJ,Debate team,curiosity,Drexel University,denied,counselor
+SYNTHETIC,S-37,2025,1080,,3.23,ENG,none,NJ,Debate team,curiosity,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-38,2024,,23,3.23,POLISCI,legacy,NJ,Cares for younger siblings after school; Church youth group leader,immigration,Georgia Institute of Technology-Main Campus,denied,counselor
+SYNTHETIC,S-39,2024,,23,3.23,POLISCI,legacy,NJ,Cares for younger siblings after school; Church youth group leader,immigration,Montclair State University,admitted,counselor
+SYNTHETIC,S-40,2024,,23,3.23,POLISCI,legacy,NJ,Cares for younger siblings after school; Church youth group leader,immigration,Stony Brook University,denied,counselor
+SYNTHETIC,S-41,2025,1340,,3.55,POLISCI,none,PA,Hospital volunteer,family,Drexel University,admitted,counselor
+SYNTHETIC,S-42,2025,1340,,3.55,POLISCI,none,PA,Hospital volunteer,family,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-43,2025,1340,,3.55,POLISCI,none,PA,Hospital volunteer,family,Pennsylvania State University-Main Campus,denied,counselor
+SYNTHETIC,S-44,2025,1010,,3.05,POLISCI,none,NJ,Art portfolio and school gallery show,mentorship,Pennsylvania State University-Main Campus,denied,counselor
+SYNTHETIC,S-45,2025,1010,,3.05,POLISCI,none,NJ,Art portfolio and school gallery show,mentorship,Purdue University-Main Campus,denied,counselor
+SYNTHETIC,S-46,2025,1010,,3.05,POLISCI,none,NJ,Art portfolio and school gallery show,mentorship,Montclair State University,admitted,counselor
+SYNTHETIC,S-47,2025,1010,,3.05,POLISCI,none,NJ,Art portfolio and school gallery show,mentorship,Rowan University,denied,counselor
+SYNTHETIC,S-48,2024,1390,,3.74,POLISCI,none,NJ,Student newspaper editor; Robotics club captain,curiosity,Rutgers University-New Brunswick,admitted,counselor
+SYNTHETIC,S-49,2024,1390,,3.74,POLISCI,none,NJ,Student newspaper editor; Robotics club captain,curiosity,Cornell University,waitlisted,counselor
+SYNTHETIC,S-50,2024,1390,,3.74,POLISCI,none,NJ,Student newspaper editor; Robotics club captain,curiosity,University of Maryland-College Park,waitlisted,counselor
+SYNTHETIC,S-51,2024,1390,,3.74,POLISCI,none,NJ,Student newspaper editor; Robotics club captain,curiosity,Rowan University,admitted,counselor
+SYNTHETIC,S-52,2025,1270,,4.0,CS,none,NJ,Science Olympiad,family,Rowan University,admitted,counselor
+SYNTHETIC,S-53,2025,1270,,4.0,CS,none,NJ,Science Olympiad,family,Columbia University in the City of New York,waitlisted,counselor
+SYNTHETIC,S-54,2025,1580,,3.83,HUMANITIES,none,NJ,Theater stage crew,community,Binghamton University,admitted,counselor
+SYNTHETIC,S-55,2025,1580,,3.83,HUMANITIES,none,NJ,Theater stage crew,community,University of Maryland-College Park,waitlisted,counselor
+SYNTHETIC,S-56,2025,1580,,3.83,HUMANITIES,none,NJ,Theater stage crew,community,University of Pittsburgh-Pittsburgh Campus,admitted,counselor
+SYNTHETIC,S-57,2024,1370,,3.79,BUSINESS,none,NJ,Family business helper; Summer research at a university lab,mentorship,Virginia Polytechnic Institute and State University,denied,counselor
+SYNTHETIC,S-58,2024,1370,,3.79,BUSINESS,none,NJ,Family business helper; Summer research at a university lab,mentorship,University of Virginia-Main Campus,denied,counselor
+SYNTHETIC,S-59,2024,1370,,3.79,BUSINESS,none,NJ,Family business helper; Summer research at a university lab,mentorship,Rutgers University-New Brunswick,admitted,counselor
+SYNTHETIC,S-60,2024,1370,,3.79,BUSINESS,none,NJ,Family business helper; Summer research at a university lab,mentorship,Pennsylvania State University-Main Campus,admitted,counselor
+SYNTHETIC,S-61,2025,1330,,3.36,MATH,none,NY,Art portfolio and school gallery show,leadership,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-62,2025,1330,,3.36,MATH,none,NY,Art portfolio and school gallery show,leadership,University of Virginia-Main Campus,waitlisted,counselor
+SYNTHETIC,S-63,2025,1330,,3.36,MATH,none,NY,Art portfolio and school gallery show,leadership,University of Massachusetts-Amherst,admitted,counselor
+SYNTHETIC,S-64,2024,1350,,3.92,CS,none,NJ,Theater stage crew; Part-time job at a grocery store,resilience,Lehigh University,denied,counselor
+SYNTHETIC,S-65,2024,1350,,3.92,CS,none,NJ,Theater stage crew; Part-time job at a grocery store,resilience,Virginia Polytechnic Institute and State University,admitted,counselor
+SYNTHETIC,S-66,2024,1350,,3.92,CS,none,NJ,Theater stage crew; Part-time job at a grocery store,resilience,Rutgers University-New Brunswick,denied,counselor
+SYNTHETIC,S-67,2024,1350,,3.92,CS,none,NJ,Theater stage crew; Part-time job at a grocery store,resilience,Pennsylvania State University-Main Campus,admitted,counselor
+SYNTHETIC,S-68,2024,,26,3.56,CS,none,NJ,Art portfolio and school gallery show,leadership,Purdue University-Main Campus,denied,counselor
+SYNTHETIC,S-69,2024,,26,3.56,CS,none,NJ,Art portfolio and school gallery show,leadership,Drexel University,admitted,counselor
+SYNTHETIC,S-70,2024,,26,3.56,CS,none,NJ,Art portfolio and school gallery show,leadership,University of Delaware,denied,counselor
+SYNTHETIC,S-71,2024,1330,,3.73,ARTS,none,NJ,Art portfolio and school gallery show,community,Stony Brook University,denied,counselor
+SYNTHETIC,S-72,2024,1330,,3.73,ARTS,none,NJ,Art portfolio and school gallery show,community,Lehigh University,denied,counselor
+SYNTHETIC,S-73,2024,1330,,3.73,ARTS,none,NJ,Art portfolio and school gallery show,community,University of Maryland-College Park,denied,counselor
+SYNTHETIC,S-74,2024,1330,,3.73,ARTS,none,NJ,Art portfolio and school gallery show,community,Purdue University-Main Campus,denied,counselor
+SYNTHETIC,S-75,2025,,24,3.33,PREMED,first_gen,NJ,Science Olympiad,immigration,Princeton University,denied,counselor
+SYNTHETIC,S-76,2025,,24,3.33,PREMED,first_gen,NJ,Science Olympiad,immigration,University of Massachusetts-Amherst,denied,counselor
+SYNTHETIC,S-77,2025,,24,3.33,PREMED,first_gen,NJ,Science Olympiad,immigration,Boston University,denied,counselor
+SYNTHETIC,S-78,2025,,24,3.33,PREMED,first_gen,NJ,Science Olympiad,immigration,University of Pittsburgh-Pittsburgh Campus,denied,counselor
+SYNTHETIC,S-79,2024,,26,3.66,ENG,legacy,NJ,Varsity track,service,University of Michigan-Ann Arbor,denied,counselor
+SYNTHETIC,S-80,2024,,26,3.66,ENG,legacy,NJ,Varsity track,service,Purdue University-Main Campus,denied,counselor
+SYNTHETIC,S-81,2024,,24,3.28,POLISCI,none,NJ,Theater stage crew; Varsity soccer,persistence,University of Maryland-College Park,denied,counselor
+SYNTHETIC,S-82,2024,,24,3.28,POLISCI,none,NJ,Theater stage crew; Varsity soccer,persistence,University of Delaware,denied,counselor
+SYNTHETIC,S-83,2024,,24,3.28,POLISCI,none,NJ,Theater stage crew; Varsity soccer,persistence,University of Virginia-Main Campus,waitlisted,counselor
+SYNTHETIC,S-84,2025,1590,,4.0,POLISCI,urm,NJ,Varsity soccer,creativity,Cornell University,denied,counselor
+SYNTHETIC,S-85,2025,1590,,4.0,POLISCI,urm,NJ,Varsity soccer,creativity,Carnegie Mellon University,admitted,counselor
+SYNTHETIC,S-86,2025,1590,,4.0,POLISCI,urm,NJ,Varsity soccer,creativity,University of Virginia-Main Campus,admitted,counselor
+SYNTHETIC,S-87,2024,,22,3.46,POLISCI,none,NJ,Varsity track; Food pantry volunteer,persistence,Binghamton University,denied,counselor
+SYNTHETIC,S-88,2024,,22,3.46,POLISCI,none,NJ,Varsity track; Food pantry volunteer,persistence,University of Delaware,admitted,counselor
+SYNTHETIC,S-89,2024,,22,3.46,POLISCI,none,NJ,Varsity track; Food pantry volunteer,persistence,Carnegie Mellon University,denied,counselor
+SYNTHETIC,S-90,2024,,22,3.46,POLISCI,none,NJ,Varsity track; Food pantry volunteer,persistence,Montclair State University,admitted,counselor
+SYNTHETIC,S-91,2025,1260,,3.36,CS,none,NJ,Science Olympiad; Summer research at a university lab,leadership,Stony Brook University,waitlisted,counselor
+SYNTHETIC,S-92,2025,1260,,3.36,CS,none,NJ,Science Olympiad; Summer research at a university lab,leadership,Lehigh University,waitlisted,counselor
+SYNTHETIC,S-93,2025,1260,,3.36,CS,none,NJ,Science Olympiad; Summer research at a university lab,leadership,University of Michigan-Ann Arbor,denied,counselor
+SYNTHETIC,S-94,2024,1400,,3.7,CS,none,NJ,Family business helper; Hospital volunteer,mentorship,Cornell University,denied,counselor
+SYNTHETIC,S-95,2024,1400,,3.7,CS,none,NJ,Family business helper; Hospital volunteer,mentorship,New York University,denied,counselor
+SYNTHETIC,S-96,2024,1280,27,3.87,ENG,none,NJ,Family business helper; Theater stage crew,identity,University of Michigan-Ann Arbor,denied,counselor
+SYNTHETIC,S-97,2024,1280,27,3.87,ENG,none,NJ,Family business helper; Theater stage crew,identity,Binghamton University,denied,counselor
+SYNTHETIC,S-98,2024,1280,27,3.87,ENG,none,NJ,Family business helper; Theater stage crew,identity,University of Pennsylvania,waitlisted,counselor
+SYNTHETIC,S-99,2024,1280,27,3.87,ENG,none,NJ,Family business helper; Theater stage crew,identity,Princeton University,denied,counselor
+SYNTHETIC,S-100,2024,1480,,4.0,BIO,urm,NJ,Science Olympiad,identity,Rowan University,admitted,counselor
+SYNTHETIC,S-101,2024,1480,,4.0,BIO,urm,NJ,Science Olympiad,identity,Drexel University,admitted,counselor
+SYNTHETIC,S-102,2024,1480,,4.0,BIO,urm,NJ,Science Olympiad,identity,Northeastern University,waitlisted,counselor
+SYNTHETIC,S-103,2024,1480,,4.0,BIO,urm,NJ,Science Olympiad,identity,Pennsylvania State University-Main Campus,admitted,counselor
+SYNTHETIC,S-104,2024,1490,,4.0,BIO,none,NJ,Family business helper; Summer research at a university lab,service,University of Michigan-Ann Arbor,denied,counselor
+SYNTHETIC,S-105,2024,1490,,4.0,BIO,none,NJ,Family business helper; Summer research at a university lab,service,Rutgers University-New Brunswick,admitted,counselor
+SYNTHETIC,S-106,2024,1490,,4.0,BIO,none,NJ,Family business helper; Summer research at a university lab,service,Purdue University-Main Campus,admitted,counselor
+SYNTHETIC,S-107,2024,1180,,3.34,ENG,first_gen,NY,Model UN delegate; Volunteer tutor for younger students,service,University of Maryland-College Park,denied,counselor
+SYNTHETIC,S-108,2024,1180,,3.34,ENG,first_gen,NY,Model UN delegate; Volunteer tutor for younger students,service,Montclair State University,admitted,counselor
+SYNTHETIC,S-109,2024,1180,,3.34,ENG,first_gen,NY,Model UN delegate; Volunteer tutor for younger students,service,University of Pennsylvania,denied,counselor
+SYNTHETIC,S-110,2024,1180,,3.34,ENG,first_gen,NY,Model UN delegate; Volunteer tutor for younger students,service,University of Delaware,denied,counselor
+SYNTHETIC,S-111,2025,1590,,3.91,BIO,none,DE,Varsity soccer; Cares for younger siblings after school,curiosity,Carnegie Mellon University,admitted,counselor
+SYNTHETIC,S-112,2025,1590,,3.91,BIO,none,DE,Varsity soccer; Cares for younger siblings after school,curiosity,Princeton University,denied,counselor
+SYNTHETIC,S-113,2025,1590,,3.91,BIO,none,DE,Varsity soccer; Cares for younger siblings after school,curiosity,University of Michigan-Ann Arbor,admitted,counselor
+SYNTHETIC,S-114,2025,1590,,3.91,BIO,none,DE,Varsity soccer; Cares for younger siblings after school,curiosity,Columbia University in the City of New York,denied,counselor
+SYNTHETIC,S-115,2024,,30,3.45,PSYCH,none,NJ,School orchestra first chair,curiosity,Lehigh University,denied,counselor
+SYNTHETIC,S-116,2024,,30,3.45,PSYCH,none,NJ,School orchestra first chair,curiosity,Rutgers University-New Brunswick,admitted,counselor
+SYNTHETIC,S-117,2024,,30,3.45,PSYCH,none,NJ,School orchestra first chair,curiosity,University of Delaware,admitted,counselor
+SYNTHETIC,S-118,2024,,30,3.45,PSYCH,none,NJ,School orchestra first chair,curiosity,Pennsylvania State University-Main Campus,admitted,counselor
+SYNTHETIC,S-119,2024,1220,,3.47,CS,none,NJ,Theater stage crew; Varsity soccer,community,Boston University,waitlisted,counselor
+SYNTHETIC,S-120,2024,1220,,3.47,CS,none,NJ,Theater stage crew; Varsity soccer,community,Georgia Institute of Technology-Main Campus,denied,counselor

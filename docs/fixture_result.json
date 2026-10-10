@@ -1,0 +1,168 @@
+{
+  "run_id": "fixture-0001",
+  "generated_at": "2026-10-10T12:30:00-04:00",
+  "synthetic": true,
+  "student": {
+    "label": "Student A (SYNTHETIC)",
+    "sat": 1450, "act": null, "gpa": 3.9, "gpa_scale": 4.0, "home_state": "NJ",
+    "intended_major": "Computer Science", "hooks": ["first_gen"],
+    "activities": [{"type": "Research", "role": "Student researcher", "description": "Summer lab program; co-author on a poster"}],
+    "essay_words": 612,
+    "college_list": ["Cornell University", "Purdue University-Main Campus", "Rutgers University-New Brunswick", "Kenyon College", "Some College Not In Our File"]
+  },
+  "steps": [
+    {"step": "retrieve", "what": "Looked up 5 colleges and 2,250 finished cases", "ms": 14, "by": "code"},
+    {"step": "score", "what": "Compared the student's SAT of 1450 with each college's published range", "ms": 2, "by": "code"},
+    {"step": "bucket", "what": "Labelled 4 colleges; 1 is outside our data", "ms": 1, "by": "code"},
+    {"step": "explain", "what": "Read the essay for themes and quotes; 3 notes kept, 1 dropped", "ms": 1840, "by": "anthropic/claude-haiku-4-5"},
+    {"step": "log", "what": "Recorded this run in PRISM", "ms": 220, "by": "code"}
+  ],
+  "privacy": {
+    "masked": [{"kind": "name", "count": 2}, {"kind": "email", "count": 1}],
+    "blocked": false, "reason": "", "guard": "local, then PRISM",
+    "note": "3 personal details were masked before any model read the essay."
+  },
+  "reader": {
+    "status": "ok", "model": "anthropic/claude-haiku-4-5", "second_model": "openai/gpt-5.5",
+    "tags": {"major_group": "CS", "major_group_agreed": true, "activity_types": ["research"], "essay_themes": ["family", "persistence"]},
+    "notes": [
+      {"observation": "The essay centres on translating for a parent at medical appointments.", "quote": "I learned the word for kidney before I learned to drive", "question": "Does the rest of the application show this responsibility anywhere else?", "quote_found": true},
+      {"observation": "It names a specific research task rather than a general interest in science.", "quote": "I ran the same assay eleven times before it worked", "question": "Can the research mentor's letter confirm this?", "quote_found": true}
+    ],
+    "dropped": 1, "latency_ms": 1840
+  },
+  "colleges": [
+    {
+      "id": "190415", "name": "Cornell University", "state": "NY", "control": "private",
+      "admit_rate": 0.0876, "sat25": 1500, "sat75": 1570, "act25": 33, "act75": 35, "cost_year": 88140,
+      "source": "US Department of Education, College Scorecard", "in_data": true,
+      "label": {
+        "state": "reach_for_everyone", "text": "Reach for everyone", "rule_id": "R1",
+        "rule_text": "This college admits fewer than 15 in 100 applicants, so it is a reach for any student.",
+        "score_used": 1450, "score_kind": "SAT", "inputs": {"sat25": 1500, "sat75": 1570, "admit_rate": 0.0876},
+        "not_used": ["GPA", "activities", "essay"], "caveats": ["The score range covers only students who sent scores."],
+        "steady": true, "flips": [],
+        "publishers": [{"name": "BigFuture", "label": "reach"}, {"name": "Princeton Review", "label": "reach"}, {"name": "Scoir", "label": "reach"}, {"name": "Appily", "label": "reach"}, {"name": "CollegeVine", "label": "reach"}],
+        "publishers_disagree": false
+      },
+      "cases": {
+        "needed": 15,
+        "own": {"source": "Your school's own finished cases (SYNTHETIC demo data)", "verified": true, "status": "not_enough", "n": 4, "admitted": 1, "denied": 3, "waitlisted": 0, "matched_on": ["SAT within 100 points"], "relaxed": ["hook status", "major group", "SAT widened to 100"], "examples": [
+          {"case_id": "S-12", "sat": 1480, "act": null, "major": "CS", "hooks": "first_gen", "home_state": "NJ", "activities_note": "Robotics captain; state finalist", "essay_theme": "immigrant family", "outcome": "denied", "cycle_year": 2025}
+        ]},
+        "national": {"source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "ok", "n": 23, "admitted": 8, "denied": 12, "waitlisted": 3, "matched_on": ["SAT within 50 points", "same major group"], "relaxed": ["hook status"], "examples": [
+          {"case_id": "N-1042", "sat": 1460, "act": null, "major": "CS", "hooks": "NONE", "home_state": "CA", "activities_rating": 6.5, "outcome": "denied"},
+          {"case_id": "N-377", "sat": 1440, "act": null, "major": "CS", "hooks": "FIRST-GEN", "home_state": "NY", "activities_rating": 7.5, "outcome": "admitted"},
+          {"case_id": "N-1611", "sat": 1470, "act": null, "major": "CS", "hooks": "NONE", "home_state": "TX", "activities_rating": 5.5, "outcome": "waitlisted"}
+        ]},
+        "official_admit_rate": 0.0876, "pool_admit_share_all": 0.251, "overcount": 2.9,
+        "caveat": "People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."
+      },
+      "says": [
+        {"claim_id": "c7_essay", "text": "Cornell rates the application essay Very Important.", "field": "Common Data Set, section C7", "year": "2025-26", "source_url": "https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv", "numbers": [], "kb": {"text": "Application Essay: Very Important", "score": 0.83, "doc": "KB_doc1_college_admission_factors_C7.md"}, "checked": true}
+      ],
+      "myths": [
+        {"belief": "Showing interest (visits, emails) improves the odds.", "college_says": "Cornell's form rates level of applicant's interest Not Considered.", "source_url": "https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv", "year": "2025-26"}
+      ],
+      "cost_note": "Sticker cost is about $88,000 a year. What this family would actually pay is not known here.",
+      "flags": []
+    },
+    {
+      "id": "243780", "name": "Purdue University-Main Campus", "state": "IN", "control": "public",
+      "admit_rate": 0.4995, "sat25": 1210, "sat75": 1470, "act25": 27, "act75": 34, "cost_year": 22812,
+      "source": "US Department of Education, College Scorecard", "in_data": true,
+      "label": {
+        "state": "target", "text": "Target", "rule_id": "R4",
+        "rule_text": "The score is inside the college's middle range (1210 to 1470).",
+        "score_used": 1450, "score_kind": "SAT", "inputs": {"sat25": 1210, "sat75": 1470, "admit_rate": 0.4995},
+        "not_used": ["GPA", "activities", "essay"], "caveats": ["The score range covers only students who sent scores.", "Computer science at Purdue is harder to get into than the university as a whole; this label is for the university."],
+        "steady": false, "flips": [{"cause": "score 30 points higher", "to": "likely"}],
+        "publishers": [{"name": "BigFuture", "label": "target"}, {"name": "Princeton Review", "label": "target"}, {"name": "Scoir", "label": "likely"}, {"name": "Appily", "label": "target"}, {"name": "CollegeVine", "label": "target"}],
+        "publishers_disagree": true
+      },
+      "cases": {
+        "needed": 15,
+        "own": {"source": "Your school's own finished cases (SYNTHETIC demo data)", "verified": true, "status": "none", "n": 0, "admitted": 0, "denied": 0, "waitlisted": 0, "matched_on": [], "relaxed": [], "examples": []},
+        "national": {"source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "ok", "n": 31, "admitted": 22, "denied": 6, "waitlisted": 3, "matched_on": ["SAT within 50 points", "same major group", "same hook status"], "relaxed": [], "examples": [
+          {"case_id": "N-0", "sat": 1440, "act": null, "major": "CS", "hooks": "NONE", "home_state": "MI", "activities_rating": 2.0, "outcome": "admitted"},
+          {"case_id": "N-918", "sat": 1460, "act": null, "major": "CS", "hooks": "NONE", "home_state": "IL", "activities_rating": 6.5, "outcome": "denied"}
+        ]},
+        "official_admit_rate": 0.4995, "pool_admit_share_all": 0.687, "overcount": 1.4,
+        "caveat": "People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."
+      },
+      "says": [], "myths": [],
+      "cost_note": "Sticker cost is about $23,000 a year in-state; out-of-state students pay more. What this family would actually pay is not known here.",
+      "flags": []
+    },
+    {
+      "id": "186380", "name": "Rutgers University-New Brunswick", "state": "NJ", "control": "public",
+      "admit_rate": 0.582, "sat25": 1270, "sat75": 1480, "act25": 28, "act75": 33, "cost_year": 37000,
+      "source": "US Department of Education, College Scorecard", "in_data": true,
+      "label": {
+        "state": "target", "text": "Target", "rule_id": "R4",
+        "rule_text": "The score is inside the college's middle range (1270 to 1480).",
+        "score_used": 1450, "score_kind": "SAT", "inputs": {"sat25": 1270, "sat75": 1480, "admit_rate": 0.582},
+        "not_used": ["GPA", "activities", "essay"], "caveats": ["The score range covers only students who sent scores."],
+        "steady": false, "flips": [{"cause": "score 30 points higher", "to": "likely"}],
+        "publishers": [{"name": "BigFuture", "label": "target"}, {"name": "Princeton Review", "label": "target"}, {"name": "Scoir", "label": "likely"}, {"name": "Appily", "label": "target"}, {"name": "CollegeVine", "label": "target"}],
+        "publishers_disagree": true
+      },
+      "cases": {
+        "needed": 15,
+        "own": {"source": "Your school's own finished cases (SYNTHETIC demo data)", "verified": true, "status": "ok", "n": 17, "admitted": 13, "denied": 3, "waitlisted": 1, "matched_on": ["SAT within 100 points"], "relaxed": ["hook status", "major group", "SAT widened to 100"], "examples": [
+          {"case_id": "S-3", "sat": 1430, "act": null, "major": "ENG", "hooks": "none", "home_state": "NJ", "activities_note": "Varsity track; part-time job", "essay_theme": "work", "outcome": "admitted", "cycle_year": 2025}
+        ]},
+        "national": {"source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "not_enough", "n": 9, "admitted": 7, "denied": 1, "waitlisted": 1, "matched_on": ["SAT within 100 points"], "relaxed": ["hook status", "major group", "SAT widened to 100"], "examples": []},
+        "official_admit_rate": 0.582, "pool_admit_share_all": 0.70, "overcount": 1.2,
+        "caveat": "People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."
+      },
+      "says": [], "myths": [],
+      "cost_note": "Sticker cost is about $37,000 a year in-state. What this family would actually pay is not known here.",
+      "flags": []
+    },
+    {
+      "id": "203535", "name": "Kenyon College", "state": "OH", "control": "private",
+      "admit_rate": 0.31, "sat25": null, "sat75": null, "act25": null, "act75": null, "cost_year": 85000,
+      "source": "US Department of Education, College Scorecard", "in_data": true,
+      "label": {
+        "state": "cant_say", "text": "Can't say", "rule_id": "R2",
+        "rule_text": "This college publishes no test score range, so there is nothing to compare the student's score with.",
+        "score_used": 1450, "score_kind": "SAT", "inputs": {"sat25": null, "sat75": null, "admit_rate": 0.31},
+        "not_used": ["GPA", "activities", "essay"], "caveats": [], "steady": true, "flips": [], "publishers": [], "publishers_disagree": false
+      },
+      "cases": {
+        "needed": 15,
+        "own": {"source": "Your school's own finished cases (SYNTHETIC demo data)", "verified": true, "status": "none", "n": 0, "admitted": 0, "denied": 0, "waitlisted": 0, "matched_on": [], "relaxed": [], "examples": []},
+        "national": {"source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "none", "n": 0, "admitted": 0, "denied": 0, "waitlisted": 0, "matched_on": [], "relaxed": [], "examples": []},
+        "official_admit_rate": 0.31, "pool_admit_share_all": null, "overcount": null,
+        "caveat": "No finished cases for this college in either pool."
+      },
+      "says": [], "myths": [], "cost_note": "Sticker cost is about $85,000 a year. What this family would actually pay is not known here.", "flags": []
+    },
+    {
+      "id": null, "name": "Some College Not In Our File", "state": null, "control": null,
+      "admit_rate": null, "sat25": null, "sat75": null, "act25": null, "act75": null, "cost_year": null,
+      "source": null, "in_data": false,
+      "label": {"state": "outside_data", "text": "Outside our data", "rule_id": "R0", "rule_text": "This college is not in the 300-college file, so nothing is said about it.", "score_used": null, "score_kind": null, "inputs": {}, "not_used": [], "caveats": [], "steady": true, "flips": [], "publishers": [], "publishers_disagree": false},
+      "cases": null, "says": [], "myths": [], "cost_note": null, "flags": []
+    }
+  ],
+  "balance": {
+    "counts": {"reach": 1, "target": 2, "likely": 0, "cant_say": 1, "outside_data": 1},
+    "warnings": [
+      {"id": "no_likely", "text": "There is no likely college on this list."},
+      {"id": "short_list", "text": "Only 3 colleges on this list could be labelled."}
+    ],
+    "suggestions": [
+      {"id": "185828", "name": "New Jersey Institute of Technology", "would_be": "likely", "admit_rate": 0.66, "sat25": 1180, "sat75": 1400, "cost_year": 36000, "tuition_note": "In-state tuition applies", "why": "The score is at or above the 75th percentile and the college admits about two in three applicants."},
+      {"id": "204796", "name": "Ohio State University-Main Campus", "would_be": "target", "admit_rate": 0.53, "sat25": 1300, "sat75": 1470, "cost_year": 30000, "tuition_note": "Out-of-state tuition applies", "why": "The score is inside the middle range and the college admits about half of applicants."}
+    ],
+    "cost_notes": [{"name": "Cornell University", "text": "Sticker cost is about $88,000 a year. What this family would actually pay is not known here."}]
+  },
+  "checks": {"sentences_shown": 14, "sentences_hidden": 1, "hidden_reasons": ["A number in the sentence was not in its source row."]},
+  "prism": {"status": "off", "why": "No PRISM key is set, so nothing was recorded.", "session_id": null, "records_sent": 0, "guardrail": "local check only", "evaluator": null, "kb": "off"},
+  "refusals": [
+    "No personal chance of admission is given. The counts above are examples from finished cases, shown beside the official admit rate.",
+    "The essay is never rated and never changes a label."
+  ]
+}

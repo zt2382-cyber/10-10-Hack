@@ -1,0 +1,46 @@
+# One phrase per line: phrase <TAB> reason. Case-insensitive. Checker rejects the SENTENCE (not the whole answer) and logs the hit.
+percent chance	Individual probability: no dataset here supports one.
+% chance	Individual probability.
+chance of admission	Implies a personal probability.
+chances of getting in	Implies a personal probability.
+odds of	Implies a personal probability.
+probability of	Implies a personal probability unless quoting a published college-level rate with its source.
+you will get in	Certainty about a decision nobody can predict.
+will get in	Certainty.
+will be admitted	Certainty.
+will be accepted	Certainty.
+guaranteed	Only true for a stated law (e.g. Texas automatic admission) quoted with its source.
+guarantee	Same.
+safe bet	No college is safe; the tool labels by rule, it does not reassure.
+safety school	Loaded word; use the code-set label with its rule id.
+a lock	Certainty.
+sure thing	Certainty.
+no chance	Certainty about rejection.
+impossible	Certainty about rejection.
+dream school	Opinion not backed by a data field.
+best fit	Fit is not measured.
+perfect fit	Fit is not measured.
+strong essay	No data links essay quality to decisions; the tool cannot grade essays against outcomes.
+your essay will	Predicts the effect of the essay.
+essay will help	Predicts the effect of the essay.
+boost your chances	Causal claim about admission.
+increase your chances	Causal claim about admission.
+improve your odds	Causal claim about admission.
+easier to get in	Causal claim drawn from raw ED/EA rates.
+students like you	Overstates similarity of a biased sample; say "self-reported posters with a similar SAT".
+students with your gpa were admitted	Admit rate by GPA band does not exist in the data (CDS C11 describes enrolled students).
+most admitted students	Needs a distribution of admits; CDS gives enrolled students.
+typical admitted	Same.
+cares about	Attributes intent to a college; quote the C7 word instead.
+colleges prefer	Unsupported generalisation.
+admissions officers want	Unsupported generalisation.
+legacy advantage	Causal claim; C7 "alumni relation" is a self-description only.
+because you	Reasons must name a data field, not a trait of the student.
+based on my experience	The model has no experience; unsourced.
+i think	The model gives no opinions in the evidence lane.
+i believe	Same.
+in general	Unbound generalisation; every sentence needs an evidence id.
+typically	Unbound generalisation.
+usually	Unbound generalisation.
+studies show	No study was supplied as evidence.
+research shows	No study was supplied as evidence.

@@ -1,0 +1,405 @@
+{
+ "note": "All profiles are invented ('Student X, synthetic'). test_case and expected_behaviour are tester labels, not input fields.",
+ "profiles": [
+  {
+   "gpa_value": 3.95,
+   "gpa_scale_max": 4,
+   "gpa_weighted": false,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "flat",
+   "class_rank": {
+    "rank": 6,
+    "class_size": 410,
+    "reported": true
+   },
+   "rigor_level": "most_demanding_available",
+   "advanced_courses_taken": 9,
+   "advanced_courses_offered_by_school": 18,
+   "sat_total": 1540,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Research",
+     "position": "Student researcher",
+     "organization": "University lab, summer program",
+     "description": "Ran assays; co-author on poster",
+     "grades_participated": [
+      11,
+      12
+     ],
+     "hours_per_week": 10,
+     "weeks_per_year": 10,
+     "counselor_tier": "tier2_state_regional_top_leader"
+    },
+    {
+     "activity_type": "Music: Instrumental",
+     "position": "Principal cellist",
+     "organization": "Regional youth orchestra",
+     "description": "Weekly rehearsal; state solo award",
+     "grades_participated": [
+      9,
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 6,
+     "weeks_per_year": 40,
+     "counselor_tier": "tier2_state_regional_top_leader"
+    },
+    {
+     "activity_type": "Community Service (Volunteer)",
+     "position": null,
+     "organization": "Food bank",
+     "description": "Weekend sorting shifts",
+     "grades_participated": [
+      9,
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 3,
+     "weeks_per_year": 36,
+     "counselor_tier": "tier4_participation"
+    }
+   ],
+   "intended_major": "Biology",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "rd",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student A, synthetic",
+   "test_case": "strong all-round",
+   "applicant_type": "domestic",
+   "state_of_residence": "CA",
+   "school_type": "public",
+   "school_grading_system": "letter_4",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": 4.55,
+   "gpa_scale_max": 5,
+   "gpa_weighted": true,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "up",
+   "class_rank": null,
+   "rigor_level": "high",
+   "advanced_courses_taken": 7,
+   "advanced_courses_offered_by_school": 12,
+   "sat_total": null,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Journalism/Publication",
+     "position": "Editor-in-chief",
+     "organization": "School newspaper",
+     "description": "Edits 20 articles a term",
+     "grades_participated": [
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 5,
+     "weeks_per_year": 36,
+     "counselor_tier": "tier3_minor_leadership_or_distinction"
+    }
+   ],
+   "intended_major": "History",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "ea",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student B, synthetic",
+   "test_case": "strong grades, no test score",
+   "applicant_type": "domestic",
+   "state_of_residence": "OH",
+   "school_type": "public",
+   "school_grading_system": "letter_5_weighted",
+   "test_status": "not_submitting_by_choice"
+  },
+  {
+   "gpa_value": 2.9,
+   "gpa_scale_max": 4,
+   "gpa_weighted": false,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "up",
+   "class_rank": null,
+   "rigor_level": "moderate",
+   "advanced_courses_taken": 2,
+   "advanced_courses_offered_by_school": 10,
+   "sat_total": 1510,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Computer/Technology",
+     "position": null,
+     "organization": "Self-directed",
+     "description": "Built and sold two small apps",
+     "grades_participated": [
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 8,
+     "weeks_per_year": 40,
+     "counselor_tier": "tier3_minor_leadership_or_distinction"
+    }
+   ],
+   "intended_major": "Computer Science",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "undecided",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student C, synthetic",
+   "test_case": "high test score, low GPA",
+   "applicant_type": "domestic",
+   "state_of_residence": "TX",
+   "school_type": "public",
+   "school_grading_system": "letter_4",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": 3.4,
+   "gpa_scale_max": 4,
+   "gpa_weighted": false,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "flat",
+   "class_rank": null,
+   "rigor_level": "moderate",
+   "advanced_courses_taken": 3,
+   "advanced_courses_offered_by_school": 9,
+   "sat_total": null,
+   "sat_superscore": false,
+   "act_composite": 25,
+   "activities": [
+    {
+     "activity_type": "Work (Paid)",
+     "position": "Cashier",
+     "organization": "Local grocery",
+     "description": "After school and weekends",
+     "grades_participated": [
+      11,
+      12
+     ],
+     "hours_per_week": 15,
+     "weeks_per_year": 45,
+     "counselor_tier": "tier4_participation"
+    },
+    {
+     "activity_type": "Athletics: JV/Varsity",
+     "position": "Varsity member",
+     "organization": "Soccer",
+     "description": "Starter junior year",
+     "grades_participated": [
+      9,
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 10,
+     "weeks_per_year": 30,
+     "counselor_tier": "tier4_participation"
+    }
+   ],
+   "intended_major": "Business",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "rd",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student D, synthetic",
+   "test_case": "average in-state applicant to public universities",
+   "applicant_type": "domestic",
+   "state_of_residence": "NC",
+   "school_type": "public",
+   "school_grading_system": "letter_4",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": 93.5,
+   "gpa_scale_max": 100,
+   "gpa_weighted": false,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "flat",
+   "class_rank": null,
+   "rigor_level": "unknown",
+   "advanced_courses_taken": null,
+   "advanced_courses_offered_by_school": null,
+   "sat_total": 1480,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Debate/Speech",
+     "position": "Captain",
+     "organization": "National debate league",
+     "description": "Ranked top 10 nationally at home",
+     "grades_participated": [
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 6,
+     "weeks_per_year": 30,
+     "counselor_tier": "tier2_state_regional_top_leader"
+    }
+   ],
+   "intended_major": "Economics",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "undecided",
+   "needs_financial_aid": true,
+   "essay_draft_text": null,
+   "student_id": "Student E, synthetic",
+   "test_case": "international applicant",
+   "applicant_type": "international",
+   "state_of_residence": "INTL",
+   "school_type": "private",
+   "school_grading_system": "percent_100",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": null,
+   "gpa_scale_max": null,
+   "gpa_weighted": null,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "unknown",
+   "class_rank": null,
+   "rigor_level": "unknown",
+   "advanced_courses_taken": null,
+   "advanced_courses_offered_by_school": null,
+   "sat_total": 1450,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Science/Math",
+     "position": null,
+     "organization": "Community college dual enrolment",
+     "description": "Calculus III and Physics II",
+     "grades_participated": [
+      11,
+      12
+     ],
+     "hours_per_week": 9,
+     "weeks_per_year": 30,
+     "counselor_tier": "not_rated"
+    },
+    {
+     "activity_type": "Robotics",
+     "position": "Mentor",
+     "organization": "Local robotics team",
+     "description": "Mentors younger members",
+     "grades_participated": [
+      9,
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 5,
+     "weeks_per_year": 36,
+     "counselor_tier": "not_rated"
+    }
+   ],
+   "intended_major": "Physics",
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "undecided",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student F, synthetic",
+   "test_case": "homeschool applicant",
+   "applicant_type": "domestic",
+   "state_of_residence": "VA",
+   "school_type": "homeschool",
+   "school_grading_system": "narrative_or_none",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": 3.7,
+   "gpa_scale_max": 4,
+   "gpa_weighted": false,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "up",
+   "class_rank": null,
+   "rigor_level": "high",
+   "advanced_courses_taken": 6,
+   "advanced_courses_offered_by_school": 11,
+   "sat_total": 1450,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [
+    {
+     "activity_type": "Family Responsibilities",
+     "position": null,
+     "organization": "Home",
+     "description": "Cares for two siblings after school",
+     "grades_participated": [
+      9,
+      10,
+      11,
+      12
+     ],
+     "hours_per_week": 15,
+     "weeks_per_year": 50,
+     "counselor_tier": "tier4_participation"
+    }
+   ],
+   "intended_major": "Computer Science",
+   "major_capacity_limited_flag": "yes",
+   "first_generation": true,
+   "application_plan": "rd",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student G, synthetic",
+   "test_case": "capacity-limited major, first-generation",
+   "applicant_type": "domestic",
+   "state_of_residence": "IL",
+   "school_type": "public",
+   "school_grading_system": "letter_4",
+   "test_status": "submitting"
+  },
+  {
+   "gpa_value": 4.6,
+   "gpa_scale_max": 4,
+   "gpa_weighted": null,
+   "gpa_through": "end_grade_11",
+   "gpa_source": "school_reported",
+   "grade_trend": "unknown",
+   "class_rank": null,
+   "rigor_level": "high",
+   "advanced_courses_taken": null,
+   "advanced_courses_offered_by_school": null,
+   "sat_total": 1625,
+   "sat_superscore": false,
+   "act_composite": null,
+   "activities": [],
+   "intended_major": null,
+   "major_capacity_limited_flag": "unknown",
+   "first_generation": null,
+   "application_plan": "undecided",
+   "needs_financial_aid": null,
+   "essay_draft_text": null,
+   "student_id": "Student H, synthetic",
+   "test_case": "impossible values (GPA 4.6 on a stated 4.0 scale; SAT 1625)",
+   "applicant_type": "domestic",
+   "state_of_residence": "NY",
+   "school_type": "public",
+   "school_grading_system": "letter_4",
+   "test_status": "submitting",
+   "expected_behaviour": "status=invalid_input; no label; name gpa_value and sat_total; ask Q1 and Q3"
+  }
+ ]
+}

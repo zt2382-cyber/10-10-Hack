@@ -1,0 +1,102 @@
+{
+  "_note": "Pencil, unreviewed. Each claim is built by code from ONE row of outcomes_sample.csv (or the other_tables files). The model may only choose which claim ids to show and may not alter slot values. 'check' is what the verifier runs on the final sentence.",
+  "_global_gate": "A claim is eligible only if its row has no sanity_flags entry that mentions its section (C1_REJECTED, C7_REJECTED, C21_REJECTED, C11_bands_sum_*, C11_blank) and every needed field is non-empty. Otherwise the tool prints 'not reported / could not verify' for that field.",
+  "claims": [
+    {
+      "id": "K1_admit_total",
+      "needs": ["school_name", "cds_year", "applied_total", "admitted_total", "source_url_school_cds"],
+      "template": "In {cds_year}, {school_name} admitted {admitted_total:,} of {applied_total:,} first-year applicants ({rate_pct}%).",
+      "computed_by_code": {"rate_pct": "round(100*admitted_total/applied_total, 1)"},
+      "check": "Every integer in the sentence equals a slot value; rate_pct recomputed by code; admitted_total <= applied_total; row flag C1_REJECTED absent.",
+      "example": "In 2025-26, Georgia Tech admitted 8,921 of 66,881 first-year applicants (13.3%)."
+    },
+    {
+      "id": "K2_admit_by_sex",
+      "needs": ["applied_men", "applied_women", "admitted_men", "admitted_women"],
+      "template": "{school_name} ({cds_year}) admitted {admitted_men:,} of {applied_men:,} men and {admitted_women:,} of {applied_women:,} women who applied.",
+      "check": "Four integers match slots; men+women within 10% of applied_total (flag C1_sex_rows_do_not_sum_to_total blocks it). Context only: never use sex as an input to a label.",
+      "example": "University of Michigan (2025-26) admitted 7,593 of 53,044 men and 10,322 of 56,068 women who applied."
+    },
+    {
+      "id": "K3_admit_by_residency",
+      "needs": ["in_state_applied", "in_state_admitted", "out_of_state_applied", "out_of_state_admitted", "nonresident_applied", "nonresident_admitted"],
+      "template": "{school_name} ({cds_year}) admitted {in_state_admitted:,} of {in_state_applied:,} in-state, {out_of_state_admitted:,} of {out_of_state_applied:,} out-of-state and {nonresident_admitted:,} of {nonresident_applied:,} international applicants.",
+      "check": "Six integers match; present for 14 of 24 sample colleges only; if blank say 'residency split not reported'.",
+      "example": "Georgia Tech (2025-26) admitted 3,691 of 12,527 in-state, 4,513 of 44,596 out-of-state and 716 of 9,758 international applicants."
+    },
+    {
+      "id": "K4_c7_factor",
+      "needs": ["c7_<factor>"],
+      "template": "{school_name} ({cds_year}) rates {factor_label} as '{c7_value}' in its own Common Data Set (section C7).",
+      "check": "c7_value is one of the four allowed strings and equals the row value; row has >=15 of 18 factors readable (else C7_REJECTED). Never add 'so it matters X much': C7 is a self-description, not a weight.",
+      "example": "UCLA (2025-26) rates the application essay 'Very Important' and standardized test scores 'Not Considered' in its own Common Data Set (section C7)."
+    },
+    {
+      "id": "K5_test_range",
+      "needs": ["sat_p25", "sat_p75", "sat_submit_pct"],
+      "template": "Among {school_name} enrolled first-years who submitted SAT scores ({sat_submit_pct}% of them did), the middle 50% scored {sat_p25}-{sat_p75} ({cds_year}).",
+      "check": "Numbers match; the clause about the submit share is mandatory (a missing clause fails the check); no phrase implying 'admitted students'.",
+      "example": "Among Georgia Tech enrolled first-years who submitted SAT scores (78% of them did), the middle 50% scored 1370-1530 (2025-26)."
+    },
+    {
+      "id": "K6_gpa_distribution",
+      "needs": ["gpa_400", "gpa_375_399", "avg_gpa", "gpa_submitted_pct"],
+      "template": "{gpa_400}% of {school_name} enrolled first-years had a GPA of 4.0 and {gpa_375_399}% were between 3.75 and 3.99 ({cds_year}; average {avg_gpa}; {gpa_submitted_pct}% of students supplied a GPA).",
+      "check": "Bands sum to 98-102 (else C11_bands_sum flag blocks it); the word 'enrolled' and the submit share must appear; GPA scale is the school's own (some report weighted GPAs above 4.0).",
+      "example": "38.8% of University of Michigan enrolled first-years had a GPA of 4.0 and 55.1% were between 3.75 and 3.99 (2025-26; average 3.9; 97.8% of students supplied a GPA)."
+    },
+    {
+      "id": "K7_early_decision",
+      "needs": ["ed_applied", "ed_admitted"],
+      "template": "{school_name} ({cds_year}) reports {ed_admitted:,} admitted of {ed_applied:,} early decision applicants.",
+      "check": "ed_admitted <= ed_applied, ed_applied >= 100, ed_admitted < admitted_total (else C21_REJECTED). Valid for only 2 of 24 sample colleges. Never say ED is 'easier'.",
+      "example": "Boston University (2025-26) reports 2,165 admitted of 6,907 early decision applicants."
+    },
+    {
+      "id": "K8_waitlist",
+      "needs": ["wl_offered", "wl_accepted", "wl_admitted"],
+      "template": "{school_name} ({cds_year}) offered {wl_offered:,} students a wait-list place; {wl_accepted:,} accepted and {wl_admitted:,} were later admitted.",
+      "check": "wl_admitted <= wl_accepted <= wl_offered; three integers match.",
+      "example": "Yale (2025-26) offered 944 students a wait-list place; 738 accepted and 32 were later admitted."
+    },
+    {
+      "id": "K9_state_system_gpa",
+      "needs": ["campus", "applicants", "admits", "admitted_gpa_p25", "admitted_gpa_p75"],
+      "source": "other_tables/uc_first_year_admit_fall2026.csv",
+      "template": "UC reports {campus} admitted {admits:,} of {applicants:,} fall 2026 first-year applicants; the middle 50% of admitted students had a UC-calculated GPA of {admitted_gpa_p25}-{admitted_gpa_p75}.",
+      "check": "Numbers match the CSV row; the GPA clause says 'admitted' (this is an admitted-student range, not an admit rate by GPA). UC GPA is weighted and capped.",
+      "example": "UC reports UCLA admitted 15,903 of 146,692 fall 2026 first-year applicants; the middle 50% of admitted students had a UC-calculated GPA of 4.20-4.30."
+    },
+    {
+      "id": "K10_state_rank_admits",
+      "needs": ["institution", "tx_applied", "tx_accepted", "accepted_top10"],
+      "source": "other_tables/texas_fall2025_total.csv",
+      "template": "Texas reports {institution} accepted {tx_accepted:,} of {tx_applied:,} Texas first-time applicants in fall 2025; {accepted_top10:,} of those accepted were in the top 10% of their class.",
+      "check": "Numbers match; no sentence may divide top-10 admits by anything but accepted (there is no 'applied by rank' column, so no admit rate by rank).",
+      "example": "Texas reports The University of Texas at Austin accepted 15,931 of 37,691 Texas first-time applicants in fall 2025; 12,331 of those accepted were in the top 10% of their class."
+    },
+    {
+      "id": "K11_position",
+      "needs": ["student_sat", "sat_p25", "sat_p75"],
+      "template": "Your SAT of {student_sat} is {below|inside|above} the {school_name} middle-50% range of {sat_p25}-{sat_p75} for enrolled students who submitted.",
+      "check": "The comparison word is recomputed by code from the three numbers. Arithmetic only.",
+      "example": "Your SAT of 1400 is inside the Georgia Tech middle-50% range of 1370-1530 for enrolled students who submitted."
+    },
+    {
+      "id": "K12_similar_applicants",
+      "needs": ["n_similar", "k_admitted", "college", "bias_stamp"],
+      "source": "data/reddit_collegeresults_shreybirmiwal (team data; counts not re-verified in this report)",
+      "template": "Among {n_similar} self-reported posters with a similar profile who applied to {college}, {k_admitted} reported an acceptance. This sample is self-selected and does not represent all applicants.",
+      "check": "n_similar >= 15 (else 'too few to say'); stamp text mandatory; never sets the label.",
+      "example": "(Counts not verified by this report; the team computes them from its own file.)"
+    }
+  ],
+  "cannot_support": [
+    "Any probability, chance, odds or percentage for one student.",
+    "Admit rate by GPA band or by test band for a college: CDS C9/C11 are shares of ENROLLED students; UC and Texas give admitted-student ranges or admits by rank group, not rates by band.",
+    "Any statement of how much a C7 factor 'counts' or that an essay or activity raised or lowered a decision.",
+    "That early decision or early action raises a student's chance (C21 counts are usable for 2 of 24 sample colleges; C22 has no counts at all).",
+    "Test-score position for a college whose percentiles are blank or whose submit share is low, without the submit-share clause.",
+    "Anything about a college whose row is flagged REJECTED for that section."
+  ]
+}

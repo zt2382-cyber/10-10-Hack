@@ -1,0 +1,397 @@
+{
+ "title": "Counselor Copilot student profile (draft v0.1, 2026-10-10)",
+ "status": "pencil, unstamped",
+ "label_logic_note": "Only fields with role=can_move_label may change a reach/target/likely label. role=context_only fields are displayed beside the label. role=gate_only fields decide whether a label may be produced at all or how other inputs are interpreted.",
+ "never_collect": [
+  "race/ethnicity or any proxy used in a decision (SFFA v. Harvard, 2023)",
+  "religion",
+  "disability or health details",
+  "immigration status beyond applicant_type",
+  "student name, address, date of birth, ID numbers, family income or SSN (FERPA / minors)"
+ ],
+ "fields": {
+  "student_id": {
+   "type": "string",
+   "required": true,
+   "allowed": "free text code, never a real name",
+   "if_missing": "reject profile",
+   "role": "gate_only"
+  },
+  "applicant_type": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "domestic",
+    "international"
+   ],
+   "if_missing": "ask Q4; do not label",
+   "role": "gate_only",
+   "note": "international = needs a visa / schooled outside US system. Colleges often publish separate international admit rates (Lehigh CDS 2025-26 C1: 176 of 4182 admitted)"
+  },
+  "state_of_residence": {
+   "type": "string",
+   "required": true,
+   "allowed": "2-letter USPS code (e.g. NC) or INTL",
+   "if_missing": "ask Q4; treat every public university as out-of-state and say so",
+   "role": "can_move_label",
+   "note": "moves label for PUBLIC universities only; ignored for privates unless the college's CDS C1 shows a residency gap"
+  },
+  "school_type": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "public",
+    "private",
+    "homeschool",
+    "other"
+   ],
+   "if_missing": "ask",
+   "role": "gate_only"
+  },
+  "school_grading_system": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "letter_4",
+    "letter_5_weighted",
+    "percent_100",
+    "narrative_or_none",
+    "other"
+   ],
+   "if_missing": "ask Q1",
+   "role": "gate_only"
+  },
+  "gpa_value": {
+   "type": "number|null",
+   "required": false,
+   "allowed": "0 <= value <= gpa_scale_max",
+   "if_missing": "no GPA contribution; if school_type is not homeschool ask Q1",
+   "role": "can_move_label"
+  },
+  "gpa_scale_max": {
+   "type": "number|null",
+   "required": false,
+   "allowed": "integer 4..20 or 100 (the Common App dropdown options), or null for N/A",
+   "if_missing": "if gpa_value present and scale missing: STOP, ask Q1",
+   "role": "gate_only"
+  },
+  "gpa_weighted": {
+   "type": "boolean|null",
+   "required": false,
+   "allowed": "true=weighted, false=unweighted, null=unknown",
+   "if_missing": "treat as weighted_unknown: GPA shown, never converted, cannot move label",
+   "role": "gate_only"
+  },
+  "gpa_through": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "end_grade_9",
+    "end_grade_10",
+    "end_grade_11",
+    "mid_grade_12",
+    "final"
+   ],
+   "if_missing": "assume end_grade_11 and say so",
+   "role": "context_only"
+  },
+  "gpa_source": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "school_reported",
+    "counselor_recalculated_core",
+    "student_reported"
+   ],
+   "if_missing": "assume school_reported",
+   "role": "context_only"
+  },
+  "grade_trend": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "up",
+    "flat",
+    "down",
+    "unknown"
+   ],
+   "if_missing": "unknown",
+   "role": "context_only",
+   "note": "shown as text; no public outcome data supports a numeric adjustment"
+  },
+  "class_rank": {
+   "type": "object|null",
+   "required": false,
+   "allowed": {
+    "rank": "int>=1",
+    "class_size": "int>=rank",
+    "reported": "boolean"
+   },
+   "if_missing": "omit; most schools do not rank and colleges rarely get it (Lehigh CDS C10: only 23.13% of enrollees had a rank)",
+   "role": "context_only"
+  },
+  "rigor_level": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "most_demanding_available",
+    "high",
+    "moderate",
+    "limited_by_school",
+    "unknown"
+   ],
+   "if_missing": "ask Q2; unknown = no rigor credit and no penalty",
+   "role": "can_move_label",
+   "note": "counselor judgement relative to what THIS school offers"
+  },
+  "advanced_courses_taken": {
+   "type": "integer|null",
+   "required": false,
+   "allowed": "AP + IB + dual-enrolment + honors-level count, grades 9-12 including planned senior year",
+   "if_missing": "null",
+   "role": "context_only"
+  },
+  "advanced_courses_offered_by_school": {
+   "type": "integer|null",
+   "required": false,
+   "allowed": "count the school offers (from the school profile)",
+   "if_missing": "null; then taken-count cannot be read as rigor",
+   "role": "context_only"
+  },
+  "sat_total": {
+   "type": "integer|null",
+   "required": false,
+   "allowed": "400..1600, multiple of 10",
+   "if_missing": "none",
+   "role": "can_move_label"
+  },
+  "sat_superscore": {
+   "type": "boolean",
+   "required": false,
+   "allowed": "true if value is max ERW + max Math across sittings",
+   "if_missing": "false",
+   "role": "context_only"
+  },
+  "act_composite": {
+   "type": "integer|null",
+   "required": false,
+   "allowed": "1..36",
+   "if_missing": "none",
+   "role": "can_move_label"
+  },
+  "test_status": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "submitting",
+    "not_submitting_by_choice",
+    "no_test_available",
+    "undecided"
+   ],
+   "if_missing": "ask Q3; treat as undecided",
+   "role": "gate_only",
+   "note": "drives test-required / test-optional / test-blind handling"
+  },
+  "activities": {
+   "type": "array<activity_item>|null",
+   "required": false,
+   "allowed": "0..10 items",
+   "if_missing": "empty list: show 'no activity data'; never changes label",
+   "role": "context_only",
+   "note": "no public dataset links activities to outcomes"
+  },
+  "intended_major": {
+   "type": "string|null",
+   "required": false,
+   "allowed": "free text mapped to a program list",
+   "if_missing": "undecided; capacity-limited check skipped, and say so",
+   "role": "can_move_label",
+   "note": "moves label only where the college publishes a school/major-specific rate (Illinois: Grainger Engineering 23.3% and CS 7.4% first-choice-major vs 38.1% overall)"
+  },
+  "major_capacity_limited_flag": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "yes",
+    "no",
+    "unknown"
+   ],
+   "if_missing": "unknown (derived per college; not asked of the student)",
+   "role": "can_move_label"
+  },
+  "first_generation": {
+   "type": "boolean|null",
+   "required": false,
+   "allowed": "parents/guardians did not complete a 4-year degree (definitions vary; ask which)",
+   "if_missing": "null",
+   "role": "context_only",
+   "note": "colleges rate it in CDS C7 but publish no admit-rate split"
+  },
+  "application_plan": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "rd",
+    "ea",
+    "restrictive_ea",
+    "ed",
+    "undecided"
+   ],
+   "if_missing": "undecided",
+   "role": "context_only",
+   "note": "CDS C21 gives ED applicants/admits at some colleges; pool is self-selected, so shown beside the label, not used to lift it"
+  },
+  "needs_financial_aid": {
+   "type": "boolean|null",
+   "required": false,
+   "allowed": "boolean",
+   "if_missing": "null; do not infer",
+   "role": "context_only",
+   "note": "never used to lower a label"
+  },
+  "essay_draft_text": {
+   "type": "string|null",
+   "required": false,
+   "allowed": "plain text",
+   "if_missing": "handled by the essay agent; never moves a label",
+   "role": "context_only"
+  }
+ },
+ "activity_item": {
+  "activity_type": {
+   "type": "enum",
+   "required": true,
+   "allowed": [
+    "Academic",
+    "Art",
+    "Athletics: Club",
+    "Athletics: JV/Varsity",
+    "Career-Oriented",
+    "Community Service (Volunteer)",
+    "Computer/Technology",
+    "Cultural",
+    "Dance",
+    "Debate/Speech",
+    "Environmental",
+    "Family Responsibilities",
+    "Foreign Exchange",
+    "Journalism/Publication",
+    "Junior R.O.T.C.",
+    "LGBT",
+    "Music: Instrumental",
+    "Music: Vocal",
+    "Religious",
+    "Research",
+    "Robotics",
+    "School Spirit",
+    "Science/Math",
+    "Student Govt./Politics",
+    "Theater/Drama",
+    "Work (Paid)",
+    "Other Club/Activity"
+   ],
+   "if_missing": "reject item",
+   "role": "context_only",
+   "note": "list per CollegeVine's copy of the Common App dropdown (secondary). For 2026-27 secondary sources say Work (Paid) became 'Employment or work (paid)' and Junior ROTC became 'ROTC and Military'. Not verified on commonapp.org."
+  },
+  "position": {
+   "type": "string|null",
+   "required": false,
+   "allowed": "<=50 characters (Common App limit)",
+   "if_missing": "null",
+   "role": "context_only",
+   "note": "optional from 2026-27 per secondary sources (not verified)"
+  },
+  "organization": {
+   "type": "string",
+   "required": false,
+   "allowed": "<=100 characters",
+   "if_missing": "blank",
+   "role": "context_only"
+  },
+  "description": {
+   "type": "string",
+   "required": false,
+   "allowed": "<=150 characters",
+   "if_missing": "blank",
+   "role": "context_only"
+  },
+  "grades_participated": {
+   "type": "array<int>",
+   "required": true,
+   "allowed": "subset of 9,10,11,12,13 (13 = post-graduate)",
+   "if_missing": "reject item",
+   "role": "context_only"
+  },
+  "hours_per_week": {
+   "type": "number",
+   "required": false,
+   "allowed": "0..168 (flag >40 as probable error)",
+   "if_missing": "null",
+   "role": "context_only"
+  },
+  "weeks_per_year": {
+   "type": "number",
+   "required": false,
+   "allowed": "0..52",
+   "if_missing": "null",
+   "role": "context_only"
+  },
+  "counselor_tier": {
+   "type": "enum",
+   "required": false,
+   "allowed": [
+    "tier1_national_exceptional",
+    "tier2_state_regional_top_leader",
+    "tier3_minor_leadership_or_distinction",
+    "tier4_participation",
+    "not_rated"
+   ],
+   "if_missing": "not_rated",
+   "role": "context_only",
+   "note": "4-tier scheme published by CollegeVine; no outcome evidence found. Shown as the counselor's own label, never scored."
+  }
+ },
+ "normalisation_rules": [
+  "N1 VALIDATE FIRST. If gpa_value<0, or gpa_scale_max is set and gpa_value>gpa_scale_max, or sat_total is outside 400..1600 or not a multiple of 10, or act_composite is outside 1..36: set status=invalid_input, produce NO label, name the exact field and ask the counselor. Never clamp or silently fix (e.g. GPA 4.6 on a stated 4.0 scale).",
+  "N2 SCALE MUST BE KNOWN. If gpa_value is present and gpa_scale_max is null and gpa_value>4.0, ask Q1 (do not guess 5.0 or 100). If gpa_value<=4.0 and scale is unknown, accept as 'probably 4.0, unconfirmed' with confidence=low.",
+  "N3 GPA COMPARABILITY. Only gpa_weighted=false AND gpa_scale_max=4 is compared directly with college data (CDS C11 ranges on a 4.0 scale, C12 average). Weighted GPAs, 4.5/5.0/other scales and 100-point GPAs are NEVER converted by formula: no published universal conversion exists (not verified beyond the sources in the report). Display them as stated, set gpa_comparable=false, and keep GPA out of the label unless a school-supplied conversion or a counselor-recalculated core GPA (gpa_source) is entered.",
+  "N4 OPTIONAL RECALCULATION (UC method, if transcript grades are entered): use only A-G courses from the summer after grade 9 through the summer after grade 11; A=4,B=3,C=2,D=1,F=0, ignore plus/minus; add 1 point per semester of honors-level course (AP, IB HL, designated IB SL, UC-transferable college course, UC-certified honors) up to 8 semesters and at most 4 from 10th grade; divide total points by number of graded semester courses. For non-California residents honors weight is given to AP/IB only. CSU method differs: honors points for grades 10-12 up to 8 semesters, 10th-grade honors max 2.",
+  "N5 ACT TO SAT. Look up act_composite in sat_act_concordance.csv table A2_ACT_to_SAT: use sat_total_single_point as the value and carry [sat_range_low, sat_range_high] as the uncertainty band. Example: ACT 25 -> 1210, band 1200-1220. If both SAT and ACT exist, use the higher of sat_total and the concorded value, store both and say which was used. Only the composite is converted.",
+  "N6 SUPERSCORE. Only if per-sitting section scores are entered: superscore = max ERW + max Math across sittings and sat_superscore=true. Whether a given college superscores is not in CDS C7-C9: mark 'college policy not verified' and show both the best single sitting and the superscore.",
+  "N7 TEST POSITION. Compare the SAT-scale score with the college's published 25th/75th percentile (CDS C9 or College Scorecard): below_p25, p25_p50, p50_p75, above_p75. Never extrapolate outside the published range; if not published say so.",
+  "N8 NO SCORE. If test_status is not 'submitting': do not impute a score. Test-blind (University of California): the missing score has no effect; say so. Test-optional colleges: label from GPA and rigor only, confidence=low, and state that enrolled-student score ranges describe students who chose to submit. Test-required colleges (check policy per college and year): output 'incomplete: score required', no label.",
+  "N9 RIGOR. If advanced_courses_offered_by_school is known report 'took X of Y offered'; if not, never infer rigor from the raw count. rigor_level=unknown gives neither credit nor penalty.",
+  "N10 RESIDENCY. Public college and same state -> in-state pool; public and different state -> out-of-state pool; use CDS C1 residency counts if the college publishes them, otherwise say 'residency-specific rate not published', fall back to the overall rate and set confidence=low. Private colleges: overall rate unless C1 shows a gap.",
+  "N11 MAJOR. If intended_major is set and the college publishes a rate for that school or major, use it instead of the overall rate and cite it. If the major is probably capacity-limited and no major rate is available, never output 'likely'; show 'major-specific rate not available'.",
+  "N12 ACTIVITIES, FIRST-GEN, ED, ESSAY. Display only. They may add a sentence but must not change the label (no public applicant-level data links them to outcomes).",
+  "N13 PRIVACY. Strip name, address, date of birth and ID numbers from any pasted transcript before storing; keep nothing beyond the session unless the counselor explicitly saves it."
+ ],
+ "clarifying_questions": [
+  {
+   "id": "Q1",
+   "ask": "Is the GPA weighted or unweighted, what is the scale (4.0, 5.0, 100-point, none), and is it through grade 11 or the school's final number?",
+   "reason": "Weighted/unweighted and scale decide whether the GPA is comparable with a college's published GPA at all (N3). Common App also asks scale and weighted status separately."
+  },
+  {
+   "id": "Q2",
+   "ask": "Relative to this school, is the course load the most demanding available, and how many AP/IB/dual-enrolment courses does the school offer versus how many the student took or plans for senior year?",
+   "reason": "Colleges rate 'rigor of secondary school record' as its own factor (CDS C7) and judge it against what the school offers."
+  },
+  {
+   "id": "Q3",
+   "ask": "Which test scores exist (SAT/ACT, which sittings), or is the student deliberately not submitting, and are test-required colleges on the list?",
+   "reason": "A missing score means different things at test-blind, test-optional and test-required colleges (N8)."
+  },
+  {
+   "id": "Q4",
+   "ask": "What is the student's state of residence and citizenship or school system (US public, private, homeschool, international), and are public in-state colleges on the list?",
+   "reason": "Public universities can publish very different in-state and out-of-state admit rates; international and homeschool applicants are read differently."
+  },
+  {
+   "id": "Q5",
+   "ask": "For each college: what major is the student applying to, is it direct-admit or capacity-limited, and is the student applying early (ED/EA)?",
+   "reason": "Major-specific rates can be several times lower than the overall rate; early rounds are reported separately in CDS C21."
+  }
+ ]
+}

@@ -1,0 +1,7 @@
+NOTE: SYNTHETIC (fictional student). Purpose: over-limit test. Configure the word limit to 150 (a typical supplemental limit; the module must take the limit as a setting). This text is well over 150 words; the Common App limit of 650 is tested by setting the limit instead of padding the text.
+
+Why this major? Because of the laundromat on Fenwick Street, which my mother cleaned on weekday nights while I did homework on a folding table between the dryers. The machines broke constantly. The owner, Mr. Delgado, could not afford a technician each time, so he taught me to open the panels. By thirteen I could replace a belt, clear a drain pump, and read the little error codes that blinked on the front.
+
+What I noticed is that the same three faults caused most of the breakdowns. I wrote them on an index card and taped it inside the door of the supply closet. Repairs got faster. Mr. Delgado called the card "the bible" and showed it to the supplier.
+
+I want to study industrial engineering because I keep asking the same question: why do things fail in the same few ways, and what is the cheapest change that stops it? At your university I would join the lab that studies maintenance scheduling, and I would like to take the course on reliability analysis. I also hope to start a repair night for neighbours, because most broken appliances in my building are thrown out when one cheap part has failed. The laundromat taught me that a small fix, written down and shared, can matter more than a clever one that stays in one person's head.

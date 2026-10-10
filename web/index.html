@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Counselor Copilot</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#results">Skip to the college list</a>
+
+<div class="app" id="app">
+  <header class="top">
+    <h1>Counselor Copilot</h1>
+    <div class="top-chips" id="top-chips"></div>
+    <div class="student-line" id="student-line" hidden></div>
+  </header>
+
+  <div class="page">
+    <!-- ============ THE STUDENT: picker and Build first; every field behind "Edit details" ============ -->
+    <section class="student" id="student-panel" aria-labelledby="student-h">
+      <h2 id="student-h">The student</h2>
+      <form id="student-form" autocomplete="off" novalidate>
+        <div class="start-row">
+          <label class="field grow">
+            <span>Demo student</span>
+            <select id="student-pick"><option value="">New student (blank)</option></select>
+          </label>
+          <button type="submit" class="btn primary big" id="build-btn">Build the list</button>
+        </div>
+        <p class="hint" id="build-hint" role="status"></p>
+
+        <p class="quiet" id="mode-line" hidden></p>
+        <details id="more-fields">
+          <summary>Edit details</summary>
+          <div class="form-grid">
+            <div>
+              <div class="dial">
+                <label for="f-sat">SAT total</label>
+                <input type="range" id="f-sat" min="400" max="1600" step="10" value="1200">
+                <output id="o-sat" for="f-sat">1200</output>
+                <label class="tog"><input type="checkbox" id="f-sat-none"><span>none</span></label>
+              </div>
+              <div class="dial">
+                <label for="f-act">ACT</label>
+                <input type="range" id="f-act" min="1" max="36" step="1" value="24">
+                <output id="o-act" for="f-act">24</output>
+                <label class="tog"><input type="checkbox" id="f-act-none"><span>none</span></label>
+              </div>
+              <div class="dial">
+                <label for="f-gpa">GPA <em>(out of 4.0)</em></label>
+                <input type="range" id="f-gpa" min="0" max="4" step="0.1" value="3.5">
+                <output id="o-gpa" for="f-gpa">3.5</output>
+                <label class="tog"><input type="checkbox" id="f-gpa-none"><span>none</span></label>
+              </div>
+              <label class="field">
+                <span>Home state</span>
+                <select id="f-state"><option value="">Not given</option></select>
+              </label>
+              <fieldset class="field">
+                <legend>Intended major</legend>
+                <div class="picks">
+                  <button type="button" class="pick" data-act="pick-major" data-major="Computer Science" aria-pressed="false">Computer Science</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Engineering" aria-pressed="false">Engineering</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Biology" aria-pressed="false">Biology</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Business" aria-pressed="false">Business</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Political Science" aria-pressed="false">Political Science</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Psychology" aria-pressed="false">Psychology</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Math" aria-pressed="false">Math</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Humanities" aria-pressed="false">Humanities</button>
+                  <button type="button" class="pick" data-act="pick-major" data-major="Other" aria-pressed="false">Other</button>
+                </div>
+                <label class="sr" for="f-major">Or type the major</label>
+                <input type="text" id="f-major" class="fallback" maxlength="80" placeholder="or type it">
+              </fieldset>
+              <fieldset class="field">
+                <legend>Hooks</legend>
+                <div class="picks">
+                  <button type="button" class="pick" data-act="toggle-hook" data-hook="first_gen" aria-pressed="false">First in the family to attend college</button>
+                  <button type="button" class="pick" data-act="toggle-hook" data-hook="legacy" aria-pressed="false">Legacy</button>
+                  <button type="button" class="pick" data-act="toggle-hook" data-hook="urm" aria-pressed="false">Under-represented background</button>
+                  <button type="button" class="pick" data-act="toggle-hook" data-hook="recruited_athlete" aria-pressed="false">Recruited athlete</button>
+                </div>
+              </fieldset>
+            </div>
+            <div>
+              <fieldset class="field">
+                <legend>College list <em>(press a college to remove it)</em></legend>
+                <ul class="college-chips" id="college-chips"></ul>
+                <div id="suggested-row" hidden><p class="mini">Suggested for this student</p><div class="picks" id="suggested"></div></div>
+                <p class="mini">Often added</p><div class="picks" id="often"></div>
+                <div class="search">
+                  <label class="sr" for="college-q">Or search for a college to add</label>
+                  <input type="text" id="college-q" class="fallback" placeholder="or search for a college" role="combobox" aria-expanded="false" aria-controls="college-hits" aria-autocomplete="list">
+                  <button type="button" class="btn small" data-act="add-typed">Add</button>
+                </div>
+                <ul class="hits" id="college-hits" role="listbox" aria-label="Matching colleges"></ul>
+                <span class="hint" id="search-hint"></span>
+              </fieldset>
+              <fieldset class="field">
+                <legend>Essay <em>(personal details are masked before it is read)</em></legend>
+                <div class="picks" id="essay-picks"></div>
+                <label class="sr" for="f-essay">Or paste an essay</label>
+                <textarea id="f-essay" class="fallback" rows="2" placeholder="or paste an essay here"></textarea>
+                <span class="hint" id="essay-hint"></span>
+              </fieldset>
+              <details class="more">
+                <summary>Label and activities</summary>
+                <label class="field">
+                  <span>Label for this student <em>(no real names)</em></span>
+                  <input type="text" id="f-label" maxlength="80" placeholder="Student A">
+                </label>
+                <fieldset class="field">
+                  <legend>Activities</legend>
+                  <div id="activities"></div>
+                  <button type="button" class="btn small" data-act="add-activity">Add an activity</button>
+                </fieldset>
+              </details>
+            </div>
+          </div>
+        </details>
+      </form>
+    </section>
+
+    <!-- ============ LEVEL 1: the whole first view ============ -->
+    <main id="results" tabindex="-1">
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <div id="stopped"></div>
+      <section id="counters" aria-label="List balance"></section>
+      <div class="stand">
+        <section id="picture" aria-label="Where this student stands"></section>
+        <section id="levers" aria-label="What could change this"></section>
+      </div>
+      <nav id="footlinks" class="footlinks" aria-label="More"></nav>
+      <div id="chance-answer" class="chance-answer" hidden></div>
+    </main>
+  </div>
+</div>
+
+<div id="backdrop" class="backdrop" data-act="close-panel" hidden></div>
+<!-- One drawer for every drill-in: a college, the suggestions, essay notes, how this was made. -->
+<aside id="receipt" class="receipt" role="dialog" aria-modal="true" aria-labelledby="receipt-title" tabindex="-1" hidden></aside>
+
+<aside id="case-panel" class="receipt" role="dialog" aria-modal="true" aria-labelledby="case-h" tabindex="-1" hidden>
+  <header class="rc-head">
+    <div><p class="rc-kicker">Your school's own cases</p><h2 id="case-h">Add a finished case</h2></div>
+    <button type="button" class="btn" data-act="close-panel">Close</button>
+  </header>
+  <section class="rc-sec">
+    <p class="quiet" id="case-count"></p>
+    <form id="case-form" autocomplete="off" novalidate>
+      <div class="rowN">
+        <label class="field"><span>Cycle year</span><input type="number" name="cycle_year" min="2015" max="2035" step="1" placeholder="2026"></label>
+        <label class="field"><span>SAT total</span><input type="number" name="sat" min="400" max="1600" step="10"></label>
+        <label class="field"><span>ACT</span><input type="number" name="act" min="1" max="36" step="1"></label>
+        <label class="field"><span>GPA</span><input type="number" name="gpa" min="0" max="100" step="0.01"></label>
+        <label class="field"><span>Home state</span><input type="text" name="home_state" maxlength="2" class="upper" placeholder="NJ"></label>
+      </div>
+      <div class="rowN">
+        <label class="field"><span>Major group</span>
+          <select name="major_group">
+            <option value="">Choose</option>
+            <option value="CS">Computer science</option><option value="ENG">Engineering</option>
+            <option value="BIO">Biology</option><option value="PREMED">Pre-medicine</option>
+            <option value="BUSINESS">Business</option><option value="POLISCI">Political science</option>
+            <option value="PSYCH">Psychology</option><option value="MATH">Mathematics</option>
+            <option value="PHYSICS">Physics</option><option value="ECON">Economics</option>
+            <option value="HUMANITIES">Humanities</option><option value="ARTS">Arts</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </label>
+        <label class="field"><span>Hooks</span>
+          <select name="hooks">
+            <option value="none">None</option>
+            <option value="first_gen">First in the family to attend college</option>
+            <option value="legacy">Legacy</option>
+            <option value="urm">Under-represented background</option>
+            <option value="recruited_athlete">Recruited athlete</option>
+          </select>
+        </label>
+        <label class="field"><span>Outcome</span>
+          <select name="outcome">
+            <option value="admitted">Admitted</option>
+            <option value="denied">Denied</option>
+            <option value="waitlisted">Waitlisted</option>
+          </select>
+        </label>
+      </div>
+      <label class="field"><span>College (full name)</span><input type="text" name="college" list="case-colleges" placeholder="Rutgers University-New Brunswick"><datalist id="case-colleges"></datalist></label>
+      <div class="row2">
+        <label class="field"><span>Activities note <em>(no names)</em></span><input type="text" name="activities_note" maxlength="140" placeholder="Robotics captain; state finalist"></label>
+        <label class="field"><span>Essay theme</span><input type="text" name="essay_theme" maxlength="80" placeholder="work"></label>
+      </div>
+      <button type="submit" class="btn primary">Save this case</button>
+      <p class="hint">Names are never stored. A field that looks like a name, an email, a phone number or a date of birth is refused.</p>
+      <div id="case-msg" role="status" aria-live="polite"></div>
+    </form>
+  </section>
+</aside>
+
+<section id="family" class="family" aria-hidden="true"></section>
+
+<script src="app.js"></script>
+</body>
+</html>
