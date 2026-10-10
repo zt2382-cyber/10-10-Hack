@@ -365,7 +365,7 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
     steps.append({"step": "retrieve", "by": "code", "ms": _ms(t0),
                   "what": f"Looked up {len(found)} college{'s' if len(found) != 1 else ''} ({in_file} in our file of {len(C.load_colleges()):,} colleges) and the finished-case pools"})
 
-    # ---- essay observations, done before scoring so tags can order the cases ----
+    # ---- explain (the only model call), done before scoring so its tags can order the cases ----
     t0 = time.perf_counter()
     reader = {"status": "off", "model": None, "tags": {}, "notes": [], "dropped": 0}
     if masked.get("blocked"):
@@ -378,22 +378,22 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
     explain_ms = _ms(t0)
     tags = reader.get("tags") or {}
 
-    # Prepare one masked semantic index across the selected colleges.
+    # ---- optional text comparison for closeness: one masked semantic index across the selected colleges ----
+    # Off unless a model key is set and this is a full run; with it off, closeness uses the structured parts only.
     t_semantic = time.perf_counter()
-    semantic_mod = _part("semantic")
+    semantic_mod = _part("semantic") if want_closeness else None
     semantic_context = {"report": {"status": "off"}}
-    if semantic_mod and cases_mod:
+    if semantic_mod and cases_mod and hasattr(cases_mod, "_national"):
         rows = {}
-        national = cases_mod._national()[0]
+        national = _safe(cases_mod._national, ({}, 0, 0, 0))[0]
         for _, college in found:
             if college:
                 short = C.case_name_for(college)
-                for row in national.get(short, []) + cases_mod._own_rows(college):
+                for row in national.get(short, []) + _safe(cases_mod._own_rows, [], college):
                     rows[row["case_id"]] = row
         semantic_context = _safe(semantic_mod.prepare, {"report": {"status": "unavailable"}},
                                  student, "" if masked.get("blocked") else masked.get("text", ""),
                                  list(rows.values()), use_model)
-
     semantic_ms = _ms(t_semantic)
 
     # ---- score and bucket ----
@@ -426,8 +426,10 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
                     "cost_note": _cost_note(col, student), "flags": flags})
     score_ms = _ms(t0)
     have = "SAT of %s" % student["sat"] if student.get("sat") else ("ACT of %s" % student["act"] if student.get("act") else "no test score")
+    text_cmp = str((semantic_context.get("report") or {}).get("status", "off"))
     steps.append({"step": "score", "by": "code", "ms": score_ms + semantic_ms,
-                  "what": f"Compared the student's {have} with each college's published range, and compared available profile fields; text comparison: {semantic_context.get('report', {}).get('status', 'off')}"})
+                  "what": f"Compared the student's {have} with each college's published range, and found finished cases like this student"
+                          + (f"; text comparison: {text_cmp}" if text_cmp != "off" else "")})
 
     t0 = time.perf_counter()
     balance = _safe(balance_mod.assess, {"counts": {}, "warnings": [], "suggestions": [], "cost_notes": []}, labelled, student) if balance_mod else {"counts": {}, "warnings": [], "suggestions": [], "cost_notes": []}

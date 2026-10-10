@@ -13,10 +13,9 @@
 <div class="app" id="app">
   <header class="top">
     <h1>Counselor Copilot</h1>
-    <nav class="top-nav" aria-label="About this screen">
+    <nav class="top-nav" aria-label="Essay search and about this screen">
       <a class="linkbtn" href="#essay-bank">Essay search</a>
-      <button type="button" class="linkbtn" data-act="open-about">About</button>
-      <button type="button" class="linkbtn" data-act="open-built">How it was built</button>
+      <button type="button" class="linkbtn top-about" data-act="tool-about">About</button>
     </nav>
     <div class="top-chips" id="top-chips"></div>
     <div class="top-right">
@@ -24,6 +23,7 @@
       <details class="tools" id="tools">
         <summary>Counselor tools</summary>
         <div class="tools-menu">
+          <button type="button" data-act="tool-about">About this screen</button>
           <button type="button" data-act="tool-questions">Questions to ask</button>
           <button type="button" data-act="tool-how">How we worked this out</button>
           <button type="button" data-act="tool-case" data-tool="case">Add a finished case</button>

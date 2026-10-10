@@ -550,3 +550,22 @@ body.show-working .sugg-why { display: block; overflow: visible; }
 .baseline-full { white-space: pre-wrap; line-height: 1.7; padding: 12px 0; max-height: 400px; overflow: auto; }
 .baseline-links { margin-top: 12px; }
 @media (max-width: 760px) { .essay-search-grid { grid-template-columns: 1fr; } }
+/* ---------- About, data sources and the feature list (inside the drawer) ---------- */
+.top-about { font-size: 15px; padding: 4px 8px; }
+.about .tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16px; margin: 6px 0 14px; }
+.about .tour .btn { margin: 6px 6px 0 0; }
+.about .label { margin-top: 14px; }
+.tagn-off { background: var(--soft, #ece8dc); color: var(--mute); }
+.srcs { display: grid; gap: 10px; margin-top: 8px; }
+.src-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; background: var(--bg); display: grid; gap: 4px; }
+.src-name { font-weight: 700; font-size: 17px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.src-what { font-size: 15.5px; }
+.src-files { font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.src-h { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); font-weight: 650; margin-top: 4px; }
+.feats { display: grid; gap: 8px; margin-top: 8px; }
+.feat { border-left: 4px solid var(--you, #14606b); padding: 2px 0 2px 12px; display: grid; gap: 2px; }
+.feat.f-thin { border-left-color: var(--caution, #7a5a00); } .feat.f-no { border-left-color: var(--mute); border-left-style: dashed; }
+.feat-name { font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.feat-st { margin-left: auto; font-size: 13px; font-weight: 650; color: var(--mute); }
+.feat-what { font-size: 15.5px; }
+.feat-where { font-size: 14.5px; }

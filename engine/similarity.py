@@ -517,6 +517,7 @@ def closeness(student, college, tags=None, semantic_context=None) -> dict:
         return tuple([dict(v, **context.get("cases", {}).get(v["case_id"], {})) for v in group] for group in groups)
     nat, own = enriched(nat), enriched(own)
     ids = {v["case_id"] for group in nat + own for v in group}
+    # Say honestly where the school's cases come from: invented demo rows are never called verified.
     try:
         own_rows = _cases._own_rows(college) if college else []
     except Exception:
