@@ -140,5 +140,164 @@ class DistanceTests(unittest.TestCase):
         self.assertEqual(set(S.PART_WORD), set(S.WEIGHTS))
 
 
+def college_by_case_name(short):
+    return next(c for c in colleges.load_colleges() if colleges.case_name_for(c) == short)
+
+
+class ClosenessTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from engine import caselog
+        self.tmp = tempfile.TemporaryDirectory()
+        caselog.set_store_path(Path(self.tmp.name) / "school_cases.csv")
+        self.addCleanup(self.tmp.cleanup)
+        self.addCleanup(caselog.set_store_path, None)
+
+    def test_ok_block_has_the_contract_shape(self):
+        r = S.closeness(STUDENT, col("Cornell University"))
+        self.assertEqual(r["needed"], 15)
+        self.assertEqual(r["neighbours"], 7)
+        n = r["national"]
+        self.assertEqual(n["status"], "ok")
+        self.assertFalse(n["verified"])
+        self.assertGreaterEqual(n["n_admitted"], 15)
+        self.assertGreaterEqual(n["n_denied"], 15)
+        for k in ("d_admitted", "d_denied", "gap", "lean", "text", "steady", "flips", "parts", "not_used",
+                  "nearest_admitted", "nearest_denied", "kinds", "changes", "points"):
+            self.assertIn(k, n, k)
+        self.assertAlmostEqual(n["gap"], round(n["d_denied"] - n["d_admitted"], 3), places=3)
+        self.assertIn(n["lean"], ("closer_to_admitted", "closer_to_denied", "in_between"))
+        self.assertEqual(n["text"], S.LEAN_TEXT[n["lean"]])
+        self.assertEqual(n["steady"], n["flips"] == [])
+        for f in n["flips"]:
+            self.assertIn("cause", f)
+            self.assertIn("to", f)
+        self.assertTrue(r["own"]["verified"])
+        self.assertIn("not a forecast", r["caveat"])
+
+    def test_lean_follows_gap_and_threshold(self):
+        self.assertEqual(S._lean(S.LEAN_GAP), "closer_to_admitted")
+        self.assertEqual(S._lean(-S.LEAN_GAP), "closer_to_denied")
+        self.assertEqual(S._lean(S.LEAN_GAP / 2), "in_between")
+        self.assertEqual(S._lean(-S.LEAN_GAP / 2), "in_between")
+        self.assertIsNone(S._lean(None))
+
+    def test_not_enough_when_a_group_is_small(self):
+        n = S.closeness(STUDENT, college_by_case_name("CLAREMONT MCKENNA"))["national"]
+        self.assertEqual(n["status"], "not_enough")
+        self.assertTrue(1 <= n["n_admitted"] < 15)
+        self.assertIsNone(n["lean"])
+        self.assertIsNone(n["steady"])
+        self.assertEqual(n["flips"], [])
+        self.assertIn("d_admitted", n)   # the rings still place a hollow dot
+        n2 = S.closeness(STUDENT, college_by_case_name("RUTGERS"))["national"]
+        self.assertEqual(n2["status"], "not_enough")
+        self.assertTrue(1 <= n2["n_denied"] < 15)
+
+    def test_none_when_no_cases(self):
+        r = S.closeness(STUDENT, col("Barnard College"))
+        for pool in ("own", "national"):
+            self.assertEqual(r[pool]["status"], "none")
+            self.assertEqual((r[pool]["n_admitted"], r[pool]["n_denied"]), (0, 0))
+            self.assertNotIn("lean", r[pool])
+        r2 = S.closeness(STUDENT, None)
+        self.assertEqual(r2["national"]["status"], "none")
+        self.assertEqual(r2["own"]["status"], "none")
+
+    def test_cant_say_without_a_score_still_shows_counts(self):
+        n = S.closeness(dict(STUDENT, sat=None), col("Cornell University"))["national"]
+        self.assertEqual(n["status"], "cant_say")
+        self.assertGreater(n["n_admitted"] + n["n_denied"], 0)
+        self.assertNotIn("lean", n)
+        self.assertNotIn("steady", n)
+
+    def test_own_status_is_not_enough_for_the_synthetic_store(self):
+        o = S.closeness(STUDENT, col("Rutgers University-New Brunswick"))["own"]
+        self.assertEqual(o["status"], "not_enough")
+        self.assertTrue(o["n_admitted"] + o["n_denied"] > 0)
+
+    def test_pools_are_never_merged(self):
+        r = S.closeness(STUDENT, col("Rutgers University-New Brunswick"))
+        for ex in r["national"].get("nearest_admitted", []) + r["national"].get("nearest_denied", []):
+            self.assertTrue(ex["case_id"].startswith("N-"))
+        for ex in r["own"].get("nearest_admitted", []) + r["own"].get("nearest_denied", []):
+            self.assertTrue(ex["case_id"].startswith("S-"))
+        for p in r["national"].get("points", []):
+            self.assertTrue(p["case_id"].startswith("N-"))
+        self.assertLessEqual(r["own"]["n_admitted"] + r["own"]["n_denied"] + r["own"]["n_waitlisted"], 120)
+
+    def test_nearest_examples_are_near_and_typed(self):
+        n = S.closeness(STUDENT, col("Purdue University-Main Campus"))["national"]
+        self.assertTrue(1 <= len(n["nearest_admitted"]) <= 3)
+        self.assertTrue(1 <= len(n["nearest_denied"]) <= 3)
+        for ex in n["nearest_admitted"]:
+            self.assertEqual(ex["outcome"], "admitted")
+        for ex in n["nearest_denied"]:
+            self.assertEqual(ex["outcome"], "denied")
+        for ex in n["nearest_admitted"] + n["nearest_denied"]:
+            self.assertIn("distance", ex)
+            self.assertIn("score", ex["parts"])
+            self.assertTrue(set(ex["parts"]) <= set(S.WEIGHTS))
+            for bad in ("gender", "race", "income"):
+                self.assertNotIn(bad, json.dumps(ex).lower())
+        ds = [ex["distance"] for ex in n["nearest_admitted"]]
+        self.assertEqual(ds, sorted(ds))
+        self.assertLessEqual(ds[-1], n["d_admitted"] + 1e-9)   # the 3 shown are the nearest of the 7
+
+    def test_parts_and_not_used(self):
+        n = S.closeness(STUDENT, col("Cornell University"))["national"]
+        names = [p["part"] for p in n["parts"]]
+        self.assertIn("score", names)
+        self.assertNotIn("activities", names)   # the student gave no rating
+        for p in n["parts"]:
+            self.assertIn(p["text"], ("close", "some way off", "far"))
+            self.assertTrue(0 <= p["distance"] <= 1)
+        self.assertIn("GPA", n["not_used"])
+        self.assertIn("activities rating", n["not_used"])
+        self.assertIn("residency (private college)", n["not_used"])
+        self.assertIn("essay", n["not_used"])
+        self.assertIn("activity descriptions", n["not_used"])
+        pub = S.closeness(dict(STUDENT, activities_rating=7), col("Purdue University-Main Campus"))["national"]
+        self.assertNotIn("residency (private college)", pub["not_used"])
+        self.assertNotIn("activities rating", pub["not_used"])
+        self.assertIn("activities", [p["part"] for p in pub["parts"]])
+
+    def test_points_are_capped_and_typed(self):
+        n = S.closeness(STUDENT, college_by_case_name("UPENN"))["national"]
+        self.assertEqual(len(n["points"]), 300)
+        self.assertGreater(n["n_admitted"] + n["n_denied"] + n["n_waitlisted"], 300)
+        for p in n["points"]:
+            self.assertEqual(set(p), {"case_id", "sat", "activities", "outcome", "kind_id"})
+            self.assertIn(p["outcome"], ("admitted", "denied", "waitlisted"))
+            self.assertIsNotNone(p["sat"])
+
+    def test_high_score_student_is_nearer_admitted_than_a_low_score_student(self):
+        c = col("Purdue University-Main Campus")
+        high = S.closeness(dict(STUDENT, sat=1580), c)["national"]
+        low = S.closeness(dict(STUDENT, sat=1100), c)["national"]
+        self.assertGreater(high["gap"], low["gap"])
+        self.assertEqual(high["lean"], "closer_to_admitted")
+
+    def test_deterministic(self):
+        c = col("Cornell University")
+        a = json.dumps(S.closeness(STUDENT, c), sort_keys=True)
+        b = json.dumps(S.closeness(dict(STUDENT), c), sort_keys=True)
+        self.assertEqual(a, b)
+
+    def test_no_forbidden_words_anywhere(self):
+        for nm in ("Cornell University", "Purdue University-Main Campus", "Rutgers University-New Brunswick",
+                   "Barnard College", "Princeton University"):
+            for s in (STUDENT, {"label": "x"}, {"act": 30, "intended_major": "biology"}, dict(STUDENT, sat=1580)):
+                r = S.closeness(s, colleges.find_college(nm), tags={"essay_themes": ["family"]})
+                for text in strings(r):
+                    low = text.lower()
+                    for w in FORBIDDEN:
+                        self.assertNotIn(w, low, text)
+        for text in list(S.LEAN_TEXT.values()) + list(S.STATUS_TEXT.values()) + [S.CAVEAT]:
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+
+
 if __name__ == "__main__":
     unittest.main()

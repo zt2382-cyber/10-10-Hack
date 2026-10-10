@@ -9,16 +9,24 @@ Everything here is counting and sorting in code. No model is called. Hooks, race
 on where the data has them, never suggested as things to change.
 
     python -m engine.similarity            prints the block for one demo student at one college
+    python -m engine.similarity --spread   the gap for every demo student at every listed college (to set LEAN_GAP)
     python -m engine.similarity --check    the holds-up table (R5), written to docs/closeness_check.json
 """
 from __future__ import annotations
+
+from functools import lru_cache
 
 from engine import cases as _cases
 from engine import colleges as _colleges
 
 NEIGHBOURS = 7
 NEEDED = _cases.NEEDED
+# Checked with `--spread` on the six demo students (no activities rating given, so score carries most of the
+# weight): of 20 colleges with status ok, 11 leaned denied, 3 admitted, 6 in between, and the direction matched
+# the list (a 1450 leans denied at MIT and Stanford, a converted 29 ACT leans admitted at Purdue). Kept at 0.03.
 LEAN_GAP = 0.03
+POINTS_CAP = 300
+MAX_NEAREST = 3
 CAVEAT = "Closeness compares this student with people who chose to post their results. It is not a forecast."
 NATIONAL_SOURCE = _cases.NATIONAL_SOURCE
 OWN_SOURCE = _cases.OWN_SOURCE
@@ -30,6 +38,23 @@ RATING_SPAN = 10.0    # activities rating is 0 to 10
 GPA_SPAN = 1.0        # GPA points that count as "far", on a 4.0 scale
 PART_WORD = {"score": "score", "activities": "activities rating", "major": "major group", "hooks": "hook status",
              "residency": "residency", "gpa": "GPA"}
+NEVER_USED = ["essay", "activity descriptions"]   # text is never part of a distance
+
+LEAN_TEXT = {
+    "closer_to_admitted": "Looks more like the people admitted here than the people denied.",
+    "closer_to_denied": "Looks more like the people denied here than the people admitted.",
+    "in_between": "About as close to the people admitted as to the people denied.",
+}
+STATUS_TEXT = {
+    "not_enough": "Not enough finished cases in one of the two groups to say which the student is closer to.",
+    "none": "No finished cases for this college in this pool.",
+    "cant_say": "No test score, so there is nothing to measure distance from.",
+}
+CLOSE, FAR = 0.15, 0.5   # per-part words: at or under CLOSE is "close", at or over FAR is "far"
+
+# the steady test: recompute with other neighbour counts and a slightly different score
+STEADY_K = (5, 10)
+STEADY_SCORE = (-30, 30)
 
 
 # ---------------------------------------------------------------- the two sides of a comparison
@@ -113,46 +138,206 @@ def total(parts: dict) -> float | None:
     return sum(WEIGHTS[p] * v for p, v in parts.items()) / w
 
 
+# ---------------------------------------------------------------- R2. the two groups at one college
+
+def _split(views):
+    """(admitted, denied, waitlisted), scored cases only, each sorted by case number."""
+    scored = sorted((v for v in views if v["score"] is not None), key=lambda v: v["num"])
+    return ([v for v in scored if v["outcome"] == "admitted"],
+            [v for v in scored if v["outcome"] == "denied"],
+            [v for v in scored if v["outcome"] == "waitlisted"])
+
+
+@lru_cache(maxsize=None)
+def _national_groups(case_name):
+    return _split(_case_view(r) for r in _cases._national()[0].get(case_name, []))
+
+
+def _own_groups(college):
+    """Not cached: the school's store can change while the server runs. GPA is joined in from the store."""
+    rows = _cases._own_rows(college)
+    gpa = {}
+    if rows:
+        try:
+            from engine import caselog
+            gpa = {r["case_id"]: r.get("gpa") for r in caselog.load_cases()}
+        except Exception:
+            gpa = {}
+    return _split(_case_view(r, gpa.get(r["case_id"])) for r in rows)
+
+
+def _nearest(sv, group, k, college, exclude=None):
+    """The k nearest cases: [(distance, case_view, parts)], nearest first, ties by case number."""
+    scored = []
+    for cv in group:
+        if exclude is not None and cv["case_id"] == exclude:
+            continue
+        parts = part_distances(sv, cv, college)
+        d = total(parts)
+        if d is not None:
+            scored.append((d, cv["num"], cv, parts))
+    scored.sort(key=lambda t: (t[0], t[1]))
+    return [(d, cv, parts) for d, _, cv, parts in scored[:k]]
+
+
+def _mean(xs):
+    xs = list(xs)
+    return sum(xs) / len(xs) if xs else None
+
+
+def _gap(sv, groups, college, k=NEIGHBOURS, exclude=None):
+    """(d_admitted, d_denied, gap, nearest_admitted, nearest_denied). Lean, steady and changes all go through here."""
+    adm, den, _ = groups
+    na, nd = _nearest(sv, adm, k, college, exclude), _nearest(sv, den, k, college, exclude)
+    da, dd = _mean(t[0] for t in na), _mean(t[0] for t in nd)
+    gap = None if (da is None or dd is None) else dd - da
+    return da, dd, gap, na, nd
+
+
+def _lean(gap):
+    if gap is None:
+        return None
+    if gap >= LEAN_GAP:
+        return "closer_to_admitted"
+    if gap <= -LEAN_GAP:
+        return "closer_to_denied"
+    return "in_between"
+
+
+def _shifted(sv, points):
+    return dict(sv, score=max(400, min(1600, sv["score"] + points)))
+
+
+def _steady(sv, groups, college, base_lean):
+    """Same idea as the label edge test: other neighbour counts, score a little lower and higher."""
+    flips = []
+    for k in STEADY_K:
+        to = _lean(_gap(sv, groups, college, k)[2])
+        if to != base_lean:
+            flips.append({"cause": f"{k} nearest instead of {NEIGHBOURS}", "to": to})
+    for pts in STEADY_SCORE:
+        to = _lean(_gap(_shifted(sv, pts), groups, college)[2])
+        if to != base_lean:
+            flips.append({"cause": f"score {abs(pts)} points {'lower' if pts < 0 else 'higher'}", "to": to})
+    return not flips, flips
+
+
+def _part_word(d):
+    return "close" if d <= CLOSE else ("far" if d >= FAR else "some way off")
+
+
+def _parts_summary(near):
+    """Mean distance per part over the nearest cases, so the screen can say 'close on score, far on activities'."""
+    out = []
+    for p in WEIGHTS:
+        vals = [parts[p] for _, _, parts in near if p in parts]
+        if vals:
+            m = _mean(vals)
+            out.append({"part": p, "distance": round(m, 3), "text": _part_word(m)})
+    return out
+
+
+def _not_used(near_a, near_d, college):
+    used = {p for _, _, parts in near_a + near_d for p in parts}
+    private = (college or {}).get("control") != "public"
+    out = [PART_WORD[p] for p in WEIGHTS if p not in used and not (p == "residency" and private)]
+    if private:
+        out.append("residency (private college)")
+    return out + NEVER_USED
+
+
+def _example(d, cv, parts, own):
+    ex = _cases._example(cv["row"], own)
+    ex["distance"] = round(d, 3)
+    ex["parts"] = {p: round(v, 3) for p, v in parts.items()}
+    return ex
+
+
+def _points(groups, kind_of=None):
+    """Up to POINTS_CAP scored cases for the scatter, spread evenly through the file order when there are more."""
+    adm, den, wl = groups
+    allv = sorted(adm + den + wl, key=lambda v: v["num"])
+    n = len(allv)
+    if n > POINTS_CAP:
+        allv = [allv[round(i * (n - 1) / (POINTS_CAP - 1))] for i in range(POINTS_CAP)]
+    return [{"case_id": v["case_id"], "sat": v["score"], "activities": v["activities"], "outcome": v["outcome"],
+             "kind_id": (kind_of or {}).get(v["case_id"])} for v in allv]
+
+
+def _pool(sv, groups, college, source, verified, own):
+    adm, den, wl = groups
+    out = {"source": source, "verified": verified, "status": None,
+           "n_admitted": len(adm), "n_denied": len(den), "n_waitlisted": len(wl)}
+    if not (adm or den or wl):
+        out["status"] = "none"
+    elif sv["score"] is None:
+        out["status"] = "cant_say"
+    elif not adm or not den:
+        out["status"] = "none"
+    elif len(adm) < NEEDED or len(den) < NEEDED:
+        out["status"] = "not_enough"
+    else:
+        out["status"] = "ok"
+    if out["status"] in ("none", "cant_say"):
+        out["text"] = STATUS_TEXT[out["status"]]
+        return out
+
+    da, dd, gap, na, nd = _gap(sv, groups, college)
+    lean = _lean(gap) if out["status"] == "ok" else None
+    out.update({"d_admitted": round(da, 3), "d_denied": round(dd, 3), "gap": round(gap, 3), "lean": lean,
+                "text": LEAN_TEXT[lean] if lean else STATUS_TEXT["not_enough"]})
+    if lean:
+        out["steady"], out["flips"] = _steady(sv, groups, college, lean)
+    else:
+        out["steady"], out["flips"] = None, []
+    out["parts"] = _parts_summary(na)
+    out["not_used"] = _not_used(na, nd, college)
+    out["nearest_admitted"] = [_example(d, cv, p, own) for d, cv, p in na[:MAX_NEAREST]]
+    out["nearest_denied"] = [_example(d, cv, p, own) for d, cv, p in nd[:MAX_NEAREST]]
+    out["kinds"] = []
+    out["changes"] = []
+    out["points"] = _points(groups)
+    return out
+
+
 def closeness(student, college, tags=None) -> dict:
-    """The contract block for one college. Stage 1 stub: a fixed example in the contract shape."""
-    if college is None or _colleges.case_name_for(college) is None:
-        return {"needed": NEEDED, "neighbours": NEIGHBOURS,
-                "national": {"source": NATIONAL_SOURCE, "verified": False, "status": "none",
-                             "n_admitted": 0, "n_denied": 0, "n_waitlisted": 0},
-                "own": {"source": OWN_SOURCE, "verified": True, "status": "none",
-                        "n_admitted": 0, "n_denied": 0, "n_waitlisted": 0},
-                "caveat": CAVEAT}
-    return {
-        "needed": NEEDED, "neighbours": NEIGHBOURS,
-        "national": {
-            "source": NATIONAL_SOURCE, "verified": False, "status": "ok",
-            "n_admitted": 212, "n_denied": 480, "n_waitlisted": 61,
-            "d_admitted": 0.18, "d_denied": 0.24, "gap": 0.06, "lean": "closer_to_admitted",
-            "text": "Looks more like the people admitted here than the people denied.",
-            "steady": False, "flips": [{"cause": "score 30 points lower", "to": "in_between"}],
-            "parts": [{"part": "score", "distance": 0.05, "text": "close"},
-                      {"part": "activities", "distance": 0.4, "text": "far"}],
-            "not_used": ["GPA", "essay", "activity descriptions"],
-            "nearest_admitted": [], "nearest_denied": [],
-            "kinds": [{"kind_id": "K1", "name": "High score, CS, activities 7", "size": 88, "median_sat": 1540,
-                       "median_activities": 7, "top_major": "CS", "medoid_case_id": "N-1042", "distance": 0.12,
-                       "nearest": True}],
-            "changes": [{"change": "Score 60 points higher", "gap_before": 0.06, "gap_after": 0.11,
-                         "lean_after": "closer_to_admitted", "because": ["N-88", "N-1042"]}],
-            "points": [{"case_id": "N-1042", "sat": 1460, "activities": 6.5, "outcome": "admitted", "kind_id": "K1"}],
-        },
-        "own": {"source": OWN_SOURCE, "verified": True, "status": "not_enough", "n_admitted": 1, "n_denied": 3},
-        "caveat": CAVEAT,
-    }
+    """The contract's `closeness` block for one student at one college. Deterministic; code only."""
+    sv = _student_view(student, college, tags)
+    short = _colleges.case_name_for(college) if college else None
+    nat = _national_groups(short) if short else ([], [], [])
+    own = _own_groups(college) if college else ([], [], [])
+    return {"needed": NEEDED, "neighbours": NEIGHBOURS,
+            "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False),
+            "own": _pool(sv, own, college, OWN_SOURCE, True, own=True),
+            "caveat": CAVEAT}
+
+
+# ---------------------------------------------------------------- command line
+
+def _spread():
+    from engine import pipeline
+    for st in pipeline.demo_students():
+        print(st["label"])
+        for name in st["college_list"]:
+            col = _colleges.find_college(name)
+            n = closeness(st, col)["national"] if col else {"status": "outside"}
+            if n["status"] == "ok":
+                print(f"   {name[:40]:40} gap {n['gap']:+.3f}  d_adm {n['d_admitted']:.3f} d_den {n['d_denied']:.3f}"
+                      f"  {n['lean']:20} steady={n['steady']} flips={len(n['flips'])}")
+            else:
+                print(f"   {name[:40]:40} {n['status']}")
 
 
 if __name__ == "__main__":
     import json
     import sys
 
-    from engine import pipeline
-    st = pipeline.demo_students()[0]
-    col = _colleges.find_college(st["college_list"][0])
-    print(json.dumps(closeness(st, col), indent=2, ensure_ascii=False))
-    if "--check" in sys.argv:
+    if "--spread" in sys.argv:
+        _spread()
+    elif "--check" in sys.argv:
         print("--check is not built yet.")
+    else:
+        from engine import pipeline
+        st = pipeline.demo_students()[0]
+        col = _colleges.find_college(st["college_list"][0])
+        print(json.dumps(closeness(st, col), indent=2, ensure_ascii=False))
