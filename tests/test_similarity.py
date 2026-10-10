@@ -432,9 +432,166 @@ class KindsTests(unittest.TestCase):
         self.assertLess(time.perf_counter() - t, 1.0)
 
 
+def admitted_views(spec):
+    """Synthetic admitted case views: (score, activities, major group, how many) per blob."""
+    out, i = [], 0
+    for score, act, major, k in spec:
+        for j in range(k):
+            i += 1
+            out.append({"case_id": f"N-{i}", "num": i, "score": score + (j % 5) * 4, "activities": act + (j % 3) * 0.2,
+                        "major_group": major, "hooks": frozenset({"NONE"}), "home_state": None, "gpa": None,
+                        "outcome": "admitted", "row": {"hooks": "NONE"}})
+    return out
+
+
+class GroupsTests(unittest.TestCase):
+    def setUp(self):
+        self.cornell = col("Cornell University")
+        self.sv = S._student_view(dict(STUDENT, activities_rating=6), self.cornell)
+        self.groups = S._national_groups("CORNELL")
+
+    def test_bands_follow_the_written_rule(self):
+        self.assertEqual(S._score_band(1500, 1500, 1570), "inside")     # at the 25th: inside
+        self.assertEqual(S._score_band(1570, 1500, 1570), "inside")     # at the 75th: inside
+        self.assertEqual(S._score_band(1499, 1500, 1570), "below")
+        self.assertEqual(S._score_band(1571, 1500, 1570), "above")
+        self.assertEqual(S._act_band(5.9), "low")
+        self.assertEqual(S._act_band(6), "mid")
+        self.assertEqual(S._act_band(7.9), "mid")
+        self.assertEqual(S._act_band(8), "high")
+
+    def test_nine_cells_in_fixed_order_and_counts_add_up(self):
+        g = S._groups_grid(self.sv, self.groups, self.cornell, own=False)
+        self.assertEqual(g["status"], "ok")
+        self.assertEqual((g["sat25"], g["sat75"]), (1500, 1570))
+        self.assertEqual((g["act_mid"], g["act_high"], g["min_n"], g["few_n"]), (6, 8, 5, 15))
+        self.assertEqual([(c["activities_band"], c["score_band"]) for c in g["cells"]],
+                         [(a, s) for a in ("high", "mid", "low") for s in ("below", "inside", "above")])
+        total = sum(len(group) for group in self.groups)
+        self.assertEqual(sum(c["n"] for c in g["cells"]) + g["left_out"], total)
+        self.assertFalse(g["capped"])
+        for c in g["cells"]:
+            self.assertEqual(c["n"], c["admitted"] + c["waitlisted"] + c["denied"])
+            self.assertEqual(c["n"], len(c["cases"]))
+            self.assertEqual(c["state"], "not_enough" if c["n"] < 5 else ("few" if c["n"] < 15 else "ok"))
+            for case in c["cases"]:
+                self.assertEqual(len(case), 6)
+                self.assertIn(case[3], ("a", "w", "d"))
+                self.assertEqual(S._score_band(case[1], 1500, 1570), c["score_band"])
+                self.assertEqual(S._act_band(case[2]), c["activities_band"])
+            gaps = [abs(case[1] - 1450) for case in c["cases"]]
+            self.assertEqual(gaps, sorted(gaps))                        # closest score to the student first
+        self.assertIn("rosier", g["caveat"])
+
+    def test_student_cell_is_marked_once_and_notes_say_what_is_missing(self):
+        g = S._groups_grid(self.sv, self.groups, self.cornell, own=False)
+        mine = [c for c in g["cells"] if c["is_student"]]
+        self.assertEqual(len(mine), 1)
+        self.assertEqual((mine[0]["score_band"], mine[0]["activities_band"]), ("below", "mid"))
+        self.assertEqual(g["student_note"], "")
+        no_rating = S._groups_grid(S._student_view(STUDENT, self.cornell), self.groups, self.cornell, own=False)
+        self.assertFalse(any(c["is_student"] for c in no_rating["cells"]))
+        self.assertIn("activities rating", no_rating["student_note"])
+        no_score = S._groups_grid(S._student_view(dict(STUDENT, sat=None), self.cornell), self.groups, self.cornell, own=False)
+        self.assertEqual(len(no_score["cells"]), 9)                     # the grid still draws
+        self.assertFalse(any(c["is_student"] for c in no_score["cells"]))
+        self.assertIn("score", no_score["student_note"])
+
+    def test_not_enough_few_and_cant_say(self):
+        few = S._groups_grid(self.sv, (admitted_views([(1520, 7, "CS", 4)]), [], []), self.cornell, own=False)
+        cell = [c for c in few["cells"] if c["n"]][0]
+        self.assertEqual((cell["n"], cell["state"]), (4, "not_enough"))
+        some = S._groups_grid(self.sv, (admitted_views([(1520, 7, "CS", 9)]), [], []), self.cornell, own=False)
+        self.assertEqual([c["state"] for c in some["cells"] if c["n"]], ["few"])
+        ucla = col("University of California-Los Angeles")
+        g = S._groups_grid(self.sv, S._national_groups("UCLA"), ucla, own=False)
+        self.assertEqual(g["status"], "cant_say")
+        self.assertIn("no middle score range", g["reason"])
+        self.assertEqual(g["cells"], [])
+        own = S._groups_grid(self.sv, self.groups, self.cornell, own=True)
+        self.assertEqual(own["status"], "cant_say")
+        self.assertIn("activities rating", own["reason"])
+        empty = S._groups_grid(self.sv, ([], [], []), self.cornell, own=False)
+        self.assertEqual(empty["status"], "cant_say")
+
+    def test_cap_spreads_the_list_and_says_so(self):
+        many = admitted_views([(1520, 7, "CS", 1000)])
+        g = S._groups_grid(self.sv, (many, [], []), self.cornell, own=False)
+        self.assertTrue(g["capped"])
+        self.assertEqual(sum(c["n"] for c in g["cells"]), S.GROUPS_CAP)
+
+    def test_groups_ride_inside_the_closeness_block(self):
+        r = S.closeness(dict(STUDENT, activities_rating=6), self.cornell)
+        self.assertEqual(r["national"]["groups"]["status"], "ok")
+        self.assertEqual(r["own"]["groups"]["status"], "cant_say")
+        self.assertIsNone(r["own"]["kinds_check"])
+        self.assertEqual(r["national"]["kinds_check"]["verdict"], S._kinds_check("CORNELL")["verdict"])
+        no_score = S.closeness(dict(STUDENT, sat=None), self.cornell)["national"]
+        self.assertEqual(no_score["status"], "cant_say")
+        self.assertEqual(len(no_score["groups"]["cells"]), 9)           # a cant_say pool still carries the grid
+        for text in strings(r):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+
+
+class KindsCheckTests(unittest.TestCase):
+    def setUp(self):
+        self.orig = S._national_groups
+        blobs = admitted_views([(1200, 3, "BIO", 40), (1420, 6, "CS", 40), (1590, 9, "ENG", 40)])
+        import random
+        rng = random.Random(1)
+        flat = admitted_views([(rng.randrange(1000, 1600, 10), rng.randrange(0, 11), rng.choice(["CS", "BIO", "ENG", "BUSINESS"]), 1)
+                               for _ in range(120)])
+        fake = {"BLOBS3": (blobs, [], []), "UNIFORM": (flat, [], [])}
+        S._national_groups = lambda name: fake.get(name) or self.orig(name)
+        S._kinds_check.cache_clear()
+        S._kinds.cache_clear()
+        self.addCleanup(setattr, S, "_national_groups", self.orig)
+        self.addCleanup(S._kinds_check.cache_clear)
+        self.addCleanup(S._kinds.cache_clear)
+
+    def test_three_separated_blobs_are_clear(self):
+        c = S._kinds_check("BLOBS3")
+        self.assertEqual(c["verdict"], "clear")
+        self.assertGreaterEqual(c["separation"], 0.9)
+        self.assertGreaterEqual(c["separation"] - c["shuffled"], 0.05)
+        self.assertGreaterEqual(c["stability"], 0.75)
+        self.assertEqual(c["text"], S.KINDS_VERDICT_TEXT["clear"])
+        self.assertEqual(c["needs"]["separation"], S.KINDS_SEPARATION)
+
+    def test_one_uniform_blob_has_no_clear_kinds(self):
+        c = S._kinds_check("UNIFORM")
+        self.assertEqual(c["verdict"], "none")
+        self.assertLess(c["separation"], S.KINDS_SEPARATION)
+
+    def test_same_input_gives_the_same_numbers_and_no_kinds_gives_none(self):
+        a = S._kinds_check("CORNELL")
+        S._kinds_check.cache_clear()
+        self.assertEqual(a, S._kinds_check("CORNELL"))
+        self.assertEqual(set(a), {"separation", "shuffled", "stability", "verdict", "text", "needs"})
+        self.assertIn(a["verdict"], ("clear", "loose", "none"))
+        self.assertIsNone(S._kinds_check("CLAREMONT MCKENNA"))
+
+    def test_silhouette_and_jaccard(self):
+        D = [[0, 1, 9, 9], [1, 0, 9, 9], [9, 9, 0, 1], [9, 9, 1, 0]]
+        self.assertAlmostEqual(S._silhouette(D, [0, 0, 2, 2]), 8 / 9)
+        self.assertEqual(S._silhouette(D, [0, 0, 0, 0]), 0.0)
+        self.assertEqual(S._jaccard({1, 2}, {2, 3}), 1 / 3)
+        self.assertEqual(S._jaccard(set(), set()), 0.0)
+
+    def test_a_large_college_checks_in_under_two_seconds(self):
+        import time
+        t = time.perf_counter()
+        S._kinds_check("CORNELL")
+        self.assertLess(time.perf_counter() - t, 2.0)
+
+
 class MethodTests(unittest.TestCase):
     def test_method_reads_from_the_same_constants(self):
         m = S.method()
+        self.assertEqual(m["groups"], {"act_mid": S.ACT_MID, "act_high": S.ACT_HIGH, "min_n": S.GROUP_MIN, "few_n": S.GROUP_FEW, "cap": S.GROUPS_CAP})
+        self.assertEqual(m["kinds_check"]["separation"], S.KINDS_SEPARATION)
+        self.assertEqual(m["kinds_check"]["stability"], S.KINDS_STABILITY)
         self.assertEqual({p["part"]: p["weight"] for p in m["parts"]}, S.WEIGHTS)
         self.assertEqual(m["neighbours"], S.NEIGHBOURS)
         self.assertEqual(m["lean_gap"], S.LEAN_GAP)

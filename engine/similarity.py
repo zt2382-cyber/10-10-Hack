@@ -92,6 +92,10 @@ def method() -> dict:
         "steady": {"neighbours": list(STEADY_K), "score": list(STEADY_SCORE)},
         "kinds": {"k": KINDS, "min_admitted": KINDS_MIN, "cap": KINDS_CAP, "rounds": KINDS_ROUNDS, "seed": KINDS_SEED,
                   "parts": list(KIND_PARTS), "score_band": KIND_SCORE_BAND, "rating_band": KIND_RATING_BAND},
+        "groups": {"act_mid": ACT_MID, "act_high": ACT_HIGH, "min_n": GROUP_MIN, "few_n": GROUP_FEW, "cap": GROUPS_CAP},
+        "kinds_check": {"separation": KINDS_SEPARATION, "margin": KINDS_MARGIN, "stability": KINDS_STABILITY,
+                        "loose_separation": KINDS_LOOSE_SEPARATION, "loose_stability": KINDS_LOOSE_STABILITY,
+                        "subsamples": KINDS_SUBSAMPLES, "subsample_share": KINDS_SUBSAMPLE_SHARE},
         "points_cap": POINTS_CAP, "check": {"n": CHECK_N, "seed": CHECK_SEED},
         "libraries": {"engine": ["csv", "json", "functools.lru_cache", "random", "statistics", "collections.Counter", "pathlib", "optional Nicrron text embeddings"],
                       "not_used": ["numpy", "scikit-learn", "pandas"],
@@ -343,6 +347,42 @@ def _score_word(value, centre, band):
     return "Mid"
 
 
+def _kinds_pop(case_name, rng):
+    """(admitted cases with a score, the seeded sample k-medoids runs on). The sample is empty under KINDS_MIN."""
+    adm = [v for v in _national_groups(case_name)[0] if v["score"] is not None]
+    if len(adm) < KINDS_MIN:
+        return adm, []
+    return adm, (adm if len(adm) <= KINDS_CAP else sorted(rng.sample(adm, KINDS_CAP), key=lambda v: v["num"]))
+
+
+def _kind_matrix(pop):
+    n = len(pop)
+    D = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            D[i][j] = D[j][i] = _kind_distance(pop[i], pop[j])
+    return D
+
+
+def _kmedoids(D, rng, k=KINDS, rounds=KINDS_ROUNDS):
+    """(medoids, assign) over a distance matrix: seeded start, then swap each medoid for its cluster's best centre."""
+    n = len(D)
+    medoids = sorted(rng.sample(range(n), min(k, n)))
+    assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
+    for _ in range(rounds):
+        new = []
+        for m in medoids:
+            members = [i for i in range(n) if assign[i] == m]
+            # a medoid that is a duplicate of another (distance 0) can lose every member; it then stays where it is
+            new.append(min(members, key=lambda c: (sum(D[c][j] for j in members), c)) if members else m)
+        new = sorted(new)
+        if new == medoids:
+            break
+        medoids = new
+        assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
+    return medoids, assign
+
+
 @lru_cache(maxsize=None)
 def _kinds(case_name):
     """(kinds, {case_id: kind_id}) for one college's admitted national cases. Pure Python, fixed seed."""
@@ -350,26 +390,12 @@ def _kinds(case_name):
     import statistics
     from collections import Counter
 
-    adm = [v for v in _national_groups(case_name)[0] if v["score"] is not None]
-    if len(adm) < KINDS_MIN:
-        return [], {}
     rng = random.Random(KINDS_SEED)
-    pop = adm if len(adm) <= KINDS_CAP else sorted(rng.sample(adm, KINDS_CAP), key=lambda v: v["num"])
+    adm, pop = _kinds_pop(case_name, rng)
+    if not pop:
+        return [], {}
     n = len(pop)
-    D = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
-            D[i][j] = D[j][i] = _kind_distance(pop[i], pop[j])
-    medoids = sorted(rng.sample(range(n), KINDS))
-    for _ in range(KINDS_ROUNDS):
-        assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
-        new = sorted(min((i for i in range(n) if assign[i] == m),
-                         key=lambda c: (sum(D[c][j] for j in range(n) if assign[j] == m), c))
-                     for m in medoids)
-        if new == medoids:
-            break
-        medoids = new
-    assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
+    medoids, assign = _kmedoids(_kind_matrix(pop), rng)
 
     centre_score = statistics.median(v["score"] for v in adm)
     rated = [v["activities"] for v in adm if v["activities"] is not None]
@@ -415,6 +441,199 @@ def _kinds_for(sv, kinds, college):
     if with_d:
         min(with_d, key=lambda k: (k["distance"], k["kind_id"]))["nearest"] = True
     return out
+
+
+# ---------------------------------------------------------------- G1 to G4. rule-defined groups, and a check on the kinds
+# Groups are set by a written rule (score band by activities band), so a counselor can recount them by hand.
+# Tested on the national pool, k-medoids kinds were often no better separated than shuffled data; the check below
+# says so per college, and the screen shows kind names only when it passes.
+
+ACT_MID = 6             # activities rating under this: "low"; from here to under ACT_HIGH: "mid"
+ACT_HIGH = 8            # at or over: "high"
+GROUP_MIN = 5           # fewer cases than this in a group: counts hidden, "not enough"
+GROUP_FEW = 15          # under this: shown, marked "few"
+GROUPS_CAP = 900        # most cases listed per college; past this the list is spread evenly through the file order
+SCORE_BANDS = ("below", "inside", "above")
+ACT_BANDS = ("high", "mid", "low")
+GROUPS_CAVEAT = ("People who were admitted post far more often than people who were denied, so every group looks "
+                 "rosier than the real applicant pool.")
+GROUPS_REASON = {
+    "own": "The school's own cases carry no activities rating, so they cannot be placed in these groups.",
+    "no_range": "This college publishes no middle score range, so there is no written rule to place a score against.",
+    "no_cases": "No finished cases for this college in this pool.",
+}
+STUDENT_NOTE = {"activities": "Give an activities rating to place this student.", "score": "No test score was given, so this student has no group."}
+
+# Run over all 58 colleges in the national file on 2026-10-10: 53 "none", 1 "loose" (Brown), 4 with no kinds. So the
+# kinds are shown by name almost nowhere, and the rule-defined groups carry the picture.
+KINDS_SEPARATION = 0.51     # mean silhouette width the kinds need to count as clear
+KINDS_MARGIN = 0.05         # the real fit must beat the same fit on shuffled data by this much
+KINDS_STABILITY = 0.75      # the least stable kind's mean Jaccard over the subsamples
+KINDS_LOOSE_SEPARATION = 0.26
+KINDS_LOOSE_STABILITY = 0.6
+KINDS_SUBSAMPLES = 8
+KINDS_SUBSAMPLE_SHARE = 0.8
+KINDS_VERDICT_TEXT = {
+    "clear": "Clear kinds of admitted student at this college: well separated, better than shuffled data, and stable.",
+    "loose": "A loose grouping only: the kinds hold up on resampling but are not well separated.",
+    "none": "No clear kinds at this college.",
+}
+
+
+def _score_band(score, sat25, sat75):
+    if score < sat25:
+        return "below"
+    if score > sat75:
+        return "above"
+    return "inside"
+
+
+def _act_band(rating):
+    if rating >= ACT_HIGH:
+        return "high"
+    if rating >= ACT_MID:
+        return "mid"
+    return "low"
+
+
+def _published_range(college):
+    lo, hi = (college or {}).get("sat25"), (college or {}).get("sat75")
+    try:
+        lo, hi = int(lo), int(hi)
+    except (TypeError, ValueError):
+        return None, None
+    return (hi, lo) if hi < lo else (lo, hi)
+
+
+def _groups_grid(sv, groups, college, own):
+    """The contract's `groups` block: nine rule-defined cells (rows high, mid, low; columns below, inside, above)."""
+    out = {"status": "ok", "reason": "", "sat25": None, "sat75": None, "act_mid": ACT_MID, "act_high": ACT_HIGH,
+           "min_n": GROUP_MIN, "few_n": GROUP_FEW, "left_out": 0, "capped": False, "student_note": "", "cells": [],
+           "caveat": GROUPS_CAVEAT}
+    allv = sorted((v for group in groups for v in group), key=lambda v: v["num"])
+    if own:
+        return dict(out, status="cant_say", reason=GROUPS_REASON["own"])
+    if not allv:
+        return dict(out, status="cant_say", reason=GROUPS_REASON["no_cases"])
+    lo, hi = _published_range(college)
+    if lo is None:
+        return dict(out, status="cant_say", reason=GROUPS_REASON["no_range"])
+    out["sat25"], out["sat75"] = lo, hi
+    usable = [v for v in allv if v["score"] is not None and v["activities"] is not None]
+    out["left_out"] = len(allv) - len(usable)
+    if len(usable) > GROUPS_CAP:
+        out["capped"] = True
+        usable = [usable[round(i * (len(usable) - 1) / (GROUPS_CAP - 1))] for i in range(GROUPS_CAP)]
+    score, rating = sv.get("score"), sv.get("activities")
+    mine = None
+    if score is None:
+        out["student_note"] = STUDENT_NOTE["score"]
+    elif rating is None:
+        out["student_note"] = STUDENT_NOTE["activities"]
+    else:
+        mine = (_score_band(score, lo, hi), _act_band(rating))
+    letter = {"admitted": "a", "waitlisted": "w", "denied": "d"}
+    cells = {(sb, ab): [] for ab in ACT_BANDS for sb in SCORE_BANDS}
+    for v in usable:
+        cells[(_score_band(v["score"], lo, hi), _act_band(v["activities"]))].append(v)
+    for ab in ACT_BANDS:
+        for sb in SCORE_BANDS:
+            members = cells[(sb, ab)]
+            members.sort(key=lambda v: ((abs(v["score"] - score) if score is not None else 0), v["num"]))
+            n = len(members)
+            counts = {o: sum(1 for v in members if v["outcome"] == o) for o in ("admitted", "waitlisted", "denied")}
+            out["cells"].append({
+                "score_band": sb, "activities_band": ab, "admitted": counts["admitted"], "waitlisted": counts["waitlisted"],
+                "denied": counts["denied"], "n": n,
+                "state": "not_enough" if n < GROUP_MIN else ("few" if n < GROUP_FEW else "ok"),
+                "is_student": mine == (sb, ab),
+                "cases": [[v["case_id"], v["score"], v["activities"], letter.get(v["outcome"], "d"), v["major_group"] or "",
+                           str(v["row"].get("hooks") or "NONE")] for v in members]})
+    return out
+
+
+def _silhouette(D, assign):
+    """Mean silhouette width: for each case, (b - a) / max(a, b) with a the mean distance to its own kind and b the
+    lowest mean distance to another kind. A kind of one scores 0."""
+    n = len(assign)
+    labels = sorted(set(assign))
+    if n == 0 or len(labels) < 2:
+        return 0.0
+    total = 0.0
+    for i in range(n):
+        own = [D[i][j] for j in range(n) if j != i and assign[j] == assign[i]]
+        if not own:
+            continue
+        a = sum(own) / len(own)
+        b = min(_mean(D[i][j] for j in range(n) if assign[j] == lab) for lab in labels if lab != assign[i])
+        top = max(a, b)
+        total += (b - a) / top if top > 0 else 0.0
+    return total / n
+
+
+def _jaccard(a, b):
+    a, b = set(a), set(b)
+    return len(a & b) / len(a | b) if (a | b) else 0.0
+
+
+def _shuffled_parts(pop, rng):
+    """The same cases with each part's values shuffled across cases, so any grouping left is chance."""
+    cols = {}
+    for key in ("score", "activities", "major_group"):
+        vals = [v[key] for v in pop]
+        rng.shuffle(vals)
+        cols[key] = vals
+    return [dict(v, score=cols["score"][i], activities=cols["activities"][i], major_group=cols["major_group"][i])
+            for i, v in enumerate(pop)]
+
+
+@lru_cache(maxsize=None)
+def _kinds_check(case_name):
+    """G4: separation, the same on shuffled data, and stability over subsamples, for the kinds `_kinds` found.
+    None when there are no kinds. Reuses the exact sample and distance `_kinds` uses."""
+    import random
+
+    rng = random.Random(KINDS_SEED)
+    adm, pop = _kinds_pop(case_name, rng)
+    if not pop:
+        return None
+    n = len(pop)
+    D = _kind_matrix(pop)
+    medoids, assign = _kmedoids(D, rng)
+    separation = _silhouette(D, assign)
+
+    srng = random.Random(KINDS_SEED)
+    shuffled_pop = _shuffled_parts(pop, srng)
+    D2 = _kind_matrix(shuffled_pop)
+    shuffled = _silhouette(D2, _kmedoids(D2, srng)[1])
+
+    members = {m: {pop[i]["case_id"] for i in range(n) if assign[i] == m} for m in medoids}
+    best_match = {m: [] for m in medoids}
+    size = max(KINDS + 1, round(n * KINDS_SUBSAMPLE_SHARE))
+    for s in range(1, KINDS_SUBSAMPLES + 1):
+        r = random.Random(KINDS_SEED + s)
+        idx = sorted(r.sample(range(n), min(size, n)))
+        sub = [[D[i][j] for j in idx] for i in idx]
+        _, asg = _kmedoids(sub, r)
+        refit = {}
+        for k, i in enumerate(idx):
+            refit.setdefault(asg[k], set()).add(pop[i]["case_id"])
+        kept = {pop[i]["case_id"] for i in idx}
+        for m in medoids:
+            best_match[m].append(max((_jaccard(members[m] & kept, g) for g in refit.values()), default=0.0))
+    stability = min(_mean(best_match[m]) for m in medoids)
+
+    beats = separation - shuffled >= KINDS_MARGIN
+    if separation >= KINDS_SEPARATION and stability >= KINDS_STABILITY and beats:
+        verdict = "clear"
+    elif separation >= KINDS_LOOSE_SEPARATION and stability >= KINDS_LOOSE_STABILITY and beats:
+        verdict = "loose"
+    else:
+        verdict = "none"
+    return {"separation": round(separation, 3), "shuffled": round(shuffled, 3), "stability": round(stability, 3),
+            "verdict": verdict, "text": KINDS_VERDICT_TEXT[verdict],
+            "needs": {"separation": KINDS_SEPARATION, "margin": KINDS_MARGIN, "stability": KINDS_STABILITY,
+                      "loose_separation": KINDS_LOOSE_SEPARATION, "loose_stability": KINDS_LOOSE_STABILITY}}
 
 
 # ---------------------------------------------------------------- R4. what would bring the student closer
@@ -463,14 +682,16 @@ def _changes(sv, groups, college, base_gap):
     return out[:MAX_CHANGES]
 
 
-def _pool(sv, groups, college, source, verified, own, kinds=((), {})):
+def _pool(sv, groups, college, source, verified, own, kinds=((), {}), kinds_check=None):
     original_groups = groups
     # Counts refer to cases with at least one substantive shared feature.
     groups = tuple([v for v in group if total(part_distances(sv, v, college)) is not None] for group in groups)
     adm, den, wl = groups
     kind_list, kind_of = kinds
     out = {"source": source, "verified": verified, "status": None,
-           "n_admitted": len(adm), "n_denied": len(den), "n_waitlisted": len(wl)}
+           "n_admitted": len(adm), "n_denied": len(den), "n_waitlisted": len(wl),
+           "groups": _groups_grid(sv, original_groups, college, own),
+           "kinds_check": kinds_check if kind_list else None}
     if not (adm or den or wl):
         out["status"] = "cant_say" if any(original_groups) else "none"
     elif not _nearest(sv, adm, 1, college) or not _nearest(sv, den, 1, college):
@@ -531,7 +752,8 @@ def closeness(student, college, tags=None, semantic_context=None) -> dict:
             "weights": dict(WEIGHTS),
             "needed": NEEDED, "neighbours": NEIGHBOURS,
             "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
-            "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
+            "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds,
+                              kinds_check=_kinds_check(short) if short and kinds[0] else None),
             "own": own_pool,
             "caveat": CAVEAT}
 
