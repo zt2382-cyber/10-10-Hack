@@ -2619,5 +2619,146 @@
    }
   ],
   "caveat": "Counted on self-reported public posts, each person hidden before their own lean was computed. People who post are admitted far more often than applicants overall, so this says how the lean sorts posters, not applicants."
+ },
+ "closeness_method": {
+  "parts": [
+   {
+    "part": "score",
+    "name": "score",
+    "weight": 0.45,
+    "distance": "score difference / 400 SAT points, capped at 1",
+    "student": "SAT, or ACT converted to the SAT scale",
+    "case": "SAT, or ACT converted",
+    "pools": "both",
+    "required": true
+   },
+   {
+    "part": "activities",
+    "name": "activities rating",
+    "weight": 0.2,
+    "distance": "rating difference / 10",
+    "student": "the counselor's 0 to 10 rating (optional)",
+    "case": "self-rated activities and awards, 0 to 10",
+    "pools": "national only",
+    "required": false
+   },
+   {
+    "part": "major",
+    "name": "major group",
+    "weight": 0.15,
+    "distance": "0 same group, 1 different",
+    "student": "intended major, or the essay reader's tag when both models agreed",
+    "case": "stated major",
+    "pools": "both",
+    "required": false
+   },
+   {
+    "part": "hooks",
+    "name": "hook status",
+    "weight": 0.1,
+    "distance": "0 same set of hooks, 1 different",
+    "student": "first-gen, legacy, under-represented, athlete, or none",
+    "case": "the same set",
+    "pools": "both",
+    "required": false
+   },
+   {
+    "part": "residency",
+    "name": "residency",
+    "weight": 0.1,
+    "distance": "0 if both in-state or both out-of-state for this college, else 1",
+    "student": "home state",
+    "case": "home state",
+    "pools": "both, public colleges only",
+    "required": false
+   },
+   {
+    "part": "gpa",
+    "name": "GPA",
+    "weight": 0.2,
+    "distance": "GPA difference / 1 on a 4.0 scale, capped at 1",
+    "student": "GPA, converted to a 4.0 scale",
+    "case": "GPA in the school's own file",
+    "pools": "own only",
+    "required": false
+   }
+  ],
+  "never_used": [
+   "essay text",
+   "activity descriptions",
+   "race",
+   "gender",
+   "income",
+   "class rank",
+   "the essay/recommendation/interview self-rating"
+  ],
+  "neighbours": 7,
+  "needed": 15,
+  "lean_gap": 0.03,
+  "change_gain": 0.02,
+  "max_changes": 3,
+  "score_steps": [
+   30,
+   60,
+   100
+  ],
+  "rating_steps": [
+   1,
+   2
+  ],
+  "close": 0.15,
+  "far": 0.5,
+  "steady": {
+   "neighbours": [
+    5,
+    10
+   ],
+   "score": [
+    -30,
+    30
+   ]
+  },
+  "kinds": {
+   "k": 3,
+   "min_admitted": 30,
+   "cap": 300,
+   "rounds": 20,
+   "seed": 20261010,
+   "parts": [
+    "score",
+    "activities",
+    "major"
+   ],
+   "score_band": 40,
+   "rating_band": 1.0
+  },
+  "points_cap": 300,
+  "check": {
+   "n": 400,
+   "seed": 20261010
+  },
+  "libraries": {
+   "engine": [
+    "csv",
+    "json",
+    "functools.lru_cache",
+    "random",
+    "statistics",
+    "collections.Counter",
+    "pathlib"
+   ],
+   "not_used": [
+    "numpy",
+    "scikit-learn",
+    "pandas",
+    "text embeddings",
+    "any model call"
+   ],
+   "screen": [
+    "plain HTML, CSS and JavaScript",
+    "inline SVG drawn by hand",
+    "no chart library, no framework, no build step"
+   ]
+  }
  }
 }

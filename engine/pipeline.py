@@ -321,6 +321,7 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         },
         "prism": prism, "pools": pool, "refusals": REFUSALS,
         "closeness_check": _closeness_check(),
+        "closeness_method": _safe(similarity_mod.method, None) if similarity_mod and hasattr(similarity_mod, "method") else None,
     }
 
 

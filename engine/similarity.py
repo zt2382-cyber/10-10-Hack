@@ -60,6 +60,37 @@ STEADY_K = (5, 10)
 STEADY_SCORE = (-30, 30)
 
 
+def method() -> dict:
+    """The method's constants, for the screen's About page: weights, spans, thresholds and the kinds settings.
+    Read from the same names the code uses, so the page cannot drift from the code."""
+    return {
+        "parts": [
+            {"part": "score", "name": PART_WORD["score"], "weight": WEIGHTS["score"], "distance": f"score difference / {SCORE_SPAN} SAT points, capped at 1",
+             "student": "SAT, or ACT converted to the SAT scale", "case": "SAT, or ACT converted", "pools": "both", "required": True},
+            {"part": "activities", "name": PART_WORD["activities"], "weight": WEIGHTS["activities"], "distance": f"rating difference / {RATING_SPAN:g}",
+             "student": "the counselor's 0 to 10 rating (optional)", "case": "self-rated activities and awards, 0 to 10", "pools": "national only", "required": False},
+            {"part": "major", "name": PART_WORD["major"], "weight": WEIGHTS["major"], "distance": "0 same group, 1 different",
+             "student": "intended major, or the essay reader's tag when both models agreed", "case": "stated major", "pools": "both", "required": False},
+            {"part": "hooks", "name": PART_WORD["hooks"], "weight": WEIGHTS["hooks"], "distance": "0 same set of hooks, 1 different",
+             "student": "first-gen, legacy, under-represented, athlete, or none", "case": "the same set", "pools": "both", "required": False},
+            {"part": "residency", "name": PART_WORD["residency"], "weight": WEIGHTS["residency"], "distance": "0 if both in-state or both out-of-state for this college, else 1",
+             "student": "home state", "case": "home state", "pools": "both, public colleges only", "required": False},
+            {"part": "gpa", "name": PART_WORD["gpa"], "weight": WEIGHTS["gpa"], "distance": f"GPA difference / {GPA_SPAN:g} on a 4.0 scale, capped at 1",
+             "student": "GPA, converted to a 4.0 scale", "case": "GPA in the school's own file", "pools": "own only", "required": False},
+        ],
+        "never_used": ["essay text", "activity descriptions", "race", "gender", "income", "class rank", "the essay/recommendation/interview self-rating"],
+        "neighbours": NEIGHBOURS, "needed": NEEDED, "lean_gap": LEAN_GAP, "change_gain": CHANGE_GAIN, "max_changes": MAX_CHANGES,
+        "score_steps": list(SCORE_STEPS), "rating_steps": list(RATING_STEPS), "close": CLOSE, "far": FAR,
+        "steady": {"neighbours": list(STEADY_K), "score": list(STEADY_SCORE)},
+        "kinds": {"k": KINDS, "min_admitted": KINDS_MIN, "cap": KINDS_CAP, "rounds": KINDS_ROUNDS, "seed": KINDS_SEED,
+                  "parts": list(KIND_PARTS), "score_band": KIND_SCORE_BAND, "rating_band": KIND_RATING_BAND},
+        "points_cap": POINTS_CAP, "check": {"n": CHECK_N, "seed": CHECK_SEED},
+        "libraries": {"engine": ["csv", "json", "functools.lru_cache", "random", "statistics", "collections.Counter", "pathlib"],
+                      "not_used": ["numpy", "scikit-learn", "pandas", "text embeddings", "any model call"],
+                      "screen": ["plain HTML, CSS and JavaScript", "inline SVG drawn by hand", "no chart library, no framework, no build step"]},
+    }
+
+
 # ---------------------------------------------------------------- the two sides of a comparison
 
 def _rating(v):

@@ -367,6 +367,15 @@ main:focus { outline: none; }
 .about-lead { font-size: 18px; }
 .tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16.5px; }
 .tour .btn { margin: 6px 6px 0 0; }
+.weights th[scope=row] { color: var(--ink); font-weight: 650; white-space: nowrap; }
+.w-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.algo { display: block; width: 100%; height: auto; min-width: 640px; max-width: 760px; font-family: inherit; }
+.al-box rect { fill: var(--raised); stroke: var(--line); stroke-width: 1.4; }
+.al-box text { font-size: 12.5px; fill: var(--ink); }
+.al-box .al-h { font-weight: 700; font-size: 13px; }
+.al-in rect { stroke: var(--target); } .al-data rect { stroke: var(--unsure); stroke-dasharray: 4 3; }
+.al-calc rect { stroke: var(--accent); } .al-out rect { stroke: var(--likely); } .al-side rect { fill: var(--soft); }
+.al-arr { stroke: var(--mute); stroke-width: 1.6; } .al-arrhead { fill: var(--mute); }
 
 /* essay notes and how this was made (inside the drawer) */
 .notes { display: grid; gap: 14px; margin: 12px 0; }

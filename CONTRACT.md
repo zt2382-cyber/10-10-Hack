@@ -75,7 +75,8 @@ rating) and `major_interests` (a list of majors the student named).
 ## Output: Result (dict). This is the only thing the screen reads.
 The full example is `docs/fixture_result.json`. Top-level keys:
 `run_id, generated_at, synthetic, student, steps, privacy, reader, colleges, balance, checks, prism, refusals,
-closeness_check` (the last is the Closeness holds-up table from `docs/closeness_check.json`, or null).
+closeness_check, closeness_method` (the last two are the Closeness holds-up table from `docs/closeness_check.json`,
+or null, and `similarity.method()`: the weights, spans and thresholds the About page shows, read from the code).
 
 ### `label` object: `labels.label_college(student, college_or_None) -> dict`
 ```json

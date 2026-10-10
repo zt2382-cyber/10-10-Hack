@@ -424,6 +424,21 @@ class KindsTests(unittest.TestCase):
         self.assertLess(time.perf_counter() - t, 1.0)
 
 
+class MethodTests(unittest.TestCase):
+    def test_method_reads_from_the_same_constants(self):
+        m = S.method()
+        self.assertEqual({p["part"]: p["weight"] for p in m["parts"]}, S.WEIGHTS)
+        self.assertEqual(m["neighbours"], S.NEIGHBOURS)
+        self.assertEqual(m["lean_gap"], S.LEAN_GAP)
+        self.assertEqual(m["kinds"]["seed"], S.KINDS_SEED)
+        self.assertIn("essay text", m["never_used"])
+        self.assertIn("numpy", m["libraries"]["not_used"])
+        for text in strings(m):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+        json.dumps(m)   # plain data only
+
+
 class CheckTests(unittest.TestCase):
     def test_small_check_is_deterministic_national_only_and_adds_up(self):
         a = S.check(n=60, seed=7)
