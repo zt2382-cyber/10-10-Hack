@@ -422,7 +422,9 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
     explain_what = {"ok": f"Read the essay for themes and exact quotes; {kept} note{'s' if kept != 1 else ''} kept, {dropped} dropped",
                     "blocked": "Did not read the essay: it was stopped by the privacy screen",
                     "empty": "No essay to read", "off": "The essay reader is off (no model key), so no model was used"}.get(reader.get("status"), "The essay reader did not finish")
-    steps.append({"step": "explain", "by": reader.get("model") or "code", "ms": explain_ms, "what": explain_what})
+    readers = [m for m in (reader.get("model"), reader.get("second_model")) if m]
+    by = (" and ".join(readers) + ", through the Nicrron gateway") if (readers and reader.get("status") == "ok") else "code"
+    steps.append({"step": "explain", "by": by, "ms": explain_ms, "what": explain_what})
 
     # ---- knowledge base: back one statement per college from PRISM, when it is on ----
     kb_state = "off"
