@@ -1,0 +1,523 @@
+{
+  "retrieval_version": "hybrid-v2",
+  "model": null,
+  "college_id": "demo-university",
+  "weights": {
+    "gpa": 0.2,
+    "sat_submitted": 0.1,
+    "courses": 0.2,
+    "activities": 0.25,
+    "interests": 0.05,
+    "essay": 0.2
+  },
+  "warnings": [
+    "Essay scoring explicitly disabled"
+  ],
+  "eligible_students": 3,
+  "excluded_applications_by_academic_gate": 0,
+  "matched_students": 3,
+  "synthetic_included": true,
+  "category": "insufficient evidence",
+  "reason": "Combined similarity is a retrieval heuristic, not an admission probability.",
+  "matches": [
+    {
+      "application_id": "application-2",
+      "student_id": "student-2",
+      "cycle": 2025,
+      "synthetic": true,
+      "source": "Generated example; no real applicant or college outcomes",
+      "source_id": "demo-source",
+      "evidence_pool": "synthetic",
+      "verification_level": "synthetic",
+      "similarity": 0.9951,
+      "coverage": 0.51,
+      "rank_score": 0.5075,
+      "academic_similarity": 0.9931,
+      "academic_coverage": 0.72,
+      "components": {
+        "gpa": {
+          "similarity": 1.0,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.2,
+          "contribution": 0.2
+        },
+        "sat_submitted": {
+          "similarity": 0.975,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.1,
+          "contribution": 0.0975
+        },
+        "interests": {
+          "similarity": 1.0,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.05,
+          "contribution": 0.05
+        },
+        "courses": {
+          "similarity": 1.0,
+          "coverage": 0.3,
+          "method": "tag fallback",
+          "weight": 0.2,
+          "contribution": 0.06
+        },
+        "activities": {
+          "similarity": 1.0,
+          "coverage": 0.4,
+          "method": "tag fallback",
+          "weight": 0.25,
+          "contribution": 0.1
+        }
+      },
+      "missing_components": [
+        "essay"
+      ],
+      "essay_status": "disabled",
+      "matching_passages": null,
+      "profile_evidence": [],
+      "outcome_events": [
+        {
+          "id": "outcome-2",
+          "decision": "waitlist",
+          "occurred_at": "2025-03-15",
+          "verified": 0,
+          "source_id": "demo-source",
+          "synthetic": 1,
+          "reference": "Generated example; no real applicant or college outcomes",
+          "evidence_pool": "unclassified",
+          "verification_level": "unverified"
+        }
+      ]
+    },
+    {
+      "application_id": "application-0",
+      "student_id": "student-0",
+      "cycle": 2025,
+      "synthetic": true,
+      "source": "Generated example; no real applicant or college outcomes",
+      "source_id": "demo-source",
+      "evidence_pool": "synthetic",
+      "verification_level": "synthetic",
+      "similarity": 0.9461,
+      "coverage": 0.51,
+      "rank_score": 0.4825,
+      "academic_similarity": 0.9236,
+      "academic_coverage": 0.72,
+      "components": {
+        "gpa": {
+          "similarity": 0.9,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.2,
+          "contribution": 0.18
+        },
+        "sat_submitted": {
+          "similarity": 0.925,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.1,
+          "contribution": 0.0925
+        },
+        "interests": {
+          "similarity": 1.0,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.05,
+          "contribution": 0.05
+        },
+        "courses": {
+          "similarity": 1.0,
+          "coverage": 0.3,
+          "method": "tag fallback",
+          "weight": 0.2,
+          "contribution": 0.06
+        },
+        "activities": {
+          "similarity": 1.0,
+          "coverage": 0.4,
+          "method": "tag fallback",
+          "weight": 0.25,
+          "contribution": 0.1
+        }
+      },
+      "missing_components": [
+        "essay"
+      ],
+      "essay_status": "disabled",
+      "matching_passages": null,
+      "profile_evidence": [],
+      "outcome_events": [
+        {
+          "id": "outcome-0",
+          "decision": "admit",
+          "occurred_at": "2025-03-15",
+          "verified": 0,
+          "source_id": "demo-source",
+          "synthetic": 1,
+          "reference": "Generated example; no real applicant or college outcomes",
+          "evidence_pool": "unclassified",
+          "verification_level": "unverified"
+        }
+      ]
+    },
+    {
+      "application_id": "application-1",
+      "student_id": "student-1",
+      "cycle": 2025,
+      "synthetic": true,
+      "source": "Generated example; no real applicant or college outcomes",
+      "source_id": "demo-source",
+      "evidence_pool": "synthetic",
+      "verification_level": "synthetic",
+      "similarity": 0.9412,
+      "coverage": 0.51,
+      "rank_score": 0.48,
+      "academic_similarity": 0.9167,
+      "academic_coverage": 0.72,
+      "components": {
+        "gpa": {
+          "similarity": 0.9,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.2,
+          "contribution": 0.18
+        },
+        "sat_submitted": {
+          "similarity": 0.9,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.1,
+          "contribution": 0.09
+        },
+        "interests": {
+          "similarity": 1.0,
+          "coverage": 1,
+          "method": "structured",
+          "weight": 0.05,
+          "contribution": 0.05
+        },
+        "courses": {
+          "similarity": 1.0,
+          "coverage": 0.3,
+          "method": "tag fallback",
+          "weight": 0.2,
+          "contribution": 0.06
+        },
+        "activities": {
+          "similarity": 1.0,
+          "coverage": 0.4,
+          "method": "tag fallback",
+          "weight": 0.25,
+          "contribution": 0.1
+        }
+      },
+      "missing_components": [
+        "essay"
+      ],
+      "essay_status": "disabled",
+      "matching_passages": null,
+      "profile_evidence": [],
+      "outcome_events": [
+        {
+          "id": "outcome-1",
+          "decision": "deny",
+          "occurred_at": "2025-03-15",
+          "verified": 0,
+          "source_id": "demo-source",
+          "synthetic": 1,
+          "reference": "Generated example; no real applicant or college outcomes",
+          "evidence_pool": "unclassified",
+          "verification_level": "unverified"
+        }
+      ]
+    }
+  ],
+  "outcome_comparison": {
+    "neighbours": 7,
+    "needed_per_group": 15,
+    "pools": [
+      {
+        "pool_id": "synthetic|synthetic|unverified|synthetic|unverified",
+        "evidence_pool": "synthetic",
+        "synthetic": true,
+        "verified": false,
+        "profile_verification": "synthetic",
+        "outcome_verification": [
+          "unverified"
+        ],
+        "status": "not_enough",
+        "counts": {
+          "admit": 1,
+          "deny": 1,
+          "waitlist": 1,
+          "defer": 0,
+          "withdraw": 0,
+          "unknown": 0,
+          "conflicting": 0
+        },
+        "n_students": 3,
+        "needed_per_group": 15,
+        "neighbours": 7,
+        "sources": [
+          "Generated example; no real applicant or college outcomes"
+        ],
+        "d_admitted": 0.5175,
+        "d_denied": 0.52,
+        "gap": 0.0025,
+        "lean": null,
+        "text": "Not enough admitted and denied examples in this evidence pool to describe a direction.",
+        "nearest_admitted": [
+          {
+            "application_id": "application-0",
+            "student_id": "student-0",
+            "distance": 0.5175,
+            "coverage": 0.51,
+            "decision": "admit",
+            "synthetic": true,
+            "source": "Generated example; no real applicant or college outcomes",
+            "components": {
+              "gpa": {
+                "similarity": 0.9,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.2,
+                "contribution": 0.18
+              },
+              "sat_submitted": {
+                "similarity": 0.925,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.1,
+                "contribution": 0.0925
+              },
+              "interests": {
+                "similarity": 1.0,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.05,
+                "contribution": 0.05
+              },
+              "courses": {
+                "similarity": 1.0,
+                "coverage": 0.3,
+                "method": "tag fallback",
+                "weight": 0.2,
+                "contribution": 0.06
+              },
+              "activities": {
+                "similarity": 1.0,
+                "coverage": 0.4,
+                "method": "tag fallback",
+                "weight": 0.25,
+                "contribution": 0.1
+              }
+            },
+            "profile_evidence": [],
+            "matching_passages": null,
+            "outcome_evidence": [
+              {
+                "id": "outcome-0",
+                "decision": "admit",
+                "occurred_at": "2025-03-15",
+                "verified": 0,
+                "source_id": "demo-source",
+                "synthetic": 1,
+                "reference": "Generated example; no real applicant or college outcomes",
+                "evidence_pool": "unclassified",
+                "verification_level": "unverified"
+              }
+            ]
+          }
+        ],
+        "nearest_denied": [
+          {
+            "application_id": "application-1",
+            "student_id": "student-1",
+            "distance": 0.52,
+            "coverage": 0.51,
+            "decision": "deny",
+            "synthetic": true,
+            "source": "Generated example; no real applicant or college outcomes",
+            "components": {
+              "gpa": {
+                "similarity": 0.9,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.2,
+                "contribution": 0.18
+              },
+              "sat_submitted": {
+                "similarity": 0.9,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.1,
+                "contribution": 0.09
+              },
+              "interests": {
+                "similarity": 1.0,
+                "coverage": 1,
+                "method": "structured",
+                "weight": 0.05,
+                "contribution": 0.05
+              },
+              "courses": {
+                "similarity": 1.0,
+                "coverage": 0.3,
+                "method": "tag fallback",
+                "weight": 0.2,
+                "contribution": 0.06
+              },
+              "activities": {
+                "similarity": 1.0,
+                "coverage": 0.4,
+                "method": "tag fallback",
+                "weight": 0.25,
+                "contribution": 0.1
+              }
+            },
+            "profile_evidence": [],
+            "matching_passages": null,
+            "outcome_evidence": [
+              {
+                "id": "outcome-1",
+                "decision": "deny",
+                "occurred_at": "2025-03-15",
+                "verified": 0,
+                "source_id": "demo-source",
+                "synthetic": 1,
+                "reference": "Generated example; no real applicant or college outcomes",
+                "evidence_pool": "unclassified",
+                "verification_level": "unverified"
+              }
+            ]
+          }
+        ],
+        "parts": [
+          {
+            "component": "activities",
+            "admitted": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 0.4
+            },
+            "denied": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 0.4
+            }
+          },
+          {
+            "component": "courses",
+            "admitted": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 0.3
+            },
+            "denied": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 0.3
+            }
+          },
+          {
+            "component": "gpa",
+            "admitted": {
+              "n": 1,
+              "mean_similarity": 0.9,
+              "mean_coverage": 1.0
+            },
+            "denied": {
+              "n": 1,
+              "mean_similarity": 0.9,
+              "mean_coverage": 1.0
+            }
+          },
+          {
+            "component": "interests",
+            "admitted": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 1.0
+            },
+            "denied": {
+              "n": 1,
+              "mean_similarity": 1.0,
+              "mean_coverage": 1.0
+            }
+          },
+          {
+            "component": "sat_submitted",
+            "admitted": {
+              "n": 1,
+              "mean_similarity": 0.925,
+              "mean_coverage": 1.0
+            },
+            "denied": {
+              "n": 1,
+              "mean_similarity": 0.9,
+              "mean_coverage": 1.0
+            }
+          }
+        ]
+      }
+    ],
+    "distance_definition": "1 minus coverage-adjusted rank score",
+    "caveat": "These describe selected historical examples. Self-reporting, missing information, and changing admissions policies limit interpretation. Synthetic examples are demonstrations only."
+  },
+  "stability": {
+    "top_k": 10,
+    "status": "ok",
+    "scenarios": [
+      {
+        "scenario": "5 neighbours",
+        "top_ids": [
+          "application-2",
+          "application-0",
+          "application-1"
+        ],
+        "top_k_jaccard": 1.0,
+        "top_order_changed": false,
+        "pool_changes": []
+      },
+      {
+        "scenario": "10 neighbours",
+        "top_ids": [
+          "application-2",
+          "application-0",
+          "application-1"
+        ],
+        "top_k_jaccard": 1.0,
+        "top_order_changed": false,
+        "pool_changes": []
+      },
+      {
+        "scenario": "SAT -30",
+        "top_ids": [
+          "application-2",
+          "application-1",
+          "application-0"
+        ],
+        "top_k_jaccard": 1.0,
+        "top_order_changed": true,
+        "pool_changes": []
+      },
+      {
+        "scenario": "SAT +30",
+        "top_ids": [
+          "application-2",
+          "application-0",
+          "application-1"
+        ],
+        "top_k_jaccard": 1.0,
+        "top_order_changed": false,
+        "pool_changes": []
+      }
+    ],
+    "ranking_steady": false,
+    "outcome_direction_steady": null,
+    "flips": [],
+    "caveat": "Sensitivity to these chosen perturbations does not measure accuracy or causal effects."
+  }
+}

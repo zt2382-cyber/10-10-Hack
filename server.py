@@ -26,6 +26,8 @@ from engine import colleges as C  # noqa: E402
 from engine import pipeline  # noqa: E402
 
 PORT = int(os.environ.get("PORT", "8765"))
+# The teammate-built applicant-evidence scorer orders the example cases by default (see engine/evidence_adapter.py).
+os.environ.setdefault("SIMILARITY_PLUGIN", "engine.evidence_adapter:rank")
 MAX_BODY = 400_000
 
 
@@ -33,6 +35,14 @@ def _caselog():
     try:
         from engine import caselog
         return caselog
+    except Exception:
+        return None
+
+
+def _tracker():
+    try:
+        from engine import tracker
+        return tracker
     except Exception:
         return None
 
@@ -75,21 +85,50 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/cases":
             cl = _caselog()
             return self._send(200, cl.load_cases() if cl else [])
+        if path == "/api/tracker":
+            key = (parse_qs(url.query).get("student") or ["current"])[0]
+            return self._send(200, _tracker().get(key) if _tracker() else {})
         if path == "/api/health":
             return self._send(200, {"ok": True})
         return self._static(path)
 
+    def _same_origin(self) -> bool:
+        """A page on another website must not be able to post here (it could save a case or spend model calls)."""
+        origin = self.headers.get("Origin")
+        if origin is None:
+            return True  # not a browser cross-site request (curl, tests, same-origin GET-style fetches)
+        return origin in (f"http://localhost:{PORT}", f"http://127.0.0.1:{PORT}")
+
     def do_POST(self):
         path = urlparse(self.path).path
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return self._send(415, {"error": "Send JSON (Content-Type: application/json)."})
+        if not self._same_origin():
+            return self._send(403, {"error": "This server only answers its own page."})
         body = self._body()
-        if body is None:
-            return self._send(400, {"error": "Send a JSON body under 400 KB."})
+        if not isinstance(body, dict):
+            return self._send(400, {"error": "Send a JSON object under 400 KB."})
         if path == "/api/run":
             use_model = os.environ.get("USE_MODEL", "1") != "0" and body.pop("use_model", True) is not False
             try:
                 return self._send(200, pipeline.run(body, use_model=use_model))
             except Exception as e:  # the screen shows this sentence
                 return self._send(500, {"error": f"The run did not finish: {type(e).__name__}: {e}"})
+        if path == "/api/tracker":
+            tr = _tracker()
+            if not tr:
+                return self._send(503, {"error": "The tracker is not available."})
+            if body.get("reset") is True:
+                return self._send(200, tr.reset())
+            key = str(body.get("student") or "current")[:120]
+            demo = key in {d["label"] for d in pipeline.demo_students()}
+            profile = next((d for d in pipeline.demo_students() if d["label"] == key), None) or body.get("profile") or {}
+            if not isinstance(profile, dict):
+                profile = {}
+            res = tr.set_status(key, profile, C.find_college(str(body.get("college") or "")), str(body.get("status") or ""),
+                                body.get("outcome"), demo=demo)
+            return self._send(400 if res.get("error") else 200, res)
         if path == "/api/kb-check":
             return self._send(200, pipeline.kb_check(str(body.get("text", ""))[:400]))
         if path == "/api/cases":

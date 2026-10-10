@@ -29,7 +29,7 @@ NOT_USED = ["GPA", "activities", "essay"]
 RANGE_CAVEAT = "The score range covers only students who sent scores."
 
 RULES_TEXT = [
-    "R0. If the college is not in our file of 300 colleges, we say \"Outside our data\" and do not guess.",
+    "R0. If the college is not in our college file, we say \"Outside our data\" and do not guess.",
     "R1. If the college admits fewer than 15% of all applicants, it is \"Reach for everyone\", whatever the score.",
     "R2. If the admit rate is missing, the student has no SAT or ACT score, or the college publishes no score range "
     "we can compare with, we say \"Can't say\" and name what is missing.",
@@ -199,7 +199,7 @@ def _label(student, college):
     # R0
     if not isinstance(college, dict):
         return _result("outside_data", "R0",
-                       "This college is not in our file of 300 colleges, so we have no published numbers for it.")
+                       "This college is not in our college file, so we have no published numbers for it.")
 
     rate = _rate(college)
     sat, act, notes = _clean_student_scores(student)

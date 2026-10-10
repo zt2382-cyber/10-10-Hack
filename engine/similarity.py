@@ -517,13 +517,21 @@ def closeness(student, college, tags=None, semantic_context=None) -> dict:
         return tuple([dict(v, **context.get("cases", {}).get(v["case_id"], {})) for v in group] for group in groups)
     nat, own = enriched(nat), enriched(own)
     ids = {v["case_id"] for group in nat + own for v in group}
+    try:
+        own_rows = _cases._own_rows(college) if college else []
+    except Exception:
+        own_rows = []
+    invented = bool(own_rows) and any(r.get("invented") for r in own_rows)
+    own_source = "Invented demo school history (not real students)" if invented else OWN_SOURCE
+    own_pool = _pool(sv, own, college, own_source, True, own=True)
+    own_pool["invented"] = invented
     return {"semantic": context.get("report", {"status": "off"}),
             "essay_retrieval": [r for r in context.get("retrieval", []) if r["case_id"] in ids][:6],
             "weights": dict(WEIGHTS),
             "needed": NEEDED, "neighbours": NEIGHBOURS,
             "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
             "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
-            "own": _pool(sv, own, college, OWN_SOURCE, True, own=True),
+            "own": own_pool,
             "caveat": CAVEAT}
 
 

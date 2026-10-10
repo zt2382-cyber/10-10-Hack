@@ -18,14 +18,19 @@ from functools import lru_cache
 from pathlib import Path
 
 from engine import colleges as _colleges
+from engine import labels as _labels
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES_DIR = ROOT / "data" / "cases"
 
 NEEDED = 15
 MAX_EXAMPLES = 6
-OWN_SOURCE = "Your school's own finished cases"
-NATIONAL_SOURCE = "Self-reported public posts (r/collegeresults)"
+OWN_SOURCE = "Your school's finished cases"
+INVENTED_SOURCE = "Invented demo school history (not real students)"
+NATIONAL_SOURCE = "Public posts on Reddit (r/collegeresults), self-reported"
+NATIONAL_SKEW_NOTE = ("People who post skew high-scoring, computer-science-heavy and toward selective colleges. "
+                      "This is not a national sample of applicants.")
+_INVENTED_MARKS = {"SYNTHETIC", "DEMO"}
 CAVEAT = ("People who post their results are admitted far more often than applicants overall. "
           "Read these as examples, not as a forecast for this student.")
 _OUTCOME_WORD = {"accepted": "admitted", "admitted": "admitted", "rejected": "denied", "denied": "denied",
@@ -107,19 +112,14 @@ def _hooks_from_case(raw) -> set:
 
 
 def _valid_sat(v):
-    try:
-        v = int(float(v))
-    except (TypeError, ValueError):
-        return None
-    return v if 400 <= v <= 1600 else None
+    """The SAT as the labels module cleans it (400 to 1600, else no score)."""
+    return _labels._clean_student_scores({"sat": v})[0]
 
 
 def _valid_act(v):
-    try:
-        v = int(float(v))
-    except (TypeError, ValueError):
-        return None
-    return v if _colleges.act_to_sat(v) is not None else None
+    """The ACT as the labels module cleans it (a whole number 1 to 36, else no score), and convertible."""
+    act = _labels._clean_student_scores({"act": v})[1]
+    return act if (act is not None and _colleges.act_to_sat(act) is not None) else None
 
 
 def _score(sat, act):
@@ -186,11 +186,9 @@ def _national():
 
 
 def _own_rows(college) -> list:
-    try:
-        from engine import caselog
-        rows = caselog.load_cases()
-    except Exception:
-        return []
+    """The school's own cases at this college. Raises if the store cannot be read (the caller says so)."""
+    from engine import caselog
+    rows = caselog.load_cases()
     out = []
     for r in rows:
         col = _colleges.find_college(r.get("college"))
@@ -207,6 +205,7 @@ def _own_rows(college) -> list:
             "home_state": r.get("home_state") or None, "rating": None,
             "outcome": r["outcome"], "activities_note": r.get("activities_note") or "",
             "essay_theme": r.get("essay_theme") or "",
+            "invented": str(r.get("synthetic") or "").strip().upper() in _INVENTED_MARKS,
         })
     return out
 
@@ -276,7 +275,8 @@ def _clean_text(s) -> str:
 
 def _example(c, own: bool, shared=None) -> dict:
     ex = {"case_id": c["case_id"], "sat": c["sat"], "act": c["act"], "major": c["major"], "hooks": c["hooks"],
-          "home_state": c["home_state"], "activities_rating": c["rating"], "outcome": c["outcome"]}
+          "home_state": c["home_state"], "activities_rating": c["rating"], "outcome": c["outcome"],
+          "invented": bool(c.get("invented", False))}
     if own:
         ex["activities_note"] = _clean_text(c.get("activities_note"))
         ex["essay_theme"] = _clean_text(c.get("essay_theme"))
@@ -338,7 +338,11 @@ def _pool(rows, source, verified, score, converted, group, hooks, own, tags):
     elif group is None:
         matched_on.append("no major given, so major was not used")
     if crit["hook"]:
-        matched_on.append("same hook status")
+        if hooks == {"NONE"}:
+            matched_on.append("same hook status (neither has a hook)")
+        else:
+            shared_hooks = sorted({h for c in chosen for h in (c["hooks_set"] & hooks)})
+            matched_on.append("shares a hook with the student (%s)" % ", ".join(shared_hooks or sorted(hooks)))
     n = len(chosen)
     res.update({
         "status": "ok" if n >= NEEDED else ("not_enough" if n >= 1 else "none"),
@@ -348,6 +352,7 @@ def _pool(rows, source, verified, score, converted, group, hooks, own, tags):
         "waitlisted": sum(1 for c in chosen if c["outcome"] == "waitlisted"),
         "matched_on": matched_on, "relaxed": list(dropped),
     })
+    res["_matched"] = chosen
     if chosen:
         res["examples"], themed = _pick_examples(chosen, score, own, tags)
         if own:
@@ -357,6 +362,86 @@ def _pool(rows, source, verified, score, converted, group, hooks, own, tags):
     if 0 < n < NEEDED:
         res["note"] = ("Only %d similar finished case%s here, fewer than the %d needed to read a pattern. "
                        "Treat them as individual examples." % (n, "" if n == 1 else "s", NEEDED))
+    return res
+
+
+def _status_for(n: int) -> str:
+    return "ok" if n >= NEEDED else ("not_enough" if n >= 1 else "none")
+
+
+def _unavailable_pool(why: str) -> dict:
+    """The school's own pool when its cases could not be read: never 'none', which would mean 'no cases'."""
+    return {"source": OWN_SOURCE, "verified": False, "invented": False, "n_invented": 0, "n_real": 0,
+            "status": "unavailable", "n": 0, "admitted": 0, "denied": 0, "waitlisted": 0, "matched_on": [],
+            "relaxed": [], "examples": [], "shared_theme_n": 0,
+            "note": "Your school's finished cases could not be read, so nothing is shown here. "
+                    "This does not mean the school has no cases. (%s)" % why[:120],
+            "similarity_tool": {"used": False, "mode": None, "rule": "", "why": "the pool was not available"}}
+
+
+def _plugin_student(student, sat, act, score, group, hooks) -> dict:
+    """The allow-listed, de-identified fields a similarity plug-in may see."""
+    return {"sat": sat, "act": act, "score": score, "major_group": group,
+            "intended_major": student.get("intended_major"), "hooks": sorted(hooks),
+            "home_state": student.get("home_state"), "gpa": student.get("gpa")}
+
+
+def _apply_plugin(res: dict, plugin_student: dict, college, score, own: bool, tags) -> dict:
+    """Let a connected similarity tool order (rank) or choose (filter) the matched cases. Code keeps every count."""
+    matched = res.pop("_matched", [])
+    tool = {"used": False, "mode": None, "rule": "", "why": "no similarity plug-in is connected"}
+    res["similarity_tool"] = tool
+    try:
+        from engine import similarity_plugin as sp
+        if not sp.configured():
+            return res
+        mode = sp.mode()
+        tool.update(mode=mode, why="no matched cases to look at")
+        if not matched:
+            return res
+        by_id = {c["case_id"]: c for c in matched}
+        answer = sp.rank(plugin_student, [_example(c, own) for c in matched], college or {})
+    except Exception as err:  # a plug-in can never break a run
+        tool["why"] = "the similarity plug-in could not be used (%s)" % type(err).__name__
+        return res
+    if not answer.get("ok"):
+        tool["why"] = answer.get("why") or "the similarity plug-in returned nothing usable"
+        return res
+    ranked = answer["ranked"]
+    order = {r["case_id"]: i for i, r in enumerate(ranked)}
+    reasons = {r["case_id"]: r["reasons"] for r in ranked}
+    tool.update(used=True, rule=answer.get("rule", ""), why="")
+    if mode == "rank":
+        res["examples"] = sorted(res["examples"], key=lambda e: order.get(e["case_id"], len(order)))
+    else:
+        keep = [by_id[r["case_id"]] for r in ranked if r["similar"] and r["case_id"] in by_id]
+        n = len(keep)
+        res.update({"n": n, "status": _status_for(n),
+                    "admitted": sum(1 for c in keep if c["outcome"] == "admitted"),
+                    "denied": sum(1 for c in keep if c["outcome"] == "denied"),
+                    "waitlisted": sum(1 for c in keep if c["outcome"] == "waitlisted"),
+                    "matched_on": [tool["rule"] or "chosen by the connected similarity tool"], "relaxed": []})
+        if own:
+            res["n_invented"] = n if res.get("invented") else 0
+            res["n_real"] = 0 if res.get("invented") else n
+        themed = 0
+        if keep:
+            res["examples"], themed = _pick_examples(keep, score, own, tags)
+            res["examples"].sort(key=lambda e: order.get(e["case_id"], len(order)))
+        else:
+            res["examples"] = []
+        if own:
+            res["shared_theme_n"] = themed
+        if n == 0:
+            res["note"] = "No finished cases were marked similar by the connected tool."
+        elif n < NEEDED:
+            res["note"] = ("Only %d case%s marked similar by the connected tool, fewer than the %d needed to read "
+                           "a pattern. Treat them as individual examples." % (n, "" if n == 1 else "s", NEEDED))
+        else:
+            res.pop("note", None)
+    for e in res["examples"]:
+        if reasons.get(e["case_id"]):
+            e["why_similar"] = reasons[e["case_id"]]
     return res
 
 
@@ -371,22 +456,51 @@ def find_similar(student, college, tags=None) -> dict:
     if group is None and tags.get("major_group") in MAJOR_GROUPS:
         group = tags["major_group"]
     hooks = _hooks_from_student(student.get("hooks"))
+    pstudent = _plugin_student(student, sat, act, score, group, hooks)
 
     official = college.get("admit_rate") if college else None
     nat_rows, share = [], None
-    own_rows = []
+    own_all, own_error = [], None
     if college:
         short = _colleges.case_name_for(college)
         nat_rows = list(_national()[0].get(short, [])) if short else []
-        own_rows = _own_rows(college)
+        try:
+            own_all = _own_rows(college)
+        except Exception as err:
+            own_error = type(err).__name__
     if nat_rows:
         share = sum(1 for c in nat_rows if c["outcome"] == "admitted") / len(nat_rows)
     overcount = round(share / official, 1) if (share is not None and official) else None
 
+    if own_error:
+        own = _unavailable_pool(own_error)
+    else:
+        real = [r for r in own_all if not r["invented"]]
+        invented = [r for r in own_all if r["invented"]]
+        only_invented = bool(invented) and not real
+        counted = invented if only_invented else real
+        own = _pool(counted, INVENTED_SOURCE if only_invented else OWN_SOURCE, not only_invented, score, converted,
+                    group, hooks, True, tags)
+        own["invented"] = only_invented
+        own["n_invented"] = own["n"] if only_invented else 0
+        own["n_real"] = 0 if only_invented else own["n"]
+        if real and invented:
+            left = ("%d invented demo case%s at this college %s left out of the count; only real cases are counted."
+                    % (len(invented), "" if len(invented) == 1 else "s", "was" if len(invented) == 1 else "were"))
+            own["note"] = (own["note"] + " " + left) if own.get("note") else left
+        elif only_invented:
+            demo = "These are invented demo cases, not real or verified students."
+            own["note"] = (own["note"] + " " + demo) if own.get("note") else demo
+        own = _apply_plugin(own, pstudent, college, score, True, tags)
+
+    national = _pool(nat_rows, NATIONAL_SOURCE, False, score, converted, group, hooks, False, tags)
+    national = _apply_plugin(national, pstudent, college, score, False, tags)
+    national["note"] = (national["note"] + " " + NATIONAL_SKEW_NOTE) if national.get("note") else NATIONAL_SKEW_NOTE
+
     return {
         "needed": NEEDED,
-        "own": _pool(own_rows, OWN_SOURCE, True, score, converted, group, hooks, True, tags),
-        "national": _pool(nat_rows, NATIONAL_SOURCE, False, score, converted, group, hooks, False, tags),
+        "own": own,
+        "national": national,
         "official_admit_rate": official,
         "pool_admit_share_all": None if share is None else round(share, 3),
         "overcount": overcount,
@@ -400,11 +514,17 @@ def pool_summary() -> dict:
     try:
         from engine import caselog
         own = caselog.load_cases()
-    except Exception:
-        own = []
+        invented = sum(1 for c in own if str(c.get("synthetic") or "").strip().upper() in _INVENTED_MARKS)
+        own_part = {"source": OWN_SOURCE, "status": "ok", "cases": len(own), "decisions": len(own),
+                    "colleges": len({c["college"] for c in own}), "invented_cases": invented,
+                    "real_cases": len(own) - invented}
+    except Exception as err:
+        own_part = {"source": OWN_SOURCE, "status": "unavailable", "cases": None, "decisions": None,
+                    "colleges": None, "invented_cases": None, "real_cases": None,
+                    "note": "Your school's finished cases could not be read (%s). "
+                            "This does not mean the school has no cases." % type(err).__name__}
     return {
-        "own": {"source": OWN_SOURCE, "cases": len(own), "decisions": len(own),
-                "colleges": len({c["college"] for c in own})},
+        "own": own_part,
         "national": {"source": NATIONAL_SOURCE, "cases": n_cases, "decisions": n_dec, "student_college_cases": n_pairs,
                      "colleges": len(by_college)},
     }

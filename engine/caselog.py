@@ -23,6 +23,10 @@ try:
     from engine import colleges as _colleges
 except Exception:  # pragma: no cover - the module must import even if siblings are absent
     _colleges = None
+try:
+    from engine import privacy as _privacy
+except Exception:  # pragma: no cover
+    _privacy = None
 
 ROOT = Path(__file__).resolve().parent.parent
 SYNTHETIC_PATH = ROOT / "data" / "synthetic" / "SYNTHETIC_school_cases.csv"
@@ -197,6 +201,49 @@ def sensitive_value_kind(value) -> str | None:
     return None
 
 
+_FREE_TEXT_FIELDS = ("activities_note", "essay_theme")
+_FREE_TEXT_LABEL = {"activities_note": "activities note", "essay_theme": "essay theme"}
+
+
+def _free_text_problem(case: dict):
+    """Plain-words reason when a free-text field carries a personal detail, else None. Fails closed: if the
+    shared privacy check is unavailable, free text is refused."""
+    for field in _FREE_TEXT_FIELDS:
+        val = case.get(field)
+        if val is None or _clean(val) == "":
+            continue
+        if _privacy is None:
+            return "The privacy check is not available, so free text in '%s' cannot be stored." % field
+        kinds = _privacy.looks_personal(_clean(val))
+        if kinds:
+            what = ", ".join("an instruction to an AI" if k == "instruction" else k for k in kinds)
+            return ("The %s looks like it contains personal details (%s). This tool does not store names, "
+                    "schools, addresses, emails, phone numbers or dates of birth. Remove them and try again."
+                    % (_FREE_TEXT_LABEL[field], what))
+    return None
+
+
+def _num_text(v, as_float=False):
+    try:
+        if _clean(v) == "":
+            return ""
+        return "%.2f" % float(v) if as_float else str(int(round(float(v))))
+    except (TypeError, ValueError):
+        return _clean(v)
+
+
+def fingerprint(case: dict) -> str:
+    """A stable identity for a case's contents (never its case_id, provenance or who verified it)."""
+    import hashlib
+    parts = [_num_text(case.get("cycle_year")), _num_text(case.get("sat")), _num_text(case.get("act")),
+             _num_text(case.get("gpa"), True), _clean(case.get("major_group")).upper(),
+             ";".join(sorted(x for x in _clean(case.get("hooks") or "none").lower().split(";") if x)),
+             _clean(case.get("home_state")).upper(), " ".join(_clean(case.get("activities_note")).lower().split()),
+             " ".join(_clean(case.get("essay_theme")).lower().split()), _clean(case.get("college")).lower(),
+             _clean(case.get("outcome")).lower()]
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:20]
+
+
 # ---------------------------------------------------------------- validation
 
 def _validate(case: dict):
@@ -213,6 +260,10 @@ def _validate(case: dict):
         if kind:
             return None, ("The value in '%s' looks like a %s. This tool does not store emails, phone numbers, "
                           "dates of birth or names. Remove it and try again." % (key, kind))
+
+    problem = _free_text_problem(case)
+    if problem:
+        return None, problem
 
     out = {}
     college_in = _clean(case.get("college"))
@@ -266,6 +317,7 @@ def _validate(case: dict):
     out["activities_note"] = _clean(case.get("activities_note"))[:300]
     out["essay_theme"] = _clean(case.get("essay_theme"))[:200]
     out["verified_by"] = _clean(case.get("verified_by")) or "counselor"
+    out["synthetic"] = "SYNTHETIC" if _clean(case.get("synthetic")).upper() == "SYNTHETIC" else ""
     return out, None
 
 
@@ -322,7 +374,26 @@ def _next_id_number(rows: list[dict]) -> int:
     return best + 1
 
 
-def _append(clean_cases: list[dict]) -> list[dict]:
+def count_cases() -> int:
+    """How many cases are in the store (the store is created from the invented demo file on first use)."""
+    return len(_read_raw())
+
+
+def reset_demo() -> int:
+    """Remove every row marked DEMO (made by a demo action). Returns how many were removed."""
+    p = _ensure_store()
+    rows = _read_raw()
+    keep = [r for r in rows if _clean(r.get("synthetic")).upper() != "DEMO"]
+    removed = len(rows) - len(keep)
+    if removed:
+        with open(p, "w", encoding="utf-8", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=STORE_COLUMNS, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(keep)
+    return removed
+
+
+def _append(clean_cases: list[dict], mark: str | None = None) -> list[dict]:
     p = _ensure_store()
     rows = _read_raw()
     n = _next_id_number(rows)
@@ -335,7 +406,7 @@ def _append(clean_cases: list[dict]) -> list[dict]:
         for c in clean_cases:
             row = dict(c)
             row["case_id"] = "S-%d" % n
-            row["synthetic"] = ""
+            row["synthetic"] = mark if mark is not None else (c.get("synthetic") or "")
             n += 1
             w.writerow(row)
             stored.append(_typed(row))
@@ -348,12 +419,13 @@ def _ends_with_newline(p: Path) -> bool:
         return fh.read(1) in (b"\n", b"\r")
 
 
-def add_case(case: dict) -> dict:
-    """Validate and store one finished case. Returns the stored case, or {"error": "plain words"}."""
+def add_case(case: dict, demo: bool = False) -> dict:
+    """Validate and store one finished case. Returns the stored case, or {"error": "plain words"}.
+    A case is real unless the caller passes synthetic="SYNTHETIC"; demo=True stores it as DEMO (invented)."""
     clean, err = _validate(case)
     if err:
         return {"error": err}
-    return _append([clean])[0]
+    return _append([clean], "DEMO" if demo else None)[0]
 
 
 # ---------------------------------------------------------------- spreadsheet import
@@ -444,11 +516,13 @@ def _read_csv_rows(path):
     raise ValueError("The file could not be read as text.")
 
 
-def import_csv(path) -> dict:
+def import_csv(path, demo: bool = False) -> dict:
     """Add many cases from a spreadsheet saved as CSV, with whatever column titles it has.
-    Returns {"added", "rejected": [{"row", "reason"}], "dropped_columns", "mapped_columns", "unmapped_columns",
+    Importing the same rows again adds nothing: a row whose contents (not its id) are already stored is skipped
+    and counted in "skipped_duplicates". Rows are real unless demo=True (stored as DEMO).
+    Returns {"added", "skipped_duplicates", "rejected": [{"row", "reason"}], "dropped_columns", "mapped_columns", "unmapped_columns",
     "mapped_by_model"}; an unreadable file returns the same keys plus "error"."""
-    result = {"added": 0, "rejected": [], "dropped_columns": [], "mapped_columns": {}, "unmapped_columns": [],
+    result = {"added": 0, "skipped_duplicates": 0, "rejected": [], "dropped_columns": [], "mapped_columns": {}, "unmapped_columns": [],
               "mapped_by_model": []}
     try:
         rows = _read_csv_rows(path)
@@ -490,6 +564,10 @@ def import_csv(path) -> dict:
         return result
 
     good = []
+    try:
+        seen = {fingerprint(r) for r in load_cases()}
+    except Exception:
+        seen = set()
     for rno, row in enumerate(rows[1:], start=2):
         if not any(_clean(c) for c in row):
             continue
@@ -498,27 +576,38 @@ def import_csv(path) -> dict:
         if err:
             result["rejected"].append({"row": rno, "reason": err})
         else:
+            fp = fingerprint(clean)
+            if fp in seen:
+                result["skipped_duplicates"] += 1
+                continue
+            seen.add(fp)
             good.append(clean)
     if good:
-        _append(good)
+        _append(good, "DEMO" if demo else None)
     result["added"] = len(good)
     return result
 
 
 # ---------------------------------------------------------------- the invented school (seeded, reproducible)
+# One imaginary New Jersey public high school, cycles 2021 to 2026. Nothing here is a real student.
 
-_SYN_COLLEGES = [  # (Scorecard name, weight)
-    ("Rutgers University-New Brunswick", 8), ("Montclair State University", 3), ("Rowan University", 3),
-    ("Binghamton University", 3), ("Stony Brook University", 2), ("University of Pittsburgh-Pittsburgh Campus", 2),
-    ("Pennsylvania State University-Main Campus", 3), ("University of Delaware", 3),
-    ("University of Maryland-College Park", 3), ("University of Massachusetts-Amherst", 2),
-    ("Virginia Polytechnic Institute and State University", 2), ("Purdue University-Main Campus", 3),
-    ("Georgia Institute of Technology-Main Campus", 2), ("Cornell University", 3), ("Princeton University", 2),
-    ("University of Pennsylvania", 2), ("Columbia University in the City of New York", 1),
-    ("New York University", 3), ("Boston University", 2), ("Northeastern University", 2),
-    ("Carnegie Mellon University", 2), ("University of Virginia-Main Campus", 2),
-    ("University of Michigan-Ann Arbor", 2), ("Drexel University", 2), ("Lehigh University", 2),
+_SYN_COLLEGES = [  # (Scorecard name, weight): where such a school really sends students; a few very selective rows
+    ("Rutgers University-New Brunswick", 24), ("Pennsylvania State University-Main Campus", 11),
+    ("Boston University", 8), ("Purdue University-Main Campus", 8), ("Northeastern University", 7),
+    ("New York University", 7), ("Virginia Polytechnic Institute and State University", 6),
+    ("Cornell University", 6), ("Binghamton University", 5), ("University of Delaware", 4),
+    ("University of Maryland-College Park", 4), ("Montclair State University", 3),
+    ("University of Michigan-Ann Arbor", 2), ("Georgia Institute of Technology-Main Campus", 2),
+    ("Carnegie Mellon University", 1.5), ("University of Pennsylvania", 1), ("Princeton University", 0.7),
+    ("Columbia University in the City of New York", 0.7),
 ]
+# (college, student SAT the demo will look for): each must have at least _SYN_MIN_FOCAL cases within 100 points.
+_SYN_FOCAL = [
+    ("Rutgers University-New Brunswick", 1450), ("Purdue University-Main Campus", 1450), ("Cornell University", 1450),
+    ("Rutgers University-New Brunswick", 1250), ("Pennsylvania State University-Main Campus", 1250),
+    ("Boston University", 1250),
+]
+_SYN_MIN_FOCAL = 20
 _SYN_NOTES = ["Robotics club captain", "Summer research at a university lab", "Varsity soccer", "Part-time job at a grocery store",
               "Volunteer tutor for younger students", "School orchestra first chair", "Debate team", "Coding club founder",
               "Hospital volunteer", "Theater stage crew", "Cares for younger siblings after school", "Student newspaper editor",
@@ -529,7 +618,7 @@ _SYN_THEMES = ["family", "persistence", "curiosity", "immigration", "community",
 _SYN_MAJORS = [("CS", 30), ("ENG", 20), ("BIO", 12), ("BUSINESS", 12), ("PREMED", 6), ("POLISCI", 5), ("PSYCH", 5),
                ("MATH", 4), ("HUMANITIES", 3), ("ARTS", 3)]
 _SYN_HOOKS = [("none", 70), ("first_gen", 14), ("urm", 8), ("legacy", 5), ("recruited_athlete", 3)]
-_SYN_STATES = [("NJ", 86), ("NY", 6), ("PA", 5), ("DE", 3)]
+_SYN_STATES = [("NJ", 95), ("NY", 2), ("PA", 2), ("DE", 1)]
 
 
 def _wchoice(rng, pairs):
@@ -551,8 +640,8 @@ def _sat_to_act(sat):
     return best
 
 
-def make_synthetic(path=None, seed: int = 20261010, n_rows: int = 120) -> Path:
-    """Write the invented school's finished cases. Same seed, same file."""
+def make_synthetic(path=None, seed: int = 20261010, n_rows: int = 720) -> Path:
+    """Write the invented school's finished cases (about 720 over 18 colleges). Same seed, same file."""
     path = Path(path) if path else SYNTHETIC_PATH
     rng = random.Random(seed)
     roster = []
@@ -560,45 +649,64 @@ def make_synthetic(path=None, seed: int = 20261010, n_rows: int = 120) -> Path:
         c = _colleges.find_college(name)
         if c and c["admit_rate"] and c["sat25"] and c["sat75"]:
             roster.append((c, weight))
+    by_name = {c["name"]: c for c, _ in roster}
     rows = []
-    while len(rows) < n_rows:
-        sat = int(round(min(1590, max(920, rng.gauss(1270, 150))) / 10.0) * 10)
+
+    def decide(c, sat):
+        mid = (c["sat25"] + c["sat75"]) / 2.0
+        half = max(40.0, (c["sat75"] - c["sat25"]) / 2.0)
+        z = max(-2.0, min(2.0, (sat - mid) / half))
+        rate = min(0.97, max(0.02, c["admit_rate"]))
+        logit = math.log(rate / (1 - rate)) + 1.4 * z
+        p = min(0.97, max(0.01, 1 / (1 + math.exp(-logit))))
+        if rng.random() < p:
+            return "admitted"
+        wl = 0.15 if rate < 0.5 else 0.04
+        return "waitlisted" if rng.random() < wl else "denied"
+
+    def new_student(sat=None, sat_only=False):
+        if sat is None:
+            r = rng.random()
+            mean, sd = (1250, 120) if r < 0.5 else ((1450, 70) if r < 0.85 else (1100, 100))
+            sat = int(round(min(1590, max(900, rng.gauss(mean, sd))) / 10.0) * 10)
         gpa = round(min(4.0, max(2.6, 3.55 + (sat - 1270) / 700.0 + rng.gauss(0, 0.2))), 2)
-        major = _wchoice(rng, _SYN_MAJORS)
-        hook = _wchoice(rng, _SYN_HOOKS)
-        state = _wchoice(rng, _SYN_STATES)
-        cycle = rng.choice([2024, 2025])
-        score_mode = rng.random()  # SAT only / ACT only / both
-        shown_sat = sat if score_mode < 0.72 or score_mode >= 0.9 else None
-        shown_act = _sat_to_act(sat) if score_mode >= 0.72 else None
-        notes = "; ".join(rng.sample(_SYN_NOTES, rng.choice([1, 2])))
-        theme = rng.choice(_SYN_THEMES)
-        weights = []
-        for c, w in roster:
-            mid = (c["sat25"] + c["sat75"]) / 2.0
-            weights.append((c, w * math.exp(-0.5 * ((sat - mid) / 250.0) ** 2)))
-        for _ in range(rng.choice([2, 3, 4])):
-            if len(rows) >= n_rows or not weights:
-                break
-            c = _wchoice(rng, weights)
-            weights = [(x, w) for x, w in weights if x is not c]
-            mid = (c["sat25"] + c["sat75"]) / 2.0
-            half = max(40.0, (c["sat75"] - c["sat25"]) / 2.0)
-            z = max(-2.0, min(2.0, (sat - mid) / half))
-            rate = min(0.97, max(0.02, c["admit_rate"]))
-            logit = math.log(rate / (1 - rate)) + 1.4 * z
-            p = min(0.97, max(0.01, 1 / (1 + math.exp(-logit))))
-            u = rng.random()
-            if u < p:
-                outcome = "admitted"
-            else:
-                wl = 0.15 if rate < 0.5 else 0.04
-                outcome = "waitlisted" if rng.random() < wl else "denied"
-            rows.append({"synthetic": "SYNTHETIC", "case_id": "S-%d" % (len(rows) + 1), "cycle_year": cycle,
-                         "sat": shown_sat if shown_sat is not None else "",
-                         "act": shown_act if shown_act is not None else "", "gpa": gpa, "major_group": major,
-                         "hooks": hook, "home_state": state, "activities_note": notes, "essay_theme": theme,
-                         "college": c["name"], "outcome": outcome, "verified_by": "counselor"})
+        mode = 0.0 if sat_only else rng.random()  # SAT only / ACT only / both
+        return {"sat": sat, "gpa": gpa, "major": _wchoice(rng, _SYN_MAJORS), "hook": _wchoice(rng, _SYN_HOOKS),
+                "state": _wchoice(rng, _SYN_STATES), "cycle": rng.choice([2021, 2022, 2023, 2024, 2025, 2026]),
+                "notes": "; ".join(rng.sample(_SYN_NOTES, rng.choice([1, 2]))), "theme": rng.choice(_SYN_THEMES),
+                "show_sat": mode < 0.72 or mode >= 0.9, "show_act": mode >= 0.72}
+
+    def emit(st, c):
+        rows.append({"synthetic": "SYNTHETIC", "case_id": "S-%d" % (len(rows) + 1), "cycle_year": st["cycle"],
+                     "sat": st["sat"] if st["show_sat"] else "",
+                     "act": _sat_to_act(st["sat"]) if st["show_act"] else "", "gpa": st["gpa"],
+                     "major_group": st["major"], "hooks": st["hook"], "home_state": st["state"],
+                     "activities_note": st["notes"], "essay_theme": st["theme"], "college": c["name"],
+                     "outcome": decide(c, st["sat"]), "verified_by": "counselor"})
+
+    def organic(limit):
+        while len(rows) < limit:
+            st = new_student()
+            weights = []
+            for c, w in roster:
+                mid = (c["sat25"] + c["sat75"]) / 2.0
+                weights.append((c, w * math.exp(-0.5 * ((st["sat"] - mid) / 250.0) ** 2)))
+            for _ in range(rng.choice([2, 3, 4])):
+                if len(rows) >= limit or not weights:
+                    break
+                c = _wchoice(rng, weights)
+                weights = [(x, w) for x, w in weights if x is not c]
+                emit(st, c)
+
+    organic(max(0, n_rows - 160))
+    # Guarantee enough cases near each demo score so the school's own pool can read a pattern there.
+    for name, center in _SYN_FOCAL:
+        c = by_name[name]
+        have = sum(1 for r in rows if r["college"] == name and r["sat"] != "" and abs(int(r["sat"]) - center) <= 100)
+        for _ in range(max(0, _SYN_MIN_FOCAL - have)):
+            sat = int(round((center + rng.randint(-100, 100)) / 10.0) * 10)
+            emit(new_student(sat=sat, sat_only=True), c)
+    organic(n_rows)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=STORE_COLUMNS)

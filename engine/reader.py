@@ -168,19 +168,45 @@ def _talks_chances(*fields) -> bool:
     return bool(_PERCENT.search(blob) or _CHANCE_WORDS.search(blob))
 
 
-def check_notes(raw_notes, essay: str) -> tuple[list[dict], int]:
-    """Keep notes whose quote is in the essay and that say nothing about chances. Returns (kept up to 4, dropped)."""
-    kept, dropped = [], 0
+REASON_PERSONAL = "a note was left out because it contained a personal detail"
+REASON_QUOTE = "a note was left out because its quote was not found word for word in the essay"
+REASON_CHANCES = "a note was left out because it talked about chances or percentages"
+REASON_SHAPE = "a note was left out because it was not in the expected shape"
+
+
+def check_notes_detailed(raw_notes, essay: str) -> tuple[list[dict], int, list[str]]:
+    """Keep notes whose quote is in the essay, that say nothing about chances and that carry no personal detail
+    (checked in the observation, the quote and the question). Returns (kept up to 4, dropped, plain reasons)."""
+    kept, dropped, reasons = [], 0, []
+
+    def drop(reason):
+        nonlocal dropped
+        dropped += 1
+        if reason not in reasons:
+            reasons.append(reason)
+
     for n in raw_notes if isinstance(raw_notes, list) else []:
         if not isinstance(n, dict):
-            dropped += 1
+            drop(REASON_SHAPE)
             continue
         obs, quote, q = (str(n.get(k) or "").strip() for k in ("observation", "quote", "question"))
-        if not obs or not quote_in_essay(quote, essay) or _talks_chances(obs, quote, q):
-            dropped += 1
+        if not obs or not quote_in_essay(quote, essay):
+            drop(REASON_QUOTE if obs else REASON_SHAPE)
+            continue
+        if any(privacy.looks_personal(f) for f in (obs, quote, q)):
+            drop(REASON_PERSONAL)
+            continue
+        if _talks_chances(obs, quote, q):
+            drop(REASON_CHANCES)
             continue
         if len(kept) < MAX_NOTES:
             kept.append({"observation": obs, "quote": quote, "question": q, "quote_found": True})
+    return kept, dropped, reasons
+
+
+def check_notes(raw_notes, essay: str) -> tuple[list[dict], int]:
+    """Same as check_notes_detailed, without the reasons. Returns (kept up to 4, dropped)."""
+    kept, dropped, _ = check_notes_detailed(raw_notes, essay)
     return kept, dropped
 
 
@@ -213,7 +239,7 @@ def _base(status, activities, intended_major, **kw) -> dict:
         "status": status, "model": "", "second_model": "",
         "tags": {"major_group": None, "major_group_agreed": None,
                  "activity_types": tag_activities(activities), "essay_themes": []},
-        "notes": [], "dropped": 0, "latency_ms": 0, "trace_payloads": [],
+        "notes": [], "dropped": 0, "dropped_reasons": [], "latency_ms": 0, "trace_payloads": [],
     }
     out.update(kw)
     return out
@@ -236,6 +262,8 @@ def read(masked_essay, activities, intended_major=None, chat_fn=None) -> dict:
         already_blocked, prior_reason = bool(masked_essay.get("blocked")), str(masked_essay.get("reason") or "")
     else:
         text, already_blocked, prior_reason = str(masked_essay or ""), False, ""
+    # Fail closed: text that was handed over still carrying an email or a phone number never reaches a model.
+    given_kinds = [k for k in privacy.looks_personal(text) if k in ("email", "phone")]
     again = privacy.mask(text)  # idempotent for already-masked text; catches anything that slipped through
     text = again["text"]
     # The activity list is counselor-typed free text too: mask it and check it the same way.
@@ -250,6 +278,13 @@ def read(masked_essay, activities, intended_major=None, chat_fn=None) -> dict:
                 act_blocked, act_reason = True, m["reason"]
         safe_acts.append(row)
 
+    leftover = [k for k in privacy.looks_personal(again["text"]) if k in ("email", "phone")]
+    if given_kinds or leftover:
+        what = " and ".join(sorted({"an email address" if k == "email" else "a phone number" for k in given_kinds + leftover}))
+        return _base("blocked", activities, intended_major,
+                     reason=("This essay was not sent to any model because it still contains %s. Remove it and try "
+                             "again." % what),
+                     latency_ms=int((time.time() - started) * 1000))
     if already_blocked or again["blocked"] or act_blocked:
         return _base("blocked", activities, intended_major, reason=prior_reason or again["reason"] or act_reason,
                      latency_ms=int((time.time() - started) * 1000))
@@ -300,7 +335,7 @@ def read(masked_essay, activities, intended_major=None, chat_fn=None) -> dict:
     if not isinstance(data1, dict):
         return _base("error", activities, intended_major, latency_ms=elapsed, trace_payloads=traces,
                      error="the first read did not return the expected JSON")
-    notes, dropped = check_notes(data1.get("notes"), text)
+    notes, dropped, dropped_reasons = check_notes_detailed(data1.get("notes"), text)
     themes = [t for t in (data1.get("essay_themes") or []) if isinstance(t, str) and t in THEMES][:3]
 
     g1 = _clean_group(data1.get("major_group"))
@@ -311,7 +346,7 @@ def read(masked_essay, activities, intended_major=None, chat_fn=None) -> dict:
     same_maker = _maker(r1.get("model")) == _maker(r2.get("model")) if r2.get("ok") else False
     agreed = bool(g1 and g2 and g1 == g2 and not same_maker)
     out = _base("ok", activities, intended_major, model=r1.get("model", ""), second_model=r2.get("model", "") if r2.get("ok") else "",
-                notes=notes, dropped=dropped, latency_ms=elapsed, trace_payloads=traces)
+                notes=notes, dropped=dropped, dropped_reasons=dropped_reasons, latency_ms=elapsed, trace_payloads=traces)
     out["tags"].update({"major_group": g1 if agreed else None, "major_group_agreed": agreed, "essay_themes": themes})
     out["tags"]["major_group_by_model"] = {"first": g1, "second": g2}
     return out

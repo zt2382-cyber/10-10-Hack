@@ -214,9 +214,16 @@ class ClosenessTests(unittest.TestCase):
         self.assertNotIn("steady", n)
 
     def test_own_status_is_not_enough_for_the_synthetic_store(self):
-        o = S.closeness(STUDENT, col("Rutgers University-New Brunswick"))["own"]
-        self.assertEqual(o["status"], "not_enough")
-        self.assertTrue(o["n_admitted"] + o["n_denied"] > 0)
+        # The invented school history is deeper now, so look for any college where it is still thin.
+        from engine import colleges as _C
+        thin = None
+        for c in _C.load_colleges():
+            o = S.closeness(STUDENT, c)["own"]
+            if o["status"] == "not_enough":
+                thin = o
+                break
+        self.assertIsNotNone(thin, "expected at least one college with too few of the school's own cases")
+        self.assertTrue(thin["n_admitted"] + thin["n_denied"] > 0)
 
     def test_pools_are_never_merged(self):
         r = S.closeness(STUDENT, col("Rutgers University-New Brunswick"))
@@ -226,7 +233,8 @@ class ClosenessTests(unittest.TestCase):
             self.assertTrue(ex["case_id"].startswith("S-"))
         for p in r["national"].get("points", []):
             self.assertTrue(p["case_id"].startswith("N-"))
-        self.assertLessEqual(r["own"]["n_admitted"] + r["own"]["n_denied"] + r["own"]["n_waitlisted"], 120)
+        from engine import caselog as _caselog
+        self.assertLessEqual(r["own"]["n_admitted"] + r["own"]["n_denied"] + r["own"]["n_waitlisted"], len(_caselog.load_cases()))
 
     def test_nearest_examples_are_near_and_typed(self):
         n = S.closeness(STUDENT, col("Purdue University-Main Campus"))["national"]

@@ -31,8 +31,8 @@ class TestLabels(unittest.TestCase):
         self.assertEqual((r["state"], r["text"], r["rule_id"]), ("outside_data", "Outside our data", "R0"))
         self.assertTrue(r["steady"])
         self.assertEqual(r["flips"], [])
-        self.assertIsNone(find_college("Caltech"))  # a case-file college that is not in the 300
-        self.assertEqual(label_college(sat(1450), find_college("Caltech"))["state"], "outside_data")
+        self.assertIsNone(find_college("Hogwarts School"))  # a name that is not in our college file
+        self.assertEqual(label_college(sat(1450), find_college("Hogwarts School"))["state"], "outside_data")
 
     def test_r1_reach_for_everyone(self):
         r = label_college(sat(1600), CORNELL)

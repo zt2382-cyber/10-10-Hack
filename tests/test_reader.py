@@ -296,5 +296,41 @@ class GatewayRequest(unittest.TestCase):
                 self.assertTrue(nicrron.has_key())
 
 
+class PersonalDetailsInNotes(unittest.TestCase):
+    def test_notes_with_a_name_or_phone_are_dropped_with_reasons(self):
+        text = ESSAY + " I am Jane Doe and I build robots. Call 2125551212 for the club."
+        masked = {"text": text, "blocked": False, "reason": ""}
+        # bypass the masking pass: the notes themselves must be checked too
+        notes = [note("I opened her notebook, the one with flour thumbprints"),
+                 note("I am Jane Doe and I build robots"),
+                 note("I opened her notebook, the one with flour", obs="She phoned 2125551212 about it."),
+                 note("I was eleven and I did not believe her", q="Does Maria Gomez, my mother Maria Gomez, know?")]
+        kept, dropped, reasons = reader.check_notes_detailed(notes, text)
+        self.assertEqual([n["quote"] for n in kept], ["I opened her notebook, the one with flour thumbprints"])
+        self.assertEqual(dropped, 3)
+        self.assertIn("a note was left out because it contained a personal detail", reasons)
+
+    def test_read_reports_dropped_reasons(self):
+        masked = privacy.mask(ESSAY)
+        first = good_first([note("I opened her notebook, the one with flour thumbprints"),
+                            note("I did not believe her", obs="My mother Maria Gomez disagreed with her."),
+                            note("never said this at all in the essay")])
+        r = reader.read(masked, [], chat_fn=make_fake(first, {"major_group": "CS"}))
+        self.assertEqual(r["status"], "ok")
+        self.assertEqual(len(r["notes"]), 1)
+        self.assertEqual(r["dropped"], 2)
+        self.assertIn("a note was left out because it contained a personal detail", r["dropped_reasons"])
+        self.assertTrue(all(isinstance(x, str) and x for x in r["dropped_reasons"]))
+
+    def test_text_still_carrying_email_or_phone_is_never_sent(self):
+        for leaky in (ESSAY + " Write to kid@example.com.", ESSAY + " Call 2125551212."):
+            for given in (leaky, {"text": leaky, "blocked": False, "reason": ""}):
+                calls = []
+                r = reader.read(given, [], chat_fn=make_fake(good_first([]), {"major_group": "CS"}, calls))
+                self.assertEqual(r["status"], "blocked")
+                self.assertEqual(calls, [])
+                self.assertTrue(r["reason"])
+
+
 if __name__ == "__main__":
     unittest.main()

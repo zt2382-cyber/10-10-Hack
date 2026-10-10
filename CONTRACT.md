@@ -59,7 +59,11 @@ retrieve, score, bucket, explain, log.
 
 **College** (dict): `id, name, city, state, control ("public"/"private"), admit_rate (0..1 or None), sat25, sat75
 (total SAT, or None), act25, act75, undergrads, cost_year (sticker cost of attendance, dollars), tuition_in,
-tuition_out, pell_share, grad_rate, url, source`.
+tuition_out, pell_share, grad_rate, url, source, net_price` (average net price after grants for the college's sector, or
+None), `net_price_by_income` ({"0-30k","30-48k","48-75k","75-110k","110k+"} -> dollars or None), `median_debt` (median
+debt at graduation or None), `loan_share` (share of students with federal loans, 0..1, or None). Data: `data/colleges/
+scorecard_colleges.csv` (built by `tools/build_college_file.py`), else the two older files. `colleges.cost_sentence(college,
+home_state=None, income_band=None) -> str | None` is the one place cost wording is written.
 
 ## Input: StudentInput (dict)
 ```json

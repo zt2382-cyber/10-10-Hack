@@ -51,7 +51,7 @@ def _safe(fn, fallback, *a, **k):
 def _fallback_label(college):
     if college is None:
         return {"state": "outside_data", "text": "Outside our data", "rule_id": "R0",
-                "rule_text": "This college is not in the 300-college file, so nothing is said about it.",
+                "rule_text": "This college is not in our college file, so nothing is said about it.",
                 "score_used": None, "score_kind": None, "inputs": {}, "not_used": [], "caveats": [],
                 "steady": True, "flips": [], "publishers": [], "publishers_disagree": False}
     return {"state": "cant_say", "text": "Can't say", "rule_id": "R2",
@@ -61,6 +61,13 @@ def _fallback_label(college):
 
 
 def _cost_note(college, student):
+    if hasattr(C, "cost_sentence"):  # the full federal file is loaded: sticker cost and what families actually paid
+        try:
+            sentence = C.cost_sentence(college, student.get("home_state"), student.get("income_band"))
+            if sentence:
+                return sentence
+        except Exception:
+            pass
     cost = college.get("cost_year")
     if not cost:
         return None
@@ -124,23 +131,65 @@ def _levers(student, col, label, says, labels_mod):
     # 2. what the college itself says matters most
     rated = {}
     src = None
+    short = name
     for c in says or []:
         m = _RATING.search(c.get("text", ""))
         if m:
             rated.setdefault(m.group(2), []).append(m.group(1))
             src = src or c.get("source_url")
+            short = c.get("text", "")[:m.start()].strip() or name  # the name the college's own statement uses
     if rated.get("Very Important") or rated.get("Important"):
         top = rated.get("Very Important") or rated.get("Important")
         word = "Very Important" if rated.get("Very Important") else "Important"
         out.append({"kind": "says", "factors": top, "rating": word, "source_url": src,
                     "not_considered": rated.get("Not Considered", []),
-                    "text": f"{name.split('-')[0]} rates as {word}: {', '.join(top)}." +
+                    "text": f"{short} rates as {word}: {', '.join(top)}." +
                             (f" It rates as Not Considered: {', '.join(rated['Not Considered'])}." if rated.get("Not Considered") else "")})
     # 3. sending a score or not, and where the applicant lives: published counts only
     for c in says or []:
         if c.get("claim_id") in ("test_range", "admit_residency"):
             out.append({"kind": "sent_scores" if c["claim_id"] == "test_range" else "residency", "text": c["text"], "source_url": c.get("source_url")})
     return out
+
+
+FIT_FACTORS = {
+    "c7_essay": "the application essay",
+    "c7_test_scores": "test scores",
+    "c7_class_rank": "class rank",
+    "c7_demonstrated_interest": "shown interest (visits, contact)",
+    "c7_alumni": "a family link to a graduate",
+}
+
+
+def _fit(student, says, essay_words):
+    """What the college says it reads, beside what is in this profile. Three neutral states and no total:
+    this is not a score, and a factor being present does not predict anything."""
+    looks, skips, src, year = [], [], None, None
+    for c in says or []:
+        cid = c.get("claim_id")
+        m = _RATING.search(c.get("text", ""))
+        if cid not in FIT_FACTORS or not m:
+            continue
+        src, year = src or c.get("source_url"), year or c.get("year")
+        rating, factor = m.group(2), FIT_FACTORS[cid]
+        if rating == "Not Considered":
+            skips.append(factor)
+            continue
+        if cid == "c7_essay":
+            state, note = ("in_profile", "A draft essay is in this profile.") if essay_words else ("not_yet", "No essay in this profile yet.")
+        elif cid == "c7_test_scores":
+            state, note = ("in_profile", "A test score is in this profile.") if (student.get("sat") or student.get("act")) else ("not_yet", "No test score in this profile yet.")
+        elif cid == "c7_alumni":
+            state, note = ("in_profile", "The profile lists a family link.") if "legacy" in (student.get("hooks") or []) else ("cant_see", "No family link is listed in this profile.")
+        else:
+            state, note = "cant_see", "We can't see this here. Ask your counselor."
+        looks.append({"factor": factor, "rating": rating, "state": state, "note": note})
+    if not looks and not skips:
+        return None
+    order = {"Very Important": 0, "Important": 1, "Considered": 2}
+    looks.sort(key=lambda x: (order.get(x["rating"], 9), x["factor"]))
+    return {"looks_for": looks, "does_not_consider": skips, "source_url": src, "year": year,
+            "note": "This is what the college says it reads. It is not a score, and it does not predict admission."}
 
 
 def _score_ladder(student, found, labels_mod):
@@ -164,37 +213,146 @@ def _score_ladder(student, found, labels_mod):
     return ladder
 
 
-def run(student_input: dict, use_model: bool = True) -> dict:
-    student = dict(student_input or {})
-    essay = student.pop("essay", "") or ""
-    names = [n for n in (student.get("college_list") or []) if n and str(n).strip()]
-    session_id = "s-" + uuid.uuid4().hex[:12]
-    steps = []
+HOOKS = ("first_gen", "legacy", "urm", "recruited_athlete", "none")
+INCOME_BANDS = ("0-30k", "30-48k", "48-75k", "75-110k", "110k+")
 
+
+def _text(v, limit):
+    return str(v).strip()[:limit] if isinstance(v, (str, int, float)) and str(v).strip() else None
+
+
+def _rating_in(v):
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return None
+    return v if 1 <= v <= 10 else None
+
+
+def _normalize(student_input, labels_mod, privacy_mod):
+    """Clean the input once, at the door. Returns (student, essay, college names, notes).
+    Unknown fields are dropped: nothing a caller adds (a name, a school, gender, race, income) is carried along."""
+    raw = student_input if isinstance(student_input, dict) else {}
+    notes = []
+    essay = raw.get("essay") if isinstance(raw.get("essay"), str) else ""
+
+    def hide(text, limit):
+        """Free text a person typed is masked before it is kept, shown or sent anywhere."""
+        t = _text(text, limit)
+        if not t:
+            return None
+        if not privacy_mod:
+            return "[hidden: the privacy check is not available]"
+        try:
+            return privacy_mod.mask(t).get("text", "")[:limit]
+        except Exception:
+            return "[hidden: the privacy check could not run]"
+
+    # scores: one rule for labels, cases, balance and levers
+    scores = {"sat": raw.get("sat"), "act": raw.get("act")}
+    if labels_mod and hasattr(labels_mod, "_clean_student_scores"):
+        sat, act, score_notes = labels_mod._clean_student_scores(scores)
+        notes += score_notes
+    else:
+        sat = act = None
+    if sat and act:
+        as_sat = C.act_to_sat(act)
+        if as_sat and abs(as_sat - sat) > 150:
+            notes.append(f"The SAT ({sat}) and the ACT ({act}, about {as_sat} on the SAT scale) point in different directions. The SAT was used. Check which score will be sent.")
+    try:
+        gpa = float(raw.get("gpa")) if raw.get("gpa") not in (None, "") else None
+        gpa = gpa if gpa is not None and 0 <= gpa <= 5 else None
+    except (TypeError, ValueError):
+        gpa = None
+    state = _text(raw.get("home_state"), 2)
+    hooks = [h for h in (raw.get("hooks") if isinstance(raw.get("hooks"), list) else []) if h in HOOKS]
+
+    # colleges: a list of names, each counted once
+    cl = raw.get("college_list")
+    if isinstance(cl, str):
+        cl = [cl]
+    if not isinstance(cl, list):
+        if cl not in (None, ""):
+            notes.append("The college list could not be read, so no colleges were labelled.")
+        cl = []
+    names, seen, dupes = [], set(), 0
+    for n in cl[:30]:
+        n = _text(n, 120) if isinstance(n, str) else None
+        if not n:
+            continue
+        col = C.find_college(n)
+        key = col["id"] if col else " ".join(n.lower().split())
+        if key in seen:
+            dupes += 1
+            continue
+        seen.add(key)
+        names.append(col["name"] if col else n)
+    if dupes:
+        notes.append(f"{dupes} college{'s were' if dupes != 1 else ' was'} on the list more than once and counted once.")
+
+    acts = []
+    for a in (raw.get("activities") if isinstance(raw.get("activities"), list) else [])[:8]:
+        if isinstance(a, dict):
+            item = {k: hide(a.get(k), 200) for k in ("type", "role", "description")}
+            if any(item.values()):
+                acts.append(item)
+    student = {"label": hide(raw.get("label"), 80) or "Student", "sat": sat, "act": act, "gpa": gpa,
+               "gpa_scale": 4.0, "home_state": state.upper() if state and state.isalpha() else None,
+               "intended_major": hide(raw.get("intended_major"), 60), "hooks": hooks or ["none"],
+               "activities": acts, "college_list": names,
+               # read by the closeness part: a counselor's 1-10 rating of the activities, and named major interests
+               "activities_rating": _rating_in(raw.get("activities_rating")),
+               "major_interests": [m for m in (hide(x, 40) for x in (raw.get("major_interests") if isinstance(raw.get("major_interests"), list) else [])[:5]) if m],
+               # used only to pick the federal 'what families like yours paid' figure; never sent to a model
+               "income_band": raw.get("income_band") if raw.get("income_band") in INCOME_BANDS else None}
+    return student, essay, names, notes
+
+
+def run(student_input: dict, use_model: bool = True, closeness: bool | None = None) -> dict:
+    """`closeness` (the "who they resemble" block) is heavy, so labels-only runs such as the score slider skip it
+    unless asked. Default: on for a full run, off when `use_model` is False."""
+    want_closeness = use_model if closeness is None else bool(closeness)
     labels_mod, cases_mod, balance_mod = _part("labels"), _part("cases"), _part("balance")
     privacy_mod, reader_mod, claims_mod, prism_mod = _part("privacy"), _part("reader"), _part("claims"), _part("prism")
     similarity_mod = _part("similarity")
+    student, essay, names, input_notes = _normalize(student_input, labels_mod, privacy_mod)
+    is_demo = isinstance(student_input, dict) and str(student_input.get("label", "")) in _demo_labels()
+    if not is_demo:
+        student["label"] = "Student"  # a typed label could be a real name; it is never kept, shown or sent
+    session_id = "s-" + uuid.uuid4().hex[:12]
+    steps = []
 
-    # ---- privacy first: nothing identifying reaches a model ----
-    masked = {"text": essay, "masked": [], "blocked": False, "reason": ""}
-    if privacy_mod and essay:
-        masked = _safe(privacy_mod.mask, masked, essay)
+    # ---- privacy first: nothing identifying reaches a model. If the check cannot run, the essay is not read. ----
+    masked = {"text": "", "masked": [], "blocked": False, "reason": ""}
+    if essay:
+        try:
+            if not privacy_mod:
+                raise RuntimeError("privacy check missing")
+            masked = privacy_mod.mask(essay)
+            if not isinstance(masked, dict) or "text" not in masked:
+                raise RuntimeError("privacy check gave no answer")
+        except Exception:
+            masked = {"text": "", "masked": [], "blocked": True,
+                      "reason": "The privacy check could not run, so the essay was not read by anything."}
     n_masked = sum(m.get("count", 0) for m in masked.get("masked", []))
     guard = "our own check"
     verdicts = [{"by": "Our own check (code)", "blocked": bool(masked.get("blocked")), "detail": masked.get("reason", "")}] if essay else []
-    if prism_mod and essay:
-        # asked even when our own check already stopped the text, so both verdicts are on the record
+    if essay and masked.get("blocked"):
+        # Stopped here. The text is not sent to PRISM or to any model: nothing leaves this computer.
+        verdicts.append({"by": "PRISM guardrail", "blocked": None,
+                         "detail": "Not asked. Our own check had already stopped the essay, so nothing was sent anywhere."})
+    elif prism_mod and essay and use_model:  # no model will read the essay in a labels-only run, so there is nothing to screen
         scr = _safe(prism_mod.screen, {"blocked": False, "how": "off", "detail": ""}, masked.get("text", ""))
         if scr.get("how") == "prism-proxy":
             guard = "our own check, then PRISM's guardrail"
             verdicts.append({"by": "PRISM guardrail", "blocked": bool(scr.get("blocked")), "detail": str(scr.get("detail", ""))[:200]})
-            if scr.get("blocked") and not masked.get("blocked"):
+            if scr.get("blocked"):
                 masked["blocked"] = True
                 masked["reason"] = str(scr.get("detail", ""))[:200]
     privacy = {
         "masked": masked.get("masked", []), "blocked": bool(masked.get("blocked")), "reason": masked.get("reason", ""),
         "guard": guard, "verdicts": verdicts,
-        "note": ("This essay was stopped. No model read it." if masked.get("blocked") else
+        "note": ("This essay was stopped. The essay reader did not read it." if masked.get("blocked") else
                  f"{n_masked} personal detail{'s were' if n_masked != 1 else ' was'} masked before any model read the essay."
                  if essay else "No essay was given, so no model read anything."),
     }
@@ -205,7 +363,7 @@ def run(student_input: dict, use_model: bool = True) -> dict:
     pool = _safe(cases_mod.pool_summary, {}) if cases_mod and hasattr(cases_mod, "pool_summary") else {}
     in_file = sum(1 for _, c in found if c)
     steps.append({"step": "retrieve", "by": "code", "ms": _ms(t0),
-                  "what": f"Looked up {len(found)} college{'s' if len(found) != 1 else ''} ({in_file} in our 300-college file) and the finished-case pools"})
+                  "what": f"Looked up {len(found)} college{'s' if len(found) != 1 else ''} ({in_file} in our file of {len(C.load_colleges()):,} colleges) and the finished-case pools"})
 
     # ---- essay observations, done before scoring so tags can order the cases ----
     t0 = time.perf_counter()
@@ -240,26 +398,31 @@ def run(student_input: dict, use_model: bool = True) -> dict:
 
     # ---- score and bucket ----
     t0 = time.perf_counter()
+    tracker_mod = _part("tracker")
+    student_key = (student_input.get("label") if is_demo else "current") if isinstance(student_input, dict) else "current"
+    tracked = _safe(tracker_mod.get, {}, student_key) if tracker_mod else {}
     out, labelled = [], []
     for name, col in found:
         label = _safe(labels_mod.label_college, _fallback_label(col), student, col) if labels_mod else _fallback_label(col)
         labelled.append({"college": col, "name": col["name"] if col else name, "label": label})
         if col is None:
-            out.append({"id": None, "name": name, "state": None, "control": None, "admit_rate": None, "sat25": None,
+            out.append({"id": None, "name": name, "suggestion": C.suggest(name), "state": None, "control": None, "admit_rate": None, "sat25": None,
                         "sat75": None, "act25": None, "act75": None, "cost_year": None, "source": None, "in_data": False,
                         "label": label, "cases": None, "closeness": None, "says": [], "myths": [], "levers": [],
                         "cost_note": None, "flags": []})
             continue
         cases = _safe(cases_mod.find_similar, None, student, col, tags) if cases_mod else None
-        close = _safe(similarity_mod.closeness, None, student, col, tags, semantic_context) if similarity_mod else None
+        close = _safe(similarity_mod.closeness, None, student, col, tags, semantic_context) if (similarity_mod and want_closeness) else None
         says =_safe(claims_mod.college_says, [], col) if claims_mod else []
         myths = _safe(claims_mod.myth_checks, [], col) if claims_mod and hasattr(claims_mod, "myth_checks") else []
         flags = []
         if "recruited_athlete" in (student.get("hooks") or []):
             flags.append("Recruited athletes are admitted through a separate process. Ask the coach and the admissions office.")
-        out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "source")},
+        out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "net_price", "net_price_by_income", "source")},
                     "in_data": True, "label": label, "cases": cases, "closeness": close, "says": says, "myths": myths,
                     "levers": _safe(_levers, [], student, col, label, says, labels_mod),
+                    "fit": _safe(_fit, None, student, says, len(essay.split())),
+                    "tracker": tracked.get(col["id"]) or {"status": "considering", "outcome": None},
                     "cost_note": _cost_note(col, student), "flags": flags})
     score_ms = _ms(t0)
     have = "SAT of %s" % student["sat"] if student.get("sat") else ("ACT of %s" % student["act"] if student.get("act") else "no test score")
@@ -277,7 +440,9 @@ def run(student_input: dict, use_model: bool = True) -> dict:
     explain_what = {"ok": f"Read the essay for themes and exact quotes; {kept} note{'s' if kept != 1 else ''} kept, {dropped} dropped",
                     "blocked": "Did not read the essay: it was stopped by the privacy screen",
                     "empty": "No essay to read", "off": "The essay reader is off (no model key), so no model was used"}.get(reader.get("status"), "The essay reader did not finish")
-    steps.append({"step": "explain", "by": reader.get("model") or "code", "ms": explain_ms, "what": explain_what})
+    readers = [m for m in (reader.get("model"), reader.get("second_model")) if m]
+    by = (" and ".join(readers) + ", through the Nicrron gateway") if (readers and reader.get("status") == "ok") else "code"
+    steps.append({"step": "explain", "by": by, "ms": explain_ms, "what": explain_what})
 
     # ---- knowledge base: back one statement per college from PRISM, when it is on ----
     kb_state = "off"
@@ -308,9 +473,13 @@ def run(student_input: dict, use_model: bool = True) -> dict:
 
         def _send():
             for tp in trace_payloads:
-                _safe(prism_mod.trace, {"ok": False}, AGENT_NAME, session_id, tp.get("model"), tp.get("input_messages"),
-                      tp.get("output_message"), tp.get("latency_ms") or 0,
-                      {"request_id": tp.get("request_id"), "step": "explain", "synthetic": True,
+                msgs, outm = tp.get("input_messages"), tp.get("output_message")
+                if not is_demo:  # a real student's text is never stored in a third-party record, even masked
+                    msgs = [{"role": "user", "content": f"[withheld: {len(json.dumps(msgs or ''))} characters of masked text]"}]
+                    outm = {"role": "assistant", "content": f"[withheld: {kept} notes kept, {dropped} dropped]"}
+                _safe(prism_mod.trace, {"ok": False}, AGENT_NAME, session_id, tp.get("model"), msgs,
+                      outm, tp.get("latency_ms") or 0,
+                      {"request_id": tp.get("request_id"), "step": "explain", "synthetic": is_demo,
                        "notes_kept": kept, "notes_dropped": dropped})
             _safe(prism_mod.submit_steps, {"ok": False}, session_id, frozen_steps)
 
@@ -321,11 +490,12 @@ def run(student_input: dict, use_model: bool = True) -> dict:
     for c in out:  # a statement that failed its own check is never shown
         c["says"] = [s for s in (c.get("says") or []) if s.get("checked") is not False]
 
-    student_view = {k: v for k, v in student.items()}
+    student_view = dict(student)  # already an allowlist: see _normalize
     student_view["essay_words"] = len(essay.split())
+    student_view["input_notes"] = input_notes
     return {
         "run_id": session_id, "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
-        "synthetic": "SYNTHETIC" in str(student.get("label", "")).upper() or bool(student.get("synthetic", True)),
+        "synthetic": is_demo,
         "student": student_view, "steps": sorted(steps, key=lambda s: ["retrieve", "score", "bucket", "explain", "log"].index(s["step"])),
         "privacy": privacy, "reader": reader, "colleges": out, "balance": balance,
         "checks": {"sentences_shown": shown, "sentences_hidden": hidden,
@@ -336,11 +506,20 @@ def run(student_input: dict, use_model: bool = True) -> dict:
                      "warnings": len(balance.get("warnings") or []), "suggestions": len(balance.get("suggestions") or [])},
             "score_ladder": _safe(_score_ladder, [], student, found, labels_mod),
             "note": "These are the same written rule re-run with a different score, and each college's own published statements. They are not predictions.",
+            "fit_coverage": {"with": sum(1 for c in out if c.get("fit")), "of": sum(1 for c in out if c.get("in_data"))},
         },
+        "student_key": student_key,
         "prism": prism, "pools": pool, "refusals": REFUSALS,
         "closeness_check": _closeness_check(),
         "closeness_method": _safe(similarity_mod.method, None) if similarity_mod and hasattr(similarity_mod, "method") else None,
     }
+
+
+def _demo_labels() -> set:
+    try:
+        return {d["label"] for d in demo_students()}
+    except Exception:
+        return set()
 
 
 def _closeness_check():
@@ -384,6 +563,27 @@ def demo_students() -> list[dict]:
          "essay": "",
          "college_list": ["University of California-Los Angeles", "University of California-Berkeley", "University of Southern California",
                           "University of California-Santa Cruz"]},
+        {"label": "Student G (SYNTHETIC): a balanced list", "sat": 1350, "act": None, "gpa": 3.7, "gpa_scale": 4.0,
+         "home_state": "NJ", "intended_major": "Psychology", "hooks": ["none"],
+         "activities": [{"type": "Peer tutoring", "role": "Founder", "description": "Started a lunchtime tutoring table; 14 regulars by spring"},
+                        {"type": "Work", "role": "Barista", "description": "Twelve hours a week since grade 10"}],
+         "essay": e("essay_6"),
+         "college_list": ["Northeastern University", "Boston University", "Rutgers University-New Brunswick",
+                          "Virginia Polytechnic Institute and State University", "Pennsylvania State University-Main Campus",
+                          "Rowan University", "Montclair State University"]},
+        {"label": "Student H (SYNTHETIC): a lower score and a strong story", "sat": 1080, "act": None, "gpa": 3.4, "gpa_scale": 4.0,
+         "home_state": "NJ", "intended_major": "Nursing", "hooks": ["first_gen"],
+         "activities": [{"type": "Family care", "role": "Carer", "description": "Looks after two younger siblings every weekday afternoon"},
+                        {"type": "Work", "role": "Pharmacy assistant", "description": "Twenty hours a week"}],
+         "essay": e("essay_7"),
+         "college_list": ["Rutgers University-New Brunswick", "Rowan University", "Montclair State University",
+                          "University of Delaware", "Temple University"]},
+        {"label": "Student I (SYNTHETIC): recruited athlete", "sat": 1300, "act": None, "gpa": 3.6, "gpa_scale": 4.0,
+         "home_state": "PA", "intended_major": "Business", "hooks": ["recruited_athlete"],
+         "activities": [{"type": "Athletics", "role": "Club and varsity swimmer", "description": "State finalist; in contact with two college coaches"}],
+         "essay": "",
+         "college_list": ["Pennsylvania State University-Main Campus", "Virginia Polytechnic Institute and State University",
+                          "University of Virginia-Main Campus", "University of Michigan-Ann Arbor", "Purdue University-Main Campus"]},
         {"label": "Student E (SYNTHETIC): essay with a hidden instruction", "sat": 1450, "act": None, "gpa": 3.9, "gpa_scale": 4.0,
          "home_state": "NJ", "intended_major": "Computer Science", "hooks": ["none"], "activities": [],
          "essay": e("essay_4"),

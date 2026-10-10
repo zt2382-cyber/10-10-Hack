@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Counselor Copilot</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<a class="skip" href="#results">Skip to the college list</a>
+<a class="skip" href="#results">Skip to the story</a>
 
 <div class="app" id="app">
   <header class="top">
@@ -17,23 +18,41 @@
       <button type="button" class="linkbtn" data-act="open-built">How it was built</button>
     </nav>
     <div class="top-chips" id="top-chips"></div>
-    <div class="student-line" id="student-line" hidden></div>
+    <div class="top-right">
+      <button type="button" class="switch" id="working-switch" data-act="toggle-working" aria-pressed="false"><i aria-hidden="true"></i><span>Show the working</span></button>
+      <details class="tools" id="tools">
+        <summary>Counselor tools</summary>
+        <div class="tools-menu">
+          <button type="button" data-act="tool-questions">Questions to ask</button>
+          <button type="button" data-act="tool-how">How we worked this out</button>
+          <button type="button" data-act="tool-case" data-tool="case">Add a finished case</button>
+          <button type="button" data-act="tool-edit" data-tool="edit">Change the details</button>
+          <button type="button" data-act="tool-start">Choose another student</button>
+        </div>
+      </details>
+    </div>
   </header>
+  <nav class="waypoints" id="waypoints" aria-label="The four chapters"></nav>
 
   <div class="page">
-    <!-- ============ THE STUDENT: picker and Build first; every field behind "Edit details" ============ -->
-    <section class="student" id="student-panel" aria-labelledby="student-h">
-      <h2 id="student-h">The student</h2>
-      <form id="student-form" autocomplete="off" novalidate>
-        <div class="start-row">
-          <label class="field grow">
-            <span>Demo student</span>
-            <select id="student-pick"><option value="">New student (blank)</option></select>
-          </label>
-          <button type="submit" class="btn primary big" id="build-btn">Build the list</button>
-        </div>
-        <p class="hint" id="build-hint" role="status"></p>
+    <!-- ============ OPENING: who are we looking at today? ============ -->
+    <section class="opening" id="opening" aria-labelledby="open-h">
+      <div class="ghost-wrap" id="ghost"></div>
+      <div class="open-card">
+        <h2 id="open-h" class="display">Who are we looking at today?</h2>
+        <p class="open-sub">Choose a student and see where they stand across their colleges. Nothing here predicts admission.</p>
+        <div class="student-cards" id="student-cards"></div>
+        <p class="open-go"><button type="button" class="btn primary big" data-act="build">Show where they stand</button>
+          <button type="button" class="linkbtn" id="change-link" data-act="tool-edit">Change the details</button></p>
+        <p class="quiet small" id="preview-line" hidden></p>
+      </div>
+    </section>
 
+    <!-- ============ CHANGE THE DETAILS (Counselor tools) ============ -->
+    <section class="card student" id="student-panel" aria-labelledby="student-h" hidden>
+      <div class="student-head"><h2 id="student-h" class="section">Change the details</h2>
+        <button type="button" class="linkbtn" data-act="hide-editor">Close</button></div>
+      <form id="student-form" autocomplete="off" novalidate>
         <p class="quiet" id="mode-line" hidden></p>
         <details id="more-fields">
           <summary>Edit details</summary>
@@ -58,8 +77,8 @@
                 <label class="tog"><input type="checkbox" id="f-gpa-none"><span>none</span></label>
               </div>
               <div class="dial">
-                <label for="f-actv">Activities, your rating <em>(0 to 10; used only for closeness)</em></label>
-                <input type="range" id="f-actv" min="0" max="10" step="0.5" value="5">
+                <label for="f-actv">Activities, your rating <em>(1 to 10; used only for who they resemble)</em></label>
+                <input type="range" id="f-actv" min="1" max="10" step="0.5" value="5">
                 <output id="o-actv" for="f-actv">5</output>
                 <label class="tog"><input type="checkbox" id="f-actv-none" checked><span>none</span></label>
               </div>
@@ -129,31 +148,33 @@
             </div>
           </div>
         </details>
+        <p class="open-go"><button type="button" class="btn primary big" data-act="build">Show where they stand</button></p>
+        <p class="hint" id="build-hint" role="status"></p>
       </form>
     </section>
 
-    <!-- ============ LEVEL 1: the whole first view ============ -->
-    <main id="results" tabindex="-1">
+    <!-- ============ THE STORY: four chapters ============ -->
+    <main id="results" tabindex="-1" hidden>
       <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
-      <div id="stopped"></div>
-      <section id="counters" aria-label="List balance"></section>
-      <div class="stand">
-        <section id="picture" aria-label="Where this student stands"></section>
-        <section id="levers" aria-label="What could change this"></section>
-      </div>
-      <nav id="footlinks" class="footlinks" aria-label="More"></nav>
-      <div id="chance-answer" class="chance-answer" hidden></div>
+      <section class="chapter card" id="ch1" aria-label="Chapter 1: who you are"></section>
+      <section class="chapter" id="ch2" aria-label="Chapter 2: where you stand">
+        <div id="headline"></div>
+        <div id="picture"></div>
+        <div id="caution"></div>
+      </section>
+      <section class="chapter" id="ch3" aria-label="Chapter 3: what is in your hands"></section>
+      <section class="chapter" id="ch4" aria-label="Chapter 4: your plan"></section>
+      <section class="working-only" id="working" aria-label="The working"></section>
     </main>
   </div>
 </div>
 
 <div id="backdrop" class="backdrop" data-act="close-panel" hidden></div>
-<!-- One drawer for every drill-in: a college, the suggestions, essay notes, how this was made. -->
 <aside id="receipt" class="receipt" role="dialog" aria-modal="true" aria-labelledby="receipt-title" tabindex="-1" hidden></aside>
 
 <aside id="case-panel" class="receipt" role="dialog" aria-modal="true" aria-labelledby="case-h" tabindex="-1" hidden>
   <header class="rc-head">
-    <div><p class="rc-kicker">Your school's own cases</p><h2 id="case-h">Add a finished case</h2></div>
+    <div><h2 id="case-h">Add a finished case</h2></div>
     <button type="button" class="btn" data-act="close-panel">Close</button>
   </header>
   <section class="rc-sec">

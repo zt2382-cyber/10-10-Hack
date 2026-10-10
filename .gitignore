@@ -9,3 +9,6 @@ tests/acceptance/last_run.txt
 dist/
 dist.zip
 _static_keep/
+review/
+data/local/
+data/cases/parsed/
