@@ -367,5 +367,61 @@ class ChangesTests(unittest.TestCase):
         self.assertEqual(n["changes_note"], "")
 
 
+class KindsTests(unittest.TestCase):
+    def test_three_kinds_described_from_counts(self):
+        kinds, kind_of = S._kinds("CORNELL")
+        self.assertEqual([k["kind_id"] for k in kinds], ["K1", "K2", "K3"])
+        n_adm = S._national_groups("CORNELL")[0]
+        self.assertEqual(sum(k["size"] for k in kinds), min(len(n_adm), S.KINDS_CAP))
+        self.assertEqual(len(kind_of), min(len(n_adm), S.KINDS_CAP))
+        ids = {v["case_id"] for v in n_adm}
+        for k in kinds:
+            self.assertIn(k["medoid_case_id"], ids)                    # a medoid is a real case
+            self.assertEqual(kind_of[k["medoid_case_id"]], k["kind_id"])
+            self.assertTrue(k["name"].split(" score")[0] in ("High", "Mid", "Lower"), k["name"])
+            self.assertIsInstance(k["median_sat"], int)
+            self.assertTrue(k["size"] >= 1)
+        sats = [k["median_sat"] for k in kinds]
+        self.assertEqual(sats, sorted(sats, reverse=True))              # K1 is the highest-scoring kind
+
+    def test_fewer_than_30_admitted_gives_no_kinds(self):
+        self.assertEqual(S._kinds("CLAREMONT MCKENNA"), ([], {}))
+        n = S.closeness(STUDENT, college_by_case_name("CLAREMONT MCKENNA"))["national"]
+        self.assertEqual(n["kinds"], [])
+        self.assertTrue(all(p["kind_id"] is None for p in n["points"]))
+
+    def test_same_input_gives_the_same_kinds(self):
+        a = json.dumps(S._kinds("UPENN"), sort_keys=True, default=str)
+        S._kinds.cache_clear()
+        b = json.dumps(S._kinds("UPENN"), sort_keys=True, default=str)
+        self.assertEqual(a, b)
+
+    def test_kinds_in_the_block_mark_one_nearest_and_tag_points(self):
+        n = S.closeness(STUDENT, col("Cornell University"))["national"]
+        self.assertEqual(len(n["kinds"]), 3)
+        self.assertEqual(sum(1 for k in n["kinds"] if k["nearest"]), 1)
+        near = next(k for k in n["kinds"] if k["nearest"])
+        self.assertEqual(near["distance"], min(k["distance"] for k in n["kinds"]))
+        for k in n["kinds"]:
+            self.assertEqual(set(k), {"kind_id", "name", "size", "median_sat", "median_activities", "top_major",
+                                      "medoid_case_id", "distance", "nearest"})
+        tagged = [p for p in n["points"] if p["kind_id"]]
+        self.assertTrue(tagged)
+        self.assertTrue(all(p["outcome"] == "admitted" for p in tagged))
+        self.assertTrue(all(p["kind_id"] is None for p in n["points"] if p["outcome"] != "admitted"))
+
+    def test_ten_cold_colleges_under_a_second(self):
+        import time
+        names = ["CORNELL", "MIT", "STANFORD", "CMU", "PRINCETON", "GEORGIA TECH", "PURDUE", "UPENN", "UMICH", "NYU"]
+        names = [n for n in names if n in S._cases._national()[0]][:10]
+        self.assertGreaterEqual(len(names), 8)
+        for n in names:
+            S._kinds.cache_clear()
+        t = time.perf_counter()
+        for n in names:
+            S._kinds(n)
+        self.assertLess(time.perf_counter() - t, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()

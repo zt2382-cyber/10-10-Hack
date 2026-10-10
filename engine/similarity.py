@@ -264,6 +264,113 @@ def _points(groups, kind_of=None):
              "kind_id": (kind_of or {}).get(v["case_id"])} for v in allv]
 
 
+# ---------------------------------------------------------------- R3. kinds of admitted student (k-medoids)
+
+KINDS = 3
+KINDS_MIN = 30          # fewer admitted cases than this: no kinds
+KINDS_CAP = 300         # more than this: a seeded sample
+KINDS_ROUNDS = 20
+KINDS_SEED = 20261010
+KIND_PARTS = ("score", "activities", "major")
+KIND_SCORE_BAND = 40    # medoid median this far above / below the college's admitted median: "High" / "Lower"
+KIND_RATING_BAND = 1.0
+
+
+def _kind_distance(a, b):
+    """Distance between two admitted cases over score, activities and major only; same spans and weights as R1."""
+    w = WEIGHTS["score"]
+    d = w * min(abs(a["score"] - b["score"]) / SCORE_SPAN, 1.0)
+    if a["activities"] is not None and b["activities"] is not None:
+        d += WEIGHTS["activities"] * min(abs(a["activities"] - b["activities"]) / RATING_SPAN, 1.0)
+        w += WEIGHTS["activities"]
+    if a["major_group"] is not None and b["major_group"] is not None:
+        d += WEIGHTS["major"] * (0.0 if a["major_group"] == b["major_group"] else 1.0)
+        w += WEIGHTS["major"]
+    return d / w
+
+
+def _score_word(value, centre, band):
+    if value >= centre + band:
+        return "High"
+    if value <= centre - band:
+        return "Lower"
+    return "Mid"
+
+
+@lru_cache(maxsize=None)
+def _kinds(case_name):
+    """(kinds, {case_id: kind_id}) for one college's admitted national cases. Pure Python, fixed seed."""
+    import random
+    import statistics
+    from collections import Counter
+
+    adm = _national_groups(case_name)[0]
+    if len(adm) < KINDS_MIN:
+        return [], {}
+    rng = random.Random(KINDS_SEED)
+    pop = adm if len(adm) <= KINDS_CAP else sorted(rng.sample(adm, KINDS_CAP), key=lambda v: v["num"])
+    n = len(pop)
+    D = [[0.0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1, n):
+            D[i][j] = D[j][i] = _kind_distance(pop[i], pop[j])
+    medoids = sorted(rng.sample(range(n), KINDS))
+    for _ in range(KINDS_ROUNDS):
+        assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
+        new = sorted(min((i for i in range(n) if assign[i] == m),
+                         key=lambda c: (sum(D[c][j] for j in range(n) if assign[j] == m), c))
+                     for m in medoids)
+        if new == medoids:
+            break
+        medoids = new
+    assign = [min(medoids, key=lambda m: (D[i][m], m)) for i in range(n)]
+
+    centre_score = statistics.median(v["score"] for v in adm)
+    rated = [v["activities"] for v in adm if v["activities"] is not None]
+    centre_rating = statistics.median(rated) if rated else None
+    described = []
+    for m in medoids:
+        members = [pop[i] for i in range(n) if assign[i] == m]
+        med_score = statistics.median(v["score"] for v in members)
+        acts = [v["activities"] for v in members if v["activities"] is not None]
+        med_act = round(statistics.median(acts), 1) if acts else None
+        majors = Counter(v["major_group"] for v in members if v["major_group"])
+        top = majors.most_common(1)[0][0] if majors else None
+        bits = [f"{_score_word(med_score, centre_score, KIND_SCORE_BAND)} score", top or "mixed majors"]
+        if med_act is not None and centre_rating is not None:
+            bits.append(f"activities {med_act:g}")
+        described.append({"name": ", ".join(bits), "size": len(members), "median_sat": int(round(med_score)),
+                          "median_activities": med_act, "top_major": top, "medoid_case_id": pop[m]["case_id"],
+                          "_medoid": pop[m], "_members": [v["case_id"] for v in members]})
+    described.sort(key=lambda k: (-k["median_sat"], k["medoid_case_id"]))
+    names = Counter(k["name"] for k in described)
+    for k in described:   # two kinds that read the same are told apart by their median score
+        if names[k["name"]] > 1:
+            k["name"] += f" (SAT {k['median_sat']})"
+    kind_of = {}
+    for i, k in enumerate(described, 1):
+        k["kind_id"] = f"K{i}"
+        for cid in k.pop("_members"):
+            kind_of[cid] = k["kind_id"]
+    return described, kind_of
+
+
+def _kinds_for(sv, kinds, college):
+    """The contract's `kinds` list: each kind with the student's distance to its medoid, nearest marked."""
+    out = []
+    for k in kinds:
+        parts = {p: v for p, v in part_distances(sv, k["_medoid"], college).items() if p in KIND_PARTS}
+        d = total(parts)
+        out.append({"kind_id": k["kind_id"], "name": k["name"], "size": k["size"], "median_sat": k["median_sat"],
+                    "median_activities": k["median_activities"], "top_major": k["top_major"],
+                    "medoid_case_id": k["medoid_case_id"], "distance": None if d is None else round(d, 3),
+                    "nearest": False})
+    with_d = [k for k in out if k["distance"] is not None]
+    if with_d:
+        min(with_d, key=lambda k: (k["distance"], k["kind_id"]))["nearest"] = True
+    return out
+
+
 # ---------------------------------------------------------------- R4. what would bring the student closer
 
 CHANGE_GAIN = 0.02        # a change is kept only if it raises the gap by this much
@@ -310,8 +417,9 @@ def _changes(sv, groups, college, base_gap):
     return out[:MAX_CHANGES]
 
 
-def _pool(sv, groups, college, source, verified, own):
+def _pool(sv, groups, college, source, verified, own, kinds=((), {})):
     adm, den, wl = groups
+    kind_list, kind_of = kinds
     out = {"source": source, "verified": verified, "status": None,
            "n_admitted": len(adm), "n_denied": len(den), "n_waitlisted": len(wl)}
     if not (adm or den or wl):
@@ -340,10 +448,10 @@ def _pool(sv, groups, college, source, verified, own):
     out["not_used"] = _not_used(na, nd, college)
     out["nearest_admitted"] = [_example(d, cv, p, own) for d, cv, p in na[:MAX_NEAREST]]
     out["nearest_denied"] = [_example(d, cv, p, own) for d, cv, p in nd[:MAX_NEAREST]]
-    out["kinds"] = []
+    out["kinds"] = _kinds_for(sv, kind_list, college)
     out["changes"] = _changes(sv, groups, college, gap) if lean else []
     out["changes_note"] = "" if out["changes"] or not lean else NOTHING_HELPS
-    out["points"] = _points(groups)
+    out["points"] = _points(groups, kind_of)
     return out
 
 
@@ -352,9 +460,10 @@ def closeness(student, college, tags=None) -> dict:
     sv = _student_view(student, college, tags)
     short = _colleges.case_name_for(college) if college else None
     nat = _national_groups(short) if short else ([], [], [])
+    kinds = _kinds(short) if short else ([], {})
     own = _own_groups(college) if college else ([], [], [])
     return {"needed": NEEDED, "neighbours": NEIGHBOURS,
-            "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False),
+            "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
             "own": _pool(sv, own, college, OWN_SOURCE, True, own=True),
             "caveat": CAVEAT}
 
