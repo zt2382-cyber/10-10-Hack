@@ -710,10 +710,21 @@ function renderHolistic(c) {
   var matches = arr(cl.essay_retrieval), report = obj(cl.semantic);
   h += '<p class="quiet small">Essay comparison: ' + esc(report.status) +
     (str(report.note) ? '. ' + esc(report.note) : '') + '</p>';
-  if (matches.length) h += '<h4>Similar essay content</h4><ol>' + matches.map(function (r) {
+  h += '<h4>Similar essay content</h4>';
+  if (matches.length) h += '<ol>' + matches.map(function (r) {
     return '<li>' + esc(r.case_id) + ' — ' + (r.text_kind === 'full_essay' ? 'full essay' : 'theme summary') +
       ', content distance ' + esc(r.distance) + ' (lower is closer)</li>';
   }).join('') + '</ol>';
+  else {
+    var reason;
+    if (report.status === 'off') reason = 'Essay retrieval is disabled for this run.';
+    else if (report.status === 'unavailable' || report.status === 'partial')
+      reason = 'Essay matches are unavailable. Check the model gateway configuration and rebuild the list.';
+    else if (report.status === 'empty') reason = 'No eligible essay text was available. Enter an essay and rebuild the list.';
+    else if (!str(report.status)) reason = 'This saved result has no essay retrieval data. Run a new comparison using the local server.';
+    else reason = 'No essay matches for this college. Historical cases need a full essay or an essay theme summary, and the student needs an eligible essay.';
+    h += '<p class="state-box">' + esc(reason) + '</p>';
+  }
   return h;
 }
 function renderCasesTab(c) {
