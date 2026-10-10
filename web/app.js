@@ -810,12 +810,18 @@ function groupsModel(result, opts) {
     m.cells[key] = {key: key, a: a, w: w, d: d, n: n, cases: kept, state: n < minN ? 'not_enough' : (n < fewN ? 'few' : 'ok')};
     if (cell.is_student === true) m.mine = key;
   });
-  m.note = m.mine ? '' : str(g.student_note);
-  var st = obj(obj(obj(pick.c).closeness).student), act = num(st.activities);
+  var st = obj(obj(obj(pick.c).closeness).student), act = num(st.activities), score = num(st.score);
   if (o.whatIf === true && num(o.score) !== null && pick.ok) {
-    if (o.kind !== 'ACT' && act !== null && lo !== null && hi !== null) m.mine = scoreBand(num(o.score), lo, hi) + '|' + actBand(act, mid, high);
-    else if (o.kind === 'ACT') m.actNote = 'The what-if score is on the ACT scale, so the outlined cluster stays where the real score put it.';
+    if (o.kind !== 'ACT') score = num(o.score);
+    else m.actNote = 'The what-if score is on the ACT scale, so the outlined cluster stays where the real score put it.';
   }
+  /* the column is known from the score alone; the one cell needs the activities rating too */
+  m.score = score; m.act = act;
+  m.myCol = pick.ok && score !== null && lo !== null && hi !== null ? scoreBand(score, lo, hi) : null;
+  if (m.myCol && act !== null) m.mine = m.myCol + '|' + actBand(act, mid, high);
+  if (m.mine) m.note = '';
+  else if (m.myCol) m.note = 'Score ' + score + ' puts this student in the column "' + GROUP_COLS.filter(function (x) { return x[0] === m.myCol; })[0][1].toLowerCase() + '". Give an activities rating (Counselor tools, Change the details) to pick the row.';
+  else m.note = str(g.student_note);
   return m;
 }
 function groupDots(cell) {
@@ -847,18 +853,20 @@ function renderGroups(result, opts) {
   h += '</div>';
   var cols = 'minmax(58px,auto) ' + GROUP_COLS.map(function (x) { return x[0] === openCol ? 'minmax(0,2fr)' : 'minmax(0,1fr)'; }).join(' ');
   h += '<div class="g-grid" style="grid-template-columns:' + cols + '" role="group" aria-label="Nine clusters of past applicants at ' + esc(shortName(c.name)) + (m.major ? ', ' + esc(majorText(m.major)) + ' only' : '') + '">';
+  var colOnly = m.myCol && !m.mine;
   h += '<div></div>' + GROUP_COLS.map(function (x) {
-    return '<div class="g-colh"><b>' + x[1] + '</b>' + (x[0] === 'below' ? 'under ' + m.lo : (x[0] === 'above' ? 'over ' + m.hi : m.lo + ' to ' + m.hi)) + '</div>';
+    var meCol = x[0] === m.myCol;
+    return '<div class="g-colh' + (meCol ? ' g-mecol' : '') + '">' + (meCol ? '<span class="g-tag">This student' + (colOnly ? '\'s score' : '') + '</span>' : '') + '<b>' + x[1] + '</b>' + (x[0] === 'below' ? 'under ' + m.lo : (x[0] === 'above' ? 'over ' + m.hi : m.lo + ' to ' + m.hi)) + '</div>';
   }).join('');
   GROUP_ROWS.forEach(function (r) {
     var range = r[0] === 'high' ? m.high + ' to 10' : (r[0] === 'mid' ? m.mid + ' to under ' + m.high : 'under ' + m.mid);
     h += '<div class="g-rowh"><b>' + r[1] + '</b>activities ' + esc(range) + '</div>';
     GROUP_COLS.forEach(function (x) {
       var key = x[0] + '|' + r[0], cell = m.cells[key] || {a: 0, w: 0, d: 0, n: 0, state: 'not_enough'}, me = key === m.mine, isOpen = key === open;
-      var thin = cell.state === 'not_enough';
+      var thin = cell.state === 'not_enough', inCol = colOnly && x[0] === m.myCol;
       var say = thin ? 'Not enough cases (' + cell.n + ')' : cell.a + ' admitted · ' + cell.w + ' waitlisted · ' + cell.d + ' denied (' + cell.n + (cell.state === 'few' ? ', few' : '') + ')';
-      h += '<button type="button" class="g-cell' + (me ? ' g-me' : '') + (thin ? ' g-thin' : '') + (isOpen ? ' g-open' : '') + '" data-act="groups-cell" data-key="' + key + '" aria-pressed="' + (isOpen ? 'true' : 'false') +
-        '" aria-label="' + esc(x[1] + ', ' + r[1].toLowerCase() + ' activities: ' + say + (me ? '. This student is here.' : '.') + (isOpen ? ' Open; press again to shrink it.' : ' Press to enlarge this cluster and list its cases.')) + '">' +
+      h += '<button type="button" class="g-cell' + (me ? ' g-me' : '') + (inCol ? ' g-mecol' : '') + (thin ? ' g-thin' : '') + (isOpen ? ' g-open' : '') + '" data-act="groups-cell" data-key="' + key + '" aria-pressed="' + (isOpen ? 'true' : 'false') +
+        '" aria-label="' + esc(x[1] + ', ' + r[1].toLowerCase() + ' activities: ' + say + (me ? '. This student is here.' : (inCol ? '. This student\'s score column; the row needs an activities rating.' : '.')) + (isOpen ? ' Open; press again to shrink it.' : ' Press to enlarge this cluster and list its cases.')) + '">' +
         (me ? '<span class="g-tag">This student</span>' : '') + (thin ? '' : groupDots(cell)) +
         '<span class="g-counts">' + (thin ? esc(say) : cell.a + ' admitted · ' + cell.w + ' waitlisted · ' + cell.d + ' denied <em>(' + cell.n + (cell.state === 'few' ? ', few' : '') + ')</em>') + '</span></button>';
     });

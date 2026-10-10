@@ -590,6 +590,8 @@ body.show-working .sugg-why { display: block; overflow: visible; }
 .g-cell { font: inherit; text-align: left; color: var(--ink); background: #fff; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 9px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; min-width: 0; min-height: 96px; transition: min-height .18s ease, padding .18s ease; }
 .g-cell:hover { border-color: var(--you); }
 .g-cell.g-me { border: 2px solid var(--you); background: var(--you-soft); }
+.g-cell.g-mecol { border: 2px dashed var(--you); }
+.g-colh.g-mecol b { color: var(--you); }
 .g-cell.g-thin { background: repeating-linear-gradient(45deg, #fff, #fff 6px, var(--hatch) 6px, var(--hatch) 12px); color: var(--mute); }
 .g-cell.g-open { box-shadow: 0 0 0 2.5px var(--ink); min-height: 230px; padding: 14px; }
 .g-tag { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--you); }
