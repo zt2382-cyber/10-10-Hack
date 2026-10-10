@@ -1,0 +1,5 @@
+gpa: 3.8 / 4.0 unweighted
+sat_submitted: 1420
+rigor: calculus; physics
+activities: Robotics; Community Tutoring
+interests: Engineering

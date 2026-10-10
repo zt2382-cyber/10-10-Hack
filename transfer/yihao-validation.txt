@@ -1,0 +1,32 @@
+Full root discovery was attempted separately: 194 tests ran; PRISM setUpClass could not bind its localhost HTTP test server because sandbox networking disallows socket binding. Remaining root modules and acceptance are checked below.
+
+COMMAND: python3 -m unittest discover -s tests -q
+DIRECTORY: applicant_engine
+----------------------------------------------------------------------
+Ran 51 tests in 0.051s
+
+OK
+
+
+COMMAND: python3 -m unittest tests.test_balance tests.test_caselog tests.test_cases tests.test_claims tests.test_labels tests.test_privacy tests.test_reader tests.test_similarity -q
+DIRECTORY: repository root
+----------------------------------------------------------------------
+Ran 194 tests in 0.602s
+
+OK
+
+
+COMMAND: python3 tests/acceptance/run_acceptance.py
+DIRECTORY: repository root
+Acceptance run 2026-10-10T13:58:22 (repo /private/var/folders/p5/p_svhv257k396dvgs_0vm7br0000gp/T/yihao-transfer-pgl50le7/repo)
+ACCEPTANCE: 60 of 60 match the hand-written sheet
+
+WHOLE-SYSTEM CHECKS
+PASS     no banned wording anywhere in a Result (5 Results searched; 5 refusal/negation sentences allowed)
+PASS     pools under 15 are not_enough or none (50 pools checked)
+PASS     labels identical across the five essays (6 colleges x 5 essays)
+PASS     injection essay is blocked
+PASS     personal details of essay 5 absent from Result (1 emails/phone numbers looked for: 0 email, 1 phone)
+PASS     same input twice gives same colleges and balance
+
+EXIT 0: sheet 60/60, whole-system failures 0

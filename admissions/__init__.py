@@ -1,0 +1,1 @@
+"""Applicant evidence prototype."""

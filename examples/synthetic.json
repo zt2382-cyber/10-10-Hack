@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "demo-source",
+      "kind": "synthetic_fixture",
+      "synthetic": true,
+      "consent": "synthetic",
+      "reference": "Generated example; no real applicant or college outcomes"
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "snapshot-0",
+      "student_id": "student-0",
+      "source_id": "demo-source",
+      "captured_at": "2024-11-01",
+      "profile": {
+        "gpa": {
+          "value": 3.9,
+          "scale": 4.0,
+          "weighted": false
+        },
+        "sat_submitted": 1450,
+        "rigor": [
+          "calculus",
+          "physics"
+        ],
+        "activities": [
+          "robotics",
+          "community tutoring"
+        ],
+        "interests": [
+          "engineering"
+        ],
+        "essay_draft": "Synthetic example: learning to repair a robot with my team."
+      }
+    },
+    {
+      "id": "snapshot-1",
+      "student_id": "student-1",
+      "source_id": "demo-source",
+      "captured_at": "2024-11-01",
+      "profile": {
+        "gpa": {
+          "value": 3.7,
+          "scale": 4.0,
+          "weighted": false
+        },
+        "sat_submitted": 1380,
+        "rigor": [
+          "calculus",
+          "physics"
+        ],
+        "activities": [
+          "robotics",
+          "community tutoring"
+        ],
+        "interests": [
+          "engineering"
+        ],
+        "essay_draft": "Synthetic example: learning to repair a robot with my team."
+      }
+    },
+    {
+      "id": "snapshot-2",
+      "student_id": "student-2",
+      "source_id": "demo-source",
+      "captured_at": "2024-11-01",
+      "profile": {
+        "gpa": {
+          "value": 3.8,
+          "scale": 4.0,
+          "weighted": false
+        },
+        "sat_submitted": 1410,
+        "rigor": [
+          "calculus",
+          "physics"
+        ],
+        "activities": [
+          "robotics",
+          "community tutoring"
+        ],
+        "interests": [
+          "engineering"
+        ],
+        "essay_draft": "Synthetic example: learning to repair a robot with my team."
+      }
+    }
+  ],
+  "applications": [
+    {
+      "id": "application-0",
+      "snapshot_id": "snapshot-0",
+      "college_id": "demo-university",
+      "program": "engineering",
+      "cycle": 2025,
+      "round": "RD",
+      "residency": "domestic"
+    },
+    {
+      "id": "application-1",
+      "snapshot_id": "snapshot-1",
+      "college_id": "demo-university",
+      "program": "engineering",
+      "cycle": 2025,
+      "round": "RD",
+      "residency": "domestic"
+    },
+    {
+      "id": "application-2",
+      "snapshot_id": "snapshot-2",
+      "college_id": "demo-university",
+      "program": "engineering",
+      "cycle": 2025,
+      "round": "RD",
+      "residency": "domestic"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "outcome-0",
+      "application_id": "application-0",
+      "decision": "admit",
+      "occurred_at": "2025-03-15",
+      "verified": false,
+      "source_id": "demo-source"
+    },
+    {
+      "id": "outcome-1",
+      "application_id": "application-1",
+      "decision": "deny",
+      "occurred_at": "2025-03-15",
+      "verified": false,
+      "source_id": "demo-source"
+    },
+    {
+      "id": "outcome-2",
+      "application_id": "application-2",
+      "decision": "waitlist",
+      "occurred_at": "2025-03-15",
+      "verified": false,
+      "source_id": "demo-source"
+    }
+  ]
+}

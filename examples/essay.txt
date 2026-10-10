@@ -1,0 +1,1 @@
+Synthetic essay: When our team's robot stopped working, I learned to troubleshoot one component at a time. Teaching a younger teammate helped me understand the design more clearly.
