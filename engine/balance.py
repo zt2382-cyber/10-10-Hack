@@ -186,14 +186,34 @@ def _why(would_be: str, label: dict, college: dict, student: dict) -> str:
         score_txt, int(lo), int(hi), admit_txt)
 
 
+REGIONS = (
+    ("CT", "ME", "MA", "NH", "RI", "VT", "NJ", "NY", "PA", "DE", "MD", "DC"),
+    ("VA", "WV", "NC", "SC", "GA", "FL", "KY", "TN", "AL", "MS", "AR", "LA"),
+    ("OH", "MI", "IN", "IL", "WI", "MN", "IA", "MO", "ND", "SD", "NE", "KS"),
+    ("TX", "OK", "NM", "AZ"),
+    ("CA", "OR", "WA", "NV", "ID", "UT", "CO", "MT", "WY", "AK", "HI"),
+)
+
+
+def _region(state: str):
+    for i, group in enumerate(REGIONS):
+        if state in group:
+            return i + 1
+    return None
+
+
 def _rank_key(c: dict, home: str):
     in_state = bool(home) and str(c.get("state") or "").upper() == home
     if in_state and c.get("control") == "public":
         tier = 0
     elif in_state:
         tier = 1
+    elif _region(home) and _region(home) == _region(str(c.get("state") or "").upper()):
+        tier = 2  # a nearby state
+    elif c.get("cost_year"):
+        tier = 3  # further away, with cost data loaded (the better-known 300)
     else:
-        tier = 2
+        tier = 4
     grad = _num(c.get("grad_rate"))
     size = _num(c.get("undergrads"))
     return (tier,

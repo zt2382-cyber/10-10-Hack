@@ -1,6 +1,6 @@
 """College facts: the one loader every other module uses.
 
-Source: US College Scorecard, 300 colleges (data/colleges/scorecard_top300_admissions.csv).
+Source: US College Scorecard (data/colleges/): 300 colleges with cost data, plus more colleges with admissions data only.
 Nothing here is a model call. Missing values stay None; nothing is guessed.
 """
 from __future__ import annotations
@@ -78,6 +78,40 @@ CASE_NAME_TO_SCORECARD = {
 }
 
 
+# Other names people commonly type. Each maps to a full Scorecard name.
+EXTRA_ALIASES = {
+    "penn state": "Pennsylvania State University-Main Campus", "psu": "Pennsylvania State University-Main Campus",
+    "penn": "University of Pennsylvania", "university of pennsylvania": "University of Pennsylvania",
+    "georgia tech": "Georgia Institute of Technology-Main Campus", "gatech": "Georgia Institute of Technology-Main Campus",
+    "ut austin": "The University of Texas at Austin", "university of texas": "The University of Texas at Austin",
+    "texas": "The University of Texas at Austin", "ut dallas": "The University of Texas at Dallas",
+    "michigan": "University of Michigan-Ann Arbor", "university of michigan": "University of Michigan-Ann Arbor",
+    "uc berkeley": "University of California-Berkeley", "cal": "University of California-Berkeley",
+    "ucla": "University of California-Los Angeles", "uc san diego": "University of California-San Diego",
+    "uc davis": "University of California-Davis", "uc irvine": "University of California-Irvine",
+    "uc santa barbara": "University of California-Santa Barbara", "uc santa cruz": "University of California-Santa Cruz",
+    "uc riverside": "University of California-Riverside",
+    "carnegie mellon": "Carnegie Mellon University", "texas a&m": "Texas A&M University-College Station",
+    "texas a and m": "Texas A&M University-College Station", "a&m": "Texas A&M University-College Station",
+    "virginia": "University of Virginia-Main Campus", "university of virginia": "University of Virginia-Main Campus",
+    "vt": "Virginia Polytechnic Institute and State University",
+    "illinois": "University of Illinois Urbana-Champaign", "university of illinois": "University of Illinois Urbana-Champaign",
+    "wisconsin": "University of Wisconsin-Madison", "university of wisconsin": "University of Wisconsin-Madison",
+    "unc": "University of North Carolina at Chapel Hill", "north carolina": "University of North Carolina at Chapel Hill",
+    "chicago": "University of Chicago", "university of chicago": "University of Chicago",
+    "wash u": "Washington University in St Louis", "washington university": "Washington University in St Louis",
+    "hopkins": "Johns Hopkins University", "jhu": "Johns Hopkins University", "bu": "Boston University",
+    "bc": "Boston College", "columbia university": "Columbia University in the City of New York",
+    "purdue university": "Purdue University-Main Campus", "rutgers university": "Rutgers University-New Brunswick",
+    "tulane university": "Tulane University of Louisiana", "arizona state": "Arizona State University Campus Immersion",
+    "asu": "Arizona State University Campus Immersion", "ohio state": "Ohio State University-Main Campus",
+    "osu": "Ohio State University-Main Campus", "pitt": "University of Pittsburgh-Pittsburgh Campus",
+    "university of washington": "University of Washington-Seattle Campus", "uw": "University of Washington-Seattle Campus",
+    "minnesota": "University of Minnesota-Twin Cities", "maryland": "University of Maryland-College Park",
+    "umd": "University of Maryland-College Park", "stony brook": "Stony Brook University",
+}
+
+
 def _num(x):
     try:
         v = float(x)
@@ -97,10 +131,16 @@ def _norm(name: str) -> str:
 
 @lru_cache(maxsize=1)
 def load_colleges() -> list[dict]:
-    """All 300 colleges as plain dicts. Keys are listed in CONTRACT.md under 'College'."""
+    """All colleges as plain dicts. Keys are listed in CONTRACT.md under 'College'."""
     out = []
-    with open(DATA / "colleges" / "scorecard_top300_admissions.csv", encoding="utf-8", newline="") as fh:
-        for r in csv.DictReader(fh):
+    rows = []
+    for name in ("scorecard_top300_admissions.csv", "scorecard_more_colleges.csv"):  # the second file is optional
+        path = DATA / "colleges" / name
+        if path.exists():
+            with open(path, encoding="utf-8", newline="") as fh:
+                rows += list(csv.DictReader(fh))
+    if True:
+        for r in rows:
             v25, m25, v75, m75 = (_num(r[k]) for k in ("SATVR25", "SATMT25", "SATVR75", "SATMT75"))
             out.append({
                 "id": r["UNITID"],
@@ -114,10 +154,10 @@ def load_colleges() -> list[dict]:
                 "act25": _int(r["ACTCM25"]),
                 "act75": _int(r["ACTCM75"]),
                 "undergrads": _int(r["UGDS"]),
-                "cost_year": _int(r["COSTT4_A"]),
-                "tuition_in": _int(r["TUITIONFEE_IN"]),
-                "tuition_out": _int(r["TUITIONFEE_OUT"]),
-                "pell_share": _num(r["PCTPELL"]),
+                "cost_year": _int(r.get("COSTT4_A")),
+                "tuition_in": _int(r.get("TUITIONFEE_IN")),
+                "tuition_out": _int(r.get("TUITIONFEE_OUT")),
+                "pell_share": _num(r.get("PCTPELL")),
                 "grad_rate": _num(r["C150_4"]),
                 "url": r["INSTURL"],
                 "source": SCORECARD_SOURCE,
@@ -131,9 +171,9 @@ def _index() -> dict:
     for c in load_colleges():
         idx[_norm(c["name"])] = c
         idx[c["id"]] = c
-    for short, full in CASE_NAME_TO_SCORECARD.items():
+    for short, full in list(CASE_NAME_TO_SCORECARD.items()) + list(EXTRA_ALIASES.items()):
         if _norm(full) in idx:
-            idx[_norm(short)] = idx[_norm(full)]
+            idx.setdefault(_norm(short), idx[_norm(full)])
     return idx
 
 
@@ -150,6 +190,20 @@ def case_name_for(college: dict) -> str | None:
         if _norm(full) == _norm(college["name"]):
             return short
     return None
+
+
+
+def suggest(name: str) -> str | None:
+    """A "did you mean" for a name we could not find. Never used to pick a college silently."""
+    import difflib
+    if not name or find_college(name):
+        return None
+    pool = {c["name"].lower(): c["name"] for c in load_colleges()}
+    hit = difflib.get_close_matches(str(name).lower().strip(), list(pool), n=1, cutoff=0.82)
+    if hit:
+        return pool[hit[0]]
+    starts = [full for low, full in pool.items() if low.startswith(str(name).lower().strip() + " ")]
+    return starts[0] if len(starts) == 1 else None
 
 
 @lru_cache(maxsize=1)

@@ -18,6 +18,8 @@ from engine import pipeline  # noqa: E402
 
 DIST = ROOT / "dist"
 SAT_STEPS = (-60, -30, 0, 30, 50, 100, 150)
+# Only these fields of a demo student are published. No essay text, no activity text.
+MANIFEST_FIELDS = ("label", "sat", "act", "gpa", "gpa_scale", "home_state", "intended_major", "hooks", "college_list")
 ACT_STEPS = (-2, -1, 0, 1, 2, 3)
 
 
@@ -35,13 +37,18 @@ def main() -> None:
     out = DIST / "static"
     if keep:
         shutil.move(str(keep), str(out))
+        mf = out / "manifest.json"  # re-strip an older manifest that may still carry essays
+        data = json.loads(mf.read_text(encoding="utf-8"))
+        data["students"] = [{**{k: st.get(k) for k in MANIFEST_FIELDS}, "index": st.get("index", i)}
+                            for i, st in enumerate(data.get("students", []))]
+        mf.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
         _finish()
         return
     out.mkdir()
     students = pipeline.demo_students()
     manifest = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"), "students": [], "scores": {}}
     for i, st in enumerate(students):
-        manifest["students"].append({**st, "index": i})
+        manifest["students"].append({**{k: st.get(k) for k in MANIFEST_FIELDS}, "index": i})
         base = pipeline.run(dict(st), use_model=True)
         (out / f"run-{i}.json").write_text(json.dumps(base, ensure_ascii=False), encoding="utf-8")
         kind = "SAT" if st.get("sat") else ("ACT" if st.get("act") else None)
