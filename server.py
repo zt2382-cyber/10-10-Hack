@@ -109,6 +109,13 @@ class Handler(BaseHTTPRequestHandler):
         body = self._body()
         if not isinstance(body, dict):
             return self._send(400, {"error": "Send a JSON object under 400 KB."})
+        if path == "/api/essay-search":
+            from engine import baseline
+            try:
+                return self._send(200, baseline.search(body.get("essay"), body.get("degree_level", "undergraduate"),
+                    use_model=os.environ.get("USE_MODEL", "1") != "0" and body.get("use_model", True) is not False))
+            except ValueError as error:
+                return self._send(400, {"error": str(error)})
         if path == "/api/run":
             use_model = os.environ.get("USE_MODEL", "1") != "0" and body.pop("use_model", True) is not False
             try:

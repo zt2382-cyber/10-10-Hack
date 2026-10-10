@@ -14,6 +14,7 @@
   <header class="top">
     <h1>Counselor Copilot</h1>
     <nav class="top-nav" aria-label="About this screen">
+      <a class="linkbtn" href="#essay-bank">Essay search</a>
       <button type="button" class="linkbtn" data-act="open-about">About</button>
       <button type="button" class="linkbtn" data-act="open-built">How it was built</button>
     </nav>
@@ -151,6 +152,27 @@
         <p class="open-go"><button type="button" class="btn primary big" data-act="build">Show where they stand</button></p>
         <p class="hint" id="build-hint" role="status"></p>
       </form>
+    </section>
+
+    <section class="card essay-bank" id="essay-bank" aria-labelledby="essay-bank-title">
+      <p class="eyebrow">Essay reference bank</p>
+      <h2 id="essay-bank-title">Find essays like yours</h2>
+      <p class="quiet">Compare your draft with reference essays. Similarity describes content, not essay quality or admission likelihood.</p>
+      <div class="essay-search-grid">
+        <form id="baseline-form" class="essay-input">
+          <label class="field" for="baseline-query"><span>Your student essay</span></label>
+          <textarea id="baseline-query" rows="12" maxlength="60000" placeholder="Paste your essay here. Your draft is not saved."></textarea>
+          <label class="field" for="baseline-level"><span>Essay type</span></label>
+          <select id="baseline-level"><option value="undergraduate">Undergraduate personal statement</option><option value="graduate">Graduate statement of purpose</option></select>
+          <p class="quiet small">Undergraduate: original sample essays. Graduate: attributed OpenEssays references. Personal details are masked before comparison.</p>
+          <button type="submit" class="btn primary" id="baseline-search">Find similar essays</button>
+          <p id="baseline-status" class="hint" role="status" aria-live="polite"></p>
+        </form>
+        <div class="essay-matches" aria-labelledby="baseline-results-title">
+          <h3 id="baseline-results-title">Similar essay content</h3>
+          <div id="baseline-results" aria-live="polite"><p class="quiet">Enter your essay and search to see the closest references.</p></div>
+        </div>
+      </div>
     </section>
 
     <!-- ============ THE STORY: four chapters ============ -->

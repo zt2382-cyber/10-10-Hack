@@ -195,7 +195,7 @@ docs/         the contract's example result, requirements for closeness, setup n
 
 ## What it does, feature by feature
 <!-- FEATURES_START -->
-Generated from `docs/features.json` by `tools/sync_features.py`; the About page shows the same list. 21 of 24 work today.
+Generated from `docs/features.json` by `tools/sync_features.py`; the About page shows the same list. 22 of 24 work today.
 
 | Feature | What it does | Where | Status |
 |---|---|---|---|
@@ -222,7 +222,7 @@ Generated from `docs/features.json` by `tools/sync_features.py`; the About page 
 | **Tests and the acceptance sheet** | 216 unit tests with no network, including one that fails if the fixture or this feature list drifts from its copies. 60 labels worked out by hand from the published rows, by a builder who did not see the label code: 60 of 60 match. | `python -m unittest discover -s tests -t . ; python tests/acceptance/run_acceptance.py` | Works |
 | **PRISM Evaluator on the essay notes** | The run's score is read back in code instead. |  | Not done |
 | **Several intended majors in the form** | Closeness can try another major the student named, but the form sends only one; the API accepts major_interests. |  | Not done |
-| **Matching on essay and activity text** | The public case file has no essay text, so essay themes only reorder the school's own cases and closeness never reads text. |  | Thin |
+| **Essay baseline search and activity text comparison** | A student draft searches a standalone reference bank using embeddings when available and local text similarity otherwise. Undergraduate samples are original synthetic essays; licensed graduate references come from OpenEssays with attribution. Missing applicant essay text is omitted from outcome comparisons. | Essay search in the header; input and similar references displayed side by side. | Works |
 <!-- FEATURES_END -->
 
 ## Essay retrieval and whole profile similarity
@@ -257,3 +257,48 @@ in a bounded in-memory cache keyed by model and masked content hash, and are nev
 returned to the browser or written to disk. `use_model=False` disables embeddings.
 Gateway failures omit missing vectors and expose an unavailable/partial status;
 structured comparisons continue. Static demo fixtures do not perform live retrieval.
+
+## Essay baseline search
+
+Choose **Essay search** in the header, paste the student draft, choose undergraduate
+or graduate essay type, and press **Find similar essays**. The draft stays beside
+ranked references, with shared words, content similarity, full reference text, and
+source/attribution links. The essay editor stays synchronized with the student form.
+This search works independently of a college list or applicant outcome case IDs.
+
+The starter bank contains four original synthetic undergraduate samples, explicitly
+labelled as examples with no admission outcome. The OpenEssays bank contains 12
+CC BY-NC-SA 4.0 graduate essays for noncommercial demonstration use; attribution,
+original URLs and license links are retained. The local privacy check excludes
+references containing model-directed instructions, so the searchable count can be
+lower than the imported count. Unknown-license entries remain metadata-only in
+`data/essays/openessays_catalogue.json`, including the undergraduate entries.
+
+Refresh the imported bank with `python3 tools/import_openessays.py --limit 12`.
+The importer makes public page requests; it never receives student drafts. These
+licensed references are not an unrestricted commercial dataset. For commercial use,
+replace them with material cleared for that use. No admission outcome is inferred
+from an essay's school metadata.
+
+Add your own permitted references in `data/essays/custom_bank.json`, an array:
+
+```json
+[{"id":"REF-1","title":"Community project","degree_level":"undergraduate",
+  "essay_type":"Personal statement","text":"Full essay text...",
+  "attribution":"Author credit","source_url":"https://example.com/essay",
+  "license":"Permission granted","permission_confirmed":true,"synthetic":false}]
+```
+
+Only set `permission_confirmed` when reuse permission has actually been established.
+Explicitly supported license identifiers are CC0, CC_BY_4_0 and CC_BY_NC_SA_4_0.
+Drafts and references are masked before comparison, and blocked drafts never reach
+an embedding service. Drafts are not persisted. With a configured Nicrron key,
+retrieval reuses the process-local embedding cache. If the gateway fails or is not
+configured, the entire ranking uses local TF-IDF cosine similarity, identified in
+the UI as **local text similarity**. No embedding errors are shown in the results.
+Local comparison finds shared words and may miss paraphrases; neither measure is an
+essay grade or an admission prediction. `USE_MODEL=0` forces local comparison.
+
+`POST /api/essay-search` accepts `essay`, `degree_level`, and optional `use_model`.
+It returns matches and the actual comparison method, with no student draft or
+vectors. Test with `python3 -m unittest tests.test_baseline`.

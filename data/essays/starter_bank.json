@@ -1,0 +1,50 @@
+[
+  {
+    "id": "DEMO-1",
+    "title": "The tutoring table",
+    "degree_level": "undergraduate",
+    "essay_type": "Personal statement",
+    "text": "Each afternoon I moved two folding chairs beside the library window. I thought tutoring mathematics meant explaining the right answer clearly. My first student taught me otherwise. She could repeat every step I wrote, but a differently worded problem left her silent. We put the worksheet away and drew the route she walked home. Measuring the streets became a lesson about ratios. Soon she was making problems for me to solve. I started asking what students noticed before explaining what I knew. Our small tutoring club grew because students invited friends, not because our posters promised better grades. Teaching changed how I listen. I want to study how people learn and build tools that make difficult ideas approachable.",
+    "synthetic": true,
+    "license": "ORIGINAL_DEMO",
+    "attribution": "Original synthetic sample created for Counselor Copilot; no admission outcome.",
+    "school": "",
+    "program": ""
+  },
+  {
+    "id": "DEMO-2",
+    "title": "A robot that could wait",
+    "degree_level": "undergraduate",
+    "essay_type": "Personal statement",
+    "text": "Our robotics team built a machine that could carry a box across the classroom. During testing it turned confidently into a chair. I blamed the sensor until I noticed that every trial used the same empty room. We had taught our robot a world that did not exist. I collected measurements with backpacks, moving chairs, and students walking past. Each failure became a row in my notebook. When the robot finally paused for someone crossing its path, our team cheered louder than when it first moved. Engineering became less about proving my design right and more about finding where it was wrong. I now approach unfamiliar problems by testing assumptions, listening to teammates, and leaving room for a better idea.",
+    "synthetic": true,
+    "license": "ORIGINAL_DEMO",
+    "attribution": "Original synthetic sample created for Counselor Copilot; no admission outcome.",
+    "school": "",
+    "program": ""
+  },
+  {
+    "id": "DEMO-3",
+    "title": "The language of the kitchen",
+    "degree_level": "undergraduate",
+    "essay_type": "Personal statement",
+    "text": "At home I translated recipes between my grandmother and my younger brother. The quantities were never exact: a spoonful meant whichever spoon was nearby. When I tried to record every measurement, my grandmother laughed and asked me to taste the soup. I had confused preserving a tradition with freezing it. We began writing the stories behind the dishes beside the ingredients. My brother added drawings and his own substitutions. Our notebook became a conversation across languages and generations. I learned that translation requires attention to what a person means as well as what they say. Working on the school literary magazine, I now ask writers which details sound like home. I hope to keep making spaces where different voices belong.",
+    "synthetic": true,
+    "license": "ORIGINAL_DEMO",
+    "attribution": "Original synthetic sample created for Counselor Copilot; no admission outcome.",
+    "school": "",
+    "program": ""
+  },
+  {
+    "id": "DEMO-4",
+    "title": "A creek worth listening to",
+    "degree_level": "undergraduate",
+    "essay_type": "Personal statement",
+    "text": "The creek behind our school disappeared under litter after a storm. I organized a cleanup and expected the problem to be solved by Saturday afternoon. A week later the plastic was back. We mapped where rubbish entered the water and spoke with nearby shop owners. Our science teacher helped us test water samples and compare them over several weeks. The results changed our plan: instead of another one day event, we built a regular monitoring group and shared observations with the community. I learned to distinguish visible action from lasting improvement. Collecting data was only useful when people could understand and act on it. Environmental science interests me because it asks us to connect careful evidence with responsibility for the places we share.",
+    "synthetic": true,
+    "license": "ORIGINAL_DEMO",
+    "attribution": "Original synthetic sample created for Counselor Copilot; no admission outcome.",
+    "school": "",
+    "program": ""
+  }
+]

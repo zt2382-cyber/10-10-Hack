@@ -536,3 +536,17 @@ body.show-working .sugg-why { display: block; overflow: visible; }
 .howbuilt h4 { margin-top: 18px; }
 .ccheck { margin: 10px 0; }
 @media (max-width: 720px) { .near-two { grid-template-columns: 1fr; } .pbars li { grid-template-columns: 80px 1fr; } }
+
+/* Essay baseline: input remains alongside the independent reference results. */
+.essay-bank { margin: 24px 0; }
+.essay-search-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 28px; margin-top: 20px; }
+.essay-input textarea { width: 100%; resize: vertical; min-height: 300px; font: inherit; line-height: 1.6; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); }
+.essay-input select { font: inherit; padding: 8px; width: 100%; margin: 8px 0; }
+.essay-input .field { margin: 12px 0 6px; }
+.baseline-list { padding: 0; list-style: none; }
+.baseline-match { padding: 20px 0; border-bottom: 1px solid var(--line); }
+.baseline-match h4 { font-size: 19px; }
+.baseline-match blockquote { padding: 12px 16px; margin: 12px 0; border-left: 3px solid var(--accent); line-height: 1.6; }
+.baseline-full { white-space: pre-wrap; line-height: 1.7; padding: 12px 0; max-height: 400px; overflow: auto; }
+.baseline-links { margin-top: 12px; }
+@media (max-width: 760px) { .essay-search-grid { grid-template-columns: 1fr; } }
