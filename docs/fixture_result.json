@@ -58,6 +58,29 @@
         "official_admit_rate": 0.0876, "pool_admit_share_all": 0.251, "overcount": 2.9,
         "caveat": "People who post their results are admitted far more often than applicants overall. Read these as examples, not odds."
       },
+      "closeness": {
+        "needed": 15, "neighbours": 7,
+        "national": {
+          "source": "Self-reported public posts (r/collegeresults)", "verified": false, "status": "ok",
+          "n_admitted": 212, "n_denied": 480, "n_waitlisted": 61,
+          "d_admitted": 0.18, "d_denied": 0.24, "gap": 0.06, "lean": "closer_to_admitted",
+          "text": "Looks more like the people admitted here than the people denied.",
+          "steady": false, "flips": [{"cause": "score 30 points lower", "to": "in_between"}],
+          "parts": [{"part": "score", "distance": 0.05, "text": "close"}, {"part": "activities", "distance": 0.4, "text": "far"}],
+          "not_used": ["GPA", "essay", "activity descriptions"],
+          "nearest_admitted": [
+            {"case_id": "N-377", "sat": 1440, "act": null, "major": "CS", "hooks": "FIRST-GEN", "home_state": "NY", "activities_rating": 7.5, "outcome": "admitted", "distance": 0.05, "parts": {"score": 0.03, "major": 0, "hooks": 0}}
+          ],
+          "nearest_denied": [
+            {"case_id": "N-1042", "sat": 1460, "act": null, "major": "CS", "hooks": "NONE", "home_state": "CA", "activities_rating": 6.5, "outcome": "denied", "distance": 0.12, "parts": {"score": 0.03, "major": 0, "hooks": 1}}
+          ],
+          "kinds": [{"kind_id": "K1", "name": "High score, CS, activities 7", "size": 88, "median_sat": 1540, "median_activities": 7, "top_major": "CS", "medoid_case_id": "N-1042", "distance": 0.12, "nearest": true}],
+          "changes": [{"change": "Score 60 points higher", "gap_before": 0.06, "gap_after": 0.11, "lean_after": "closer_to_admitted", "because": ["N-88", "N-1042"]}],
+          "points": [{"case_id": "N-1042", "sat": 1460, "activities": 6.5, "outcome": "denied", "kind_id": "K1"}, {"case_id": "N-377", "sat": 1440, "activities": 7.5, "outcome": "admitted", "kind_id": "K1"}]
+        },
+        "own": {"source": "Your school's own finished cases", "verified": true, "status": "not_enough", "n_admitted": 1, "n_denied": 3, "n_waitlisted": 0},
+        "caveat": "Closeness compares this student with people who chose to post their results. It is not a forecast."
+      },
       "says": [
         {"claim_id": "c7_essay", "text": "Cornell rates the application essay Very Important.", "field": "Common Data Set, section C7", "year": "2025-26", "source_url": "https://www.collegedata.fyi/schools/cornell/2025-26/cds.csv", "numbers": [], "kb": {"text": "Application Essay: Very Important", "score": 0.83, "doc": "KB_doc1_college_admission_factors_C7.md"}, "checked": true}
       ],
@@ -144,7 +167,7 @@
       "admit_rate": null, "sat25": null, "sat75": null, "act25": null, "act75": null, "cost_year": null,
       "source": null, "in_data": false,
       "label": {"state": "outside_data", "text": "Outside our data", "rule_id": "R0", "rule_text": "This college is not in the 300-college file, so nothing is said about it.", "score_used": null, "score_kind": null, "inputs": {}, "not_used": [], "caveats": [], "steady": true, "flips": [], "publishers": [], "publishers_disagree": false},
-      "cases": null, "says": [], "myths": [], "cost_note": null, "flags": []
+      "cases": null, "closeness": null, "says": [], "myths": [], "cost_note": null, "flags": []
     }
   ],
   "balance": {

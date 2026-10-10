@@ -173,6 +173,7 @@ def run(student_input: dict, use_model: bool = True) -> dict:
 
     labels_mod, cases_mod, balance_mod = _part("labels"), _part("cases"), _part("balance")
     privacy_mod, reader_mod, claims_mod, prism_mod = _part("privacy"), _part("reader"), _part("claims"), _part("prism")
+    similarity_mod = _part("similarity")
 
     # ---- privacy first: nothing identifying reaches a model ----
     masked = {"text": essay, "masked": [], "blocked": False, "reason": ""}
@@ -228,16 +229,18 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         if col is None:
             out.append({"id": None, "name": name, "state": None, "control": None, "admit_rate": None, "sat25": None,
                         "sat75": None, "act25": None, "act75": None, "cost_year": None, "source": None, "in_data": False,
-                        "label": label, "cases": None, "says": [], "myths": [], "levers": [], "cost_note": None, "flags": []})
+                        "label": label, "cases": None, "closeness": None, "says": [], "myths": [], "levers": [],
+                        "cost_note": None, "flags": []})
             continue
         cases = _safe(cases_mod.find_similar, None, student, col, tags) if cases_mod else None
-        says = _safe(claims_mod.college_says, [], col) if claims_mod else []
+        close = _safe(similarity_mod.closeness, None, student, col, tags) if similarity_mod else None
+        says =_safe(claims_mod.college_says, [], col) if claims_mod else []
         myths = _safe(claims_mod.myth_checks, [], col) if claims_mod and hasattr(claims_mod, "myth_checks") else []
         flags = []
         if "recruited_athlete" in (student.get("hooks") or []):
             flags.append("Recruited athletes are admitted through a separate process. Ask the coach and the admissions office.")
         out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "source")},
-                    "in_data": True, "label": label, "cases": cases, "says": says, "myths": myths,
+                    "in_data": True, "label": label, "cases": cases, "closeness": close, "says": says, "myths": myths,
                     "levers": _safe(_levers, [], student, col, label, says, labels_mod),
                     "cost_note": _cost_note(col, student), "flags": flags})
     score_ms = _ms(t0)
@@ -317,7 +320,17 @@ def run(student_input: dict, use_model: bool = True) -> dict:
             "note": "These are the same written rule re-run with a different score, and each college's own published statements. They are not predictions.",
         },
         "prism": prism, "pools": pool, "refusals": REFUSALS,
+        "closeness_check": _closeness_check(),
     }
+
+
+def _closeness_check():
+    """The saved holds-up table from `python -m engine.similarity --check`, or None if it was never run."""
+    p = ROOT / "docs" / "closeness_check.json"
+    try:
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+    except Exception:
+        return None
 
 
 def demo_students() -> list[dict]:
