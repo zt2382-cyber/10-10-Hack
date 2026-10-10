@@ -61,6 +61,13 @@ def _fallback_label(college):
 
 
 def _cost_note(college, student):
+    if hasattr(C, "cost_sentence"):  # the full federal file is loaded: sticker cost and what families actually paid
+        try:
+            sentence = C.cost_sentence(college, student.get("home_state"), student.get("income_band"))
+            if sentence:
+                return sentence
+        except Exception:
+            pass
     cost = college.get("cost_year")
     if not cost:
         return None
@@ -207,6 +214,7 @@ def _score_ladder(student, found, labels_mod):
 
 
 HOOKS = ("first_gen", "legacy", "urm", "recruited_athlete", "none")
+INCOME_BANDS = ("0-30k", "30-48k", "48-75k", "75-110k", "110k+")
 
 
 def _text(v, limit):
@@ -283,7 +291,9 @@ def _normalize(student_input, labels_mod, privacy_mod):
     student = {"label": hide(raw.get("label"), 80) or "Student", "sat": sat, "act": act, "gpa": gpa,
                "gpa_scale": 4.0, "home_state": state.upper() if state and state.isalpha() else None,
                "intended_major": hide(raw.get("intended_major"), 60), "hooks": hooks or ["none"],
-               "activities": acts, "college_list": names}
+               "activities": acts, "college_list": names,
+               # used only to pick the federal 'what families like yours paid' figure; never sent to a model
+               "income_band": raw.get("income_band") if raw.get("income_band") in INCOME_BANDS else None}
     return student, essay, names, notes
 
 
@@ -373,7 +383,7 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         flags = []
         if "recruited_athlete" in (student.get("hooks") or []):
             flags.append("Recruited athletes are admitted through a separate process. Ask the coach and the admissions office.")
-        out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "source")},
+        out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "net_price", "net_price_by_income", "source")},
                     "in_data": True, "label": label, "cases": cases, "says": says, "myths": myths,
                     "levers": _safe(_levers, [], student, col, label, says, labels_mod),
                     "fit": _safe(_fit, None, student, says, len(essay.split())),
