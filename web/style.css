@@ -370,6 +370,13 @@ main:focus { outline: none; }
 .about-lead { font-size: 18px; }
 .tour { list-style: decimal; padding-left: 24px; display: grid; gap: 10px; font-size: 16.5px; }
 .tour .btn { margin: 6px 6px 0 0; }
+.feats { display: grid; gap: 8px; }
+.feat { border-left: 4px solid var(--likely); padding: 2px 0 2px 12px; display: grid; gap: 2px; }
+.feat.f-thin { border-left-color: var(--edge); } .feat.f-no { border-left-color: var(--unsure); border-left-style: dashed; }
+.feat-name { font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.feat-st { margin-left: auto; font-size: 13px; font-weight: 650; color: var(--mute); }
+.feat-what { font-size: 15.5px; }
+.feat-where { font-size: 14.5px; }
 .srcs { display: grid; gap: 10px; }
 .src-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--raised); display: grid; gap: 4px; }
 .src-name { font-weight: 700; font-size: 17px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
