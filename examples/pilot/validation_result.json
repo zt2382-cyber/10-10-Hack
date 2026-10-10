@@ -1,0 +1,110 @@
+{
+  "status": "passed",
+  "synthetic": true,
+  "candidate_count": 8,
+  "accepted_candidates": 7,
+  "rejected_ambiguous_gpa": 1,
+  "activities_checked": 3,
+  "courses_checked": 4,
+  "essay_matches_original_section": true,
+  "evidence_offsets_checked": true,
+  "original_bytes_preserved": true,
+  "negated_sat_excluded": true,
+  "essay_activity_excluded": true,
+  "publication_and_outcome_retrieval": "passed",
+  "academic_similarity": 1.0,
+  "academic_coverage": 0.8,
+  "known_omissions": [
+    "High school context",
+    "Family caregiving responsibility",
+    "School service honor"
+  ],
+  "unverified": [
+    "PDF parsing",
+    "OCR",
+    "Real embedding model inference",
+    "Real applicant retrieval quality"
+  ],
+  "profile": {
+    "activities": [
+      "robotics club",
+      "neighborhood learning center",
+      "school orchestra"
+    ],
+    "activity_records": [
+      {
+        "name": "Robotics Club",
+        "role": "Mechanical Lead",
+        "hours_per_week": 7.5,
+        "duration": {
+          "value": 3.0,
+          "unit": "year"
+        },
+        "achievements": [
+          "Regional design award"
+        ],
+        "description": "Activity: Robotics Club; role: Mechanical Lead; 7.5 hours/week; 3 years; achievement: Regional design award"
+      },
+      {
+        "name": "Neighborhood Learning Center",
+        "role": "volunteer",
+        "hours_per_week": 2.0,
+        "duration": {
+          "value": 8.0,
+          "unit": "month"
+        },
+        "achievements": [],
+        "description": "I served as volunteer at Neighborhood Learning Center; 2 hours per week; 8 months."
+      },
+      {
+        "name": "School Orchestra",
+        "role": "Violinist",
+        "hours_per_week": null,
+        "duration": null,
+        "achievements": [],
+        "description": "Activity: School Orchestra; role: Violinist"
+      }
+    ],
+    "courses": [
+      {
+        "term": "2023 Fall",
+        "name": "Honors Algebra II",
+        "grade": "A",
+        "credits": 1.0,
+        "level": null
+      },
+      {
+        "term": "2024 Spring",
+        "name": "AP Physics 1",
+        "grade": "B+",
+        "credits": 1.0,
+        "level": "AP"
+      },
+      {
+        "term": "2024 Fall",
+        "name": "AP Calculus AB",
+        "grade": "A-",
+        "credits": 1.0,
+        "level": "AP"
+      },
+      {
+        "name": "English Literature",
+        "grade": "92/100",
+        "term": "2024 Fall",
+        "credits": 0.5,
+        "level": null
+      }
+    ],
+    "essay_draft": "The robot moved twelve centimeters and stopped. I had spent three evenings\nadjusting the wheels, and I was certain the motor was the problem. A younger\nteammate asked whether we had checked the battery connection. We had not.\n\nI was captain of our first prototype team. That title made it tempting to answer\nevery question before someone else could. After the battery incident, I began\nasking each teammate to propose a test before we changed a part. Our notebook\nfilled with failed hypotheses, but our decisions became easier to explain.\n\nTutoring changed my understanding of that process. When a student asked why a\nfraction became larger after division, repeating the rule did not help. Drawing\nan example did. I began bringing sketches to robotics meetings, too. I want to\nstudy mechanical engineering because I enjoy translating a confusing problem\ninto something a team can inspect, test, and improve together.\n",
+    "gpa": {
+      "value": 3.86,
+      "scale": 4.0,
+      "weighted": false
+    },
+    "interests": [
+      "mechanical engineering",
+      "applied mathematics"
+    ],
+    "sat_submitted": 1440
+  }
+}

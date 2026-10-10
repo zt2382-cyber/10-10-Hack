@@ -26,6 +26,8 @@ from engine import colleges as C  # noqa: E402
 from engine import pipeline  # noqa: E402
 
 PORT = int(os.environ.get("PORT", "8765"))
+# The teammate-built applicant-evidence scorer orders the example cases by default (see engine/evidence_adapter.py).
+os.environ.setdefault("SIMILARITY_PLUGIN", "engine.evidence_adapter:rank")
 MAX_BODY = 400_000
 
 

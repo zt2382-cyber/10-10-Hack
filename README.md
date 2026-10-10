@@ -62,6 +62,17 @@ and "What is the student's chance?", which explains why no percentage is given a
 - Matching on essays and activities is thin, because the public case file has no essay text.
 - Nobody outside the builders has reviewed the print sheet, dark mode or phone width.
 
+## Three parts built by the team
+
+- **The meeting screen and the label engine** (`engine/`, `web/`): the four-chapter screen, the labels, the list
+  balance, privacy, the essay reader and the PRISM checks.
+- **Closeness** (`engine/similarity.py`, see `docs/req/`): how much a student resembles the people admitted and the
+  people not admitted at each college, part by part, with the nearest cases, the kinds of admitted student, and a
+  check of how well that resemblance held up on 400 past posters. It is a resemblance, never a forecast.
+- **Applicant evidence** (`admissions/`, see `admissions/README.md`): a store for applicant records with
+  provenance and consent, intake from messy files, and a weighted similarity score with coverage. Its scorer
+  orders the example cases on the screen by default (`engine/evidence_adapter.py`).
+
 ## How it handles accuracy and uncertainty
 
 - **Code sets every label, count and number.** The only model call reads the essay and returns themes and notes.

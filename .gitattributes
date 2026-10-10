@@ -1,0 +1,3 @@
+examples/** text eol=lf
+transfer/** -text
+*.bundle binary
