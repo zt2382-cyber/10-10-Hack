@@ -201,7 +201,7 @@ def chat(messages, model=None, fallbacks=None, json_schema=None, max_tokens=900,
 def embed(texts, model=DEFAULT_EMBED_MODEL, timeout=40) -> dict:
     """Returns {"ok", "vectors": [[float]], "model", "request_id", "latency_ms", "error"}. Never raises."""
     key = _load_key()
-    out = {"ok": False, "vectors": [], "model": model, "request_id": "", "latency_ms": 0, "error": ""}
+    out = {"ok": False, "vectors": [], "model": model, "request_id": "", "latency_ms": 0, "error": "", "http_status": None}
     if not key:
         out["error"] = "no key"
         return out
@@ -209,6 +209,7 @@ def embed(texts, model=DEFAULT_EMBED_MODEL, timeout=40) -> dict:
         if isinstance(texts, str):
             texts = [texts]
         status, parsed, raw, hdrs, ms = _request("POST", "/embeddings", {"model": model, "input": list(texts)}, key, timeout)
+        out["http_status"] = status
         out["latency_ms"] = ms
         out["request_id"] = hdrs.get("x-request-id") or hdrs.get("request-id") or ""
         if status != 200 or not isinstance(parsed, dict):

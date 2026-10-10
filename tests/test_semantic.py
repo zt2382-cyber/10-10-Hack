@@ -84,3 +84,15 @@ class SemanticTests(unittest.TestCase):
         self.assertIn('essay', result['own']['nearest_admitted'][0]['parts'])
         self.assertIn('activity_text', result['own']['nearest_admitted'][0]['parts'])
         self.assertNotIn('science', json.dumps(result))
+
+    def test_gateway_diagnostics_are_specific_and_do_not_echo_provider_text(self):
+        for response, code in [({'error': 'no key'}, 'missing_key'),
+                               ({'http_status': 401}, 'authentication'),
+                               ({'http_status': 404}, 'endpoint'),
+                               ({'http_status': 429}, 'rate_limit'),
+                               ({'http_status': 0}, 'network')]:
+            semantic._CACHE.clear()
+            response.update(ok=False, vectors=[], private='secret-provider-text')
+            result = semantic.prepare({}, 'science', [], embed_fn=lambda texts: response)
+            self.assertEqual(result['report']['error_code'], code)
+            self.assertNotIn('secret-provider-text', json.dumps(result))

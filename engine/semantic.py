@@ -39,6 +39,28 @@ def _masked(text):
     return "" if result.get("blocked") else result["text"].strip()
 
 
+def _failure(result):
+    """Public diagnostics use fixed messages, never provider text or credentials."""
+    status = result.get("http_status")
+    if result.get("error") == "no key":
+        return "missing_key", "The server has no Nicrron API key. Set NICRRON_API_KEY or NICRRON_KEY_FILE in the terminal that starts the server, then restart it."
+    if status in (401, 403):
+        return "authentication", "The embedding gateway rejected access. Check that the Nicrron key is valid and permitted to use the embedding model."
+    if status == 402:
+        return "credits", "The embedding gateway requires available credits. Check the gateway account balance."
+    if status in (404, 405):
+        return "endpoint", "The gateway does not provide the requested embedding endpoint or model. Essay reading can work while embeddings are unavailable."
+    if status in (400, 422):
+        return "request_rejected", "The gateway rejected the embedding model or input format. Check support for openai/text-embedding-3-small at /v1/embeddings."
+    if status == 429:
+        return "rate_limit", "The embedding gateway rate limit or quota was reached. Retry after checking the account quota."
+    if status == 0:
+        return "network", "The server could not reach the embedding gateway. Check its network connection and retry."
+    if isinstance(status, int) and status >= 500:
+        return "gateway", "The embedding gateway returned a server error. Retry the comparison later."
+    return "invalid_response", "The embedding service failed or returned unusable vectors. Check the gateway's embedding support."
+
+
 def prepare(student, essay, rows, enabled=True, embed_fn=None):
     """Embed once per run for all selected colleges; no vectors enter responses.
 
@@ -52,8 +74,15 @@ def prepare(student, essay, rows, enabled=True, embed_fn=None):
         return context
     supplemental = {}
     if CORPUS.exists():
-        records = json.loads(CORPUS.read_text(encoding="utf-8"))
-        supplemental = {r["case_id"]: r for r in records}
+        try:
+            records = json.loads(CORPUS.read_text(encoding="utf-8"))
+            if not isinstance(records, list):
+                raise ValueError("Corpus must be an array")
+            supplemental = {r["case_id"]: r for r in records}
+        except (OSError, ValueError, TypeError, KeyError):
+            context["report"].update(status="unavailable", error_code="invalid_corpus",
+                error="The historical essay corpus could not be read. Check essay_corpus.json is an array of records with case_id.")
+            return context
     documents = {}
     kinds = {}
     documents[("student", "essay")] = _masked(essay)
@@ -81,6 +110,7 @@ def prepare(student, essay, rows, enabled=True, embed_fn=None):
     pending = {keys[loc]: text for loc, text in documents.items() if loc in keys and keys[loc] not in vectors}
     items = list(pending.items())
     failed = False
+    failure = None
     for start in range(0, len(items), BATCH_SIZE):
         batch = items[start:start+BATCH_SIZE]
         try:
@@ -88,10 +118,12 @@ def prepare(student, essay, rows, enabled=True, embed_fn=None):
             vs = result.get("vectors", [])
             if not result.get("ok") or len(vs) != len(batch):
                 failed = True
+                failure = failure or _failure(result)
                 continue
             for (key, _), vector in zip(batch, vs):
                 if distance(vector, vector) is None:
                     failed = True
+                    failure = failure or _failure({})
                     continue
                 vectors[key] = tuple(vector)
                 with _LOCK:
@@ -100,6 +132,7 @@ def prepare(student, essay, rows, enabled=True, embed_fn=None):
                         _CACHE.popitem(last=False)
         except Exception:
             failed = True
+            failure = failure or _failure({})
     for (cid, field), key in keys.items():
         if key in vectors:
             target = context["student"] if cid == "student" else context["cases"].setdefault(cid, {})
@@ -108,6 +141,8 @@ def prepare(student, essay, rows, enabled=True, embed_fn=None):
         d = distance(context["student"].get("essay"), fields.get("essay"))
         if d is not None:
             context["retrieval"].append({"case_id": cid, "distance": round(d, 4), "text_kind": kinds[cid]})
+    if failure:
+        context["report"].update(error_code=failure[0], error=failure[1])
     context["retrieval"].sort(key=lambda r: (r["distance"], r["case_id"]))
     context["report"].update(status="partial" if failed and context["student"] else
                              "unavailable" if failed else "ok", documents=len(context["cases"]),
