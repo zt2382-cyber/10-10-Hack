@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-10-10T13:57:58-04:00",
+  "sampled": 400,
+  "used": 382,
+  "skipped_small_groups": 18,
+  "seed": 20261010,
+  "neighbours": 7,
+  "lean_gap": 0.03,
+  "source": "Self-reported public posts (r/collegeresults)",
+  "rows": [
+    {
+      "lean": "closer_to_admitted",
+      "admitted": 39,
+      "denied": 17,
+      "n": 56
+    },
+    {
+      "lean": "in_between",
+      "admitted": 75,
+      "denied": 125,
+      "n": 200
+    },
+    {
+      "lean": "closer_to_denied",
+      "admitted": 25,
+      "denied": 101,
+      "n": 126
+    }
+  ],
+  "caveat": "Counted on self-reported public posts, each person hidden before their own lean was computed. People who post are admitted far more often than applicants overall, so this says how the lean sorts posters, not applicants."
+}

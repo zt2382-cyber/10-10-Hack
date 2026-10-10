@@ -221,6 +221,14 @@ def _text(v, limit):
     return str(v).strip()[:limit] if isinstance(v, (str, int, float)) and str(v).strip() else None
 
 
+def _rating_in(v):
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return None
+    return v if 1 <= v <= 10 else None
+
+
 def _normalize(student_input, labels_mod, privacy_mod):
     """Clean the input once, at the door. Returns (student, essay, college names, notes).
     Unknown fields are dropped: nothing a caller adds (a name, a school, gender, race, income) is carried along."""
@@ -292,14 +300,21 @@ def _normalize(student_input, labels_mod, privacy_mod):
                "gpa_scale": 4.0, "home_state": state.upper() if state and state.isalpha() else None,
                "intended_major": hide(raw.get("intended_major"), 60), "hooks": hooks or ["none"],
                "activities": acts, "college_list": names,
+               # read by the closeness part: a counselor's 1-10 rating of the activities, and named major interests
+               "activities_rating": _rating_in(raw.get("activities_rating")),
+               "major_interests": [m for m in (hide(x, 40) for x in (raw.get("major_interests") if isinstance(raw.get("major_interests"), list) else [])[:5]) if m],
                # used only to pick the federal 'what families like yours paid' figure; never sent to a model
                "income_band": raw.get("income_band") if raw.get("income_band") in INCOME_BANDS else None}
     return student, essay, names, notes
 
 
-def run(student_input: dict, use_model: bool = True) -> dict:
+def run(student_input: dict, use_model: bool = True, closeness: bool | None = None) -> dict:
+    """`closeness` (the "who they resemble" block) is heavy, so labels-only runs such as the score slider skip it
+    unless asked. Default: on for a full run, off when `use_model` is False."""
+    want_closeness = use_model if closeness is None else bool(closeness)
     labels_mod, cases_mod, balance_mod = _part("labels"), _part("cases"), _part("balance")
     privacy_mod, reader_mod, claims_mod, prism_mod = _part("privacy"), _part("reader"), _part("claims"), _part("prism")
+    similarity_mod = _part("similarity")
     student, essay, names, input_notes = _normalize(student_input, labels_mod, privacy_mod)
     is_demo = isinstance(student_input, dict) and str(student_input.get("label", "")) in _demo_labels()
     if not is_demo:
@@ -375,16 +390,18 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         if col is None:
             out.append({"id": None, "name": name, "suggestion": C.suggest(name), "state": None, "control": None, "admit_rate": None, "sat25": None,
                         "sat75": None, "act25": None, "act75": None, "cost_year": None, "source": None, "in_data": False,
-                        "label": label, "cases": None, "says": [], "myths": [], "levers": [], "cost_note": None, "flags": []})
+                        "label": label, "cases": None, "closeness": None, "says": [], "myths": [], "levers": [],
+                        "cost_note": None, "flags": []})
             continue
         cases = _safe(cases_mod.find_similar, None, student, col, tags) if cases_mod else None
-        says = _safe(claims_mod.college_says, [], col) if claims_mod else []
+        close = _safe(similarity_mod.closeness, None, student, col, tags) if (similarity_mod and want_closeness) else None
+        says =_safe(claims_mod.college_says, [], col) if claims_mod else []
         myths = _safe(claims_mod.myth_checks, [], col) if claims_mod and hasattr(claims_mod, "myth_checks") else []
         flags = []
         if "recruited_athlete" in (student.get("hooks") or []):
             flags.append("Recruited athletes are admitted through a separate process. Ask the coach and the admissions office.")
         out.append({**{k: col.get(k) for k in ("id", "name", "state", "control", "admit_rate", "sat25", "sat75", "act25", "act75", "cost_year", "net_price", "net_price_by_income", "source")},
-                    "in_data": True, "label": label, "cases": cases, "says": says, "myths": myths,
+                    "in_data": True, "label": label, "cases": cases, "closeness": close, "says": says, "myths": myths,
                     "levers": _safe(_levers, [], student, col, label, says, labels_mod),
                     "fit": _safe(_fit, None, student, says, len(essay.split())),
                     "tracker": tracked.get(col["id"]) or {"status": "considering", "outcome": None},
@@ -473,6 +490,8 @@ def run(student_input: dict, use_model: bool = True) -> dict:
         },
         "student_key": student_key,
         "prism": prism, "pools": pool, "refusals": REFUSALS,
+        "closeness_check": _closeness_check(),
+        "closeness_method": _safe(similarity_mod.method, None) if similarity_mod and hasattr(similarity_mod, "method") else None,
     }
 
 
@@ -481,6 +500,15 @@ def _demo_labels() -> set:
         return {d["label"] for d in demo_students()}
     except Exception:
         return set()
+
+
+def _closeness_check():
+    """The saved holds-up table from `python -m engine.similarity --check`, or None if it was never run."""
+    p = ROOT / "docs" / "closeness_check.json"
+    try:
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+    except Exception:
+        return None
 
 
 def demo_students() -> list[dict]:
