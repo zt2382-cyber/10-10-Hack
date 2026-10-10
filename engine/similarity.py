@@ -1,12 +1,11 @@
 """Closeness: does this student look more like the people admitted at a college, or the people denied?
 
-A distance, never a probability. Each part (score, activities rating, major group, hooks, residency, GPA) is 0
+A distance, never a probability. Each part (score, activities rating, major group, hooks, residency, GPA, essay and activity text) is 0
 (same) to 1 (far); the total is a weighted mean over the parts both sides have. Per college and per pool the
 student is compared with the nearest admitted and the nearest denied cases; the gap between those two means
 sets the lean. The two pools (national self-reported, own school) are never merged.
 
-Everything here is counting and sorting in code. No model is called. Hooks, race, gender and income are matched
-on where the data has them, never suggested as things to change.
+Distances are computed in code; optional masked text vectors are prepared by the pipeline. Hooks and residency are compared where available, never suggested as things to change.
 
     python -m engine.similarity            prints the block for one demo student at one college
     python -m engine.similarity --spread   the gap for every demo student at every listed college (to set LEAN_GAP)
@@ -17,6 +16,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from engine import semantic
 from engine import cases as _cases
 from engine import colleges as _colleges
 
@@ -35,13 +35,13 @@ NATIONAL_SOURCE = _cases.NATIONAL_SOURCE
 OWN_SOURCE = _cases.OWN_SOURCE
 
 # R1. Starting values, not tuned. Only the parts both sides have are used, and the weights renormalise over them.
-WEIGHTS = {"score": 0.45, "activities": 0.20, "major": 0.15, "hooks": 0.10, "residency": 0.10, "gpa": 0.20}
+WEIGHTS = {"score": 0.45, "activities": 0.20, "major": 0.15, "hooks": 0.10, "residency": 0.10, "gpa": 0.20, "essay": 0.20, "activity_text": 0.15}
 SCORE_SPAN = 400      # SAT points that count as "far" (distance 1)
 RATING_SPAN = 10.0    # activities rating is 0 to 10
 GPA_SPAN = 1.0        # GPA points that count as "far", on a 4.0 scale
 PART_WORD = {"score": "score", "activities": "activities rating", "major": "major group", "hooks": "hook status",
-             "residency": "residency", "gpa": "GPA"}
-NEVER_USED = ["essay", "activity descriptions"]   # text is never part of a distance
+             "residency": "residency", "gpa": "GPA", "essay": "essay", "activity_text": "activity descriptions"}
+NEVER_USED = []
 
 LEAN_TEXT = {
     "closer_to_admitted": "Looks more like the people admitted here than the people denied.",
@@ -51,7 +51,7 @@ LEAN_TEXT = {
 STATUS_TEXT = {
     "not_enough": "Not enough finished cases in one of the two groups to say which the student is closer to.",
     "none": "No finished cases for this college in this pool.",
-    "cant_say": "No test score, so there is nothing to measure distance from.",
+    "cant_say": "Not enough shared profile information to measure distance.",
 }
 CLOSE, FAR = 0.15, 0.5   # per-part words: at or under CLOSE is "close", at or over FAR is "far"
 
@@ -66,7 +66,7 @@ def method() -> dict:
     return {
         "parts": [
             {"part": "score", "name": PART_WORD["score"], "weight": WEIGHTS["score"], "distance": f"score difference / {SCORE_SPAN} SAT points, capped at 1",
-             "student": "SAT, or ACT converted to the SAT scale", "case": "SAT, or ACT converted", "pools": "both", "required": True},
+             "student": "SAT, or ACT converted to the SAT scale", "case": "SAT, or ACT converted", "pools": "both", "required": False},
             {"part": "activities", "name": PART_WORD["activities"], "weight": WEIGHTS["activities"], "distance": f"rating difference / {RATING_SPAN:g}",
              "student": "the counselor's 0 to 10 rating (optional)", "case": "self-rated activities and awards, 0 to 10", "pools": "national only", "required": False},
             {"part": "major", "name": PART_WORD["major"], "weight": WEIGHTS["major"], "distance": "0 same group, 1 different",
@@ -77,16 +77,24 @@ def method() -> dict:
              "student": "home state", "case": "home state", "pools": "both, public colleges only", "required": False},
             {"part": "gpa", "name": PART_WORD["gpa"], "weight": WEIGHTS["gpa"], "distance": f"GPA difference / {GPA_SPAN:g} on a 4.0 scale, capped at 1",
              "student": "GPA, converted to a 4.0 scale", "case": "GPA in the school's own file", "pools": "own only", "required": False},
+            {"part": "essay", "name": PART_WORD["essay"], "weight": WEIGHTS["essay"],
+             "distance": "(1 - cosine similarity) / 2, bounded from 0 to 1",
+             "student": "masked essay embedding", "case": "masked full essay or marked theme summary embedding",
+             "pools": "both, where text is available", "required": False},
+            {"part": "activity_text", "name": PART_WORD["activity_text"], "weight": WEIGHTS["activity_text"],
+             "distance": "(1 - cosine similarity) / 2, bounded from 0 to 1",
+             "student": "masked activity descriptions embedding", "case": "masked activity notes embedding",
+             "pools": "both, where text is available", "required": False},
         ],
-        "never_used": ["essay text", "activity descriptions", "race", "gender", "income", "class rank", "the essay/recommendation/interview self-rating"],
+        "never_used": [ "race", "gender", "income", "class rank", "the essay/recommendation/interview self-rating"],
         "neighbours": NEIGHBOURS, "needed": NEEDED, "lean_gap": LEAN_GAP, "change_gain": CHANGE_GAIN, "max_changes": MAX_CHANGES,
         "score_steps": list(SCORE_STEPS), "rating_steps": list(RATING_STEPS), "close": CLOSE, "far": FAR,
         "steady": {"neighbours": list(STEADY_K), "score": list(STEADY_SCORE)},
         "kinds": {"k": KINDS, "min_admitted": KINDS_MIN, "cap": KINDS_CAP, "rounds": KINDS_ROUNDS, "seed": KINDS_SEED,
                   "parts": list(KIND_PARTS), "score_band": KIND_SCORE_BAND, "rating_band": KIND_RATING_BAND},
         "points_cap": POINTS_CAP, "check": {"n": CHECK_N, "seed": CHECK_SEED},
-        "libraries": {"engine": ["csv", "json", "functools.lru_cache", "random", "statistics", "collections.Counter", "pathlib"],
-                      "not_used": ["numpy", "scikit-learn", "pandas", "text embeddings", "any model call"],
+        "libraries": {"engine": ["csv", "json", "functools.lru_cache", "random", "statistics", "collections.Counter", "pathlib", "optional Nicrron text embeddings"],
+                      "not_used": ["numpy", "scikit-learn", "pandas"],
                       "screen": ["plain HTML, CSS and JavaScript", "inline SVG drawn by hand", "no chart library, no framework, no build step"]},
     }
 
@@ -161,12 +169,16 @@ def part_distances(a: dict, b: dict, college: dict) -> dict:
         d["residency"] = 0.0 if _in_state(a["home_state"], college) == _in_state(b["home_state"], college) else 1.0
     if a.get("gpa") is not None and b.get("gpa") is not None:
         d["gpa"] = min(abs(a["gpa"] - b["gpa"]) / GPA_SPAN, 1.0)
+    for field in ("essay", "activity_text"):
+        value = semantic.distance(a.get(field), b.get(field))
+        if value is not None:
+            d[field] = value
     return d
 
 
 def total(parts: dict) -> float | None:
-    """Weighted mean of the parts present. Score is required; without it there is no distance."""
-    if not parts or "score" not in parts:
+    """Weighted mean of shared parts; require substantive profile information."""
+    if not parts or not (set(parts) & {"score", "activities", "gpa", "essay", "activity_text"}):
         return None
     w = sum(WEIGHTS[p] for p in parts)
     return sum(WEIGHTS[p] * v for p, v in parts.items()) / w
@@ -175,8 +187,8 @@ def total(parts: dict) -> float | None:
 # ---------------------------------------------------------------- R2. the two groups at one college
 
 def _split(views):
-    """(admitted, denied, waitlisted), scored cases only, each sorted by case number."""
-    scored = sorted((v for v in views if v["score"] is not None), key=lambda v: v["num"])
+    """(admitted, denied, waitlisted), each sorted by case number."""
+    scored = sorted((v for v in views), key=lambda v: v["num"])
     return ([v for v in scored if v["outcome"] == "admitted"],
             [v for v in scored if v["outcome"] == "denied"],
             [v for v in scored if v["outcome"] == "waitlisted"])
@@ -249,7 +261,7 @@ def _steady(sv, groups, college, base_lean):
         to = _lean(_gap(sv, groups, college, k)[2])
         if to != base_lean:
             flips.append({"cause": f"{k} nearest instead of {NEIGHBOURS}", "to": to})
-    for pts in STEADY_SCORE:
+    for pts in (STEADY_SCORE if sv["score"] is not None else ()):
         to = _lean(_gap(_shifted(sv, pts), groups, college)[2])
         if to != base_lean:
             flips.append({"cause": f"score {abs(pts)} points {'lower' if pts < 0 else 'higher'}", "to": to})
@@ -338,7 +350,7 @@ def _kinds(case_name):
     import statistics
     from collections import Counter
 
-    adm = _national_groups(case_name)[0]
+    adm = [v for v in _national_groups(case_name)[0] if v["score"] is not None]
     if len(adm) < KINDS_MIN:
         return [], {}
     rng = random.Random(KINDS_SEED)
@@ -417,7 +429,7 @@ NOTHING_HELPS = "Nothing we can measure here would move this."
 def _tries(sv):
     """The changes R4 allows, each alone. Never hooks, home state, GPA, or anything about who the student is."""
     tried, seen = [], set()
-    for pts in SCORE_STEPS:
+    for pts in (SCORE_STEPS if sv["score"] is not None else ()):
         s2 = min(1600, sv["score"] + pts)
         if s2 == sv["score"] or ("score", s2) in seen:
             continue
@@ -452,13 +464,16 @@ def _changes(sv, groups, college, base_gap):
 
 
 def _pool(sv, groups, college, source, verified, own, kinds=((), {})):
+    original_groups = groups
+    # Counts refer to cases with at least one substantive shared feature.
+    groups = tuple([v for v in group if total(part_distances(sv, v, college)) is not None] for group in groups)
     adm, den, wl = groups
     kind_list, kind_of = kinds
     out = {"source": source, "verified": verified, "status": None,
            "n_admitted": len(adm), "n_denied": len(den), "n_waitlisted": len(wl)}
     if not (adm or den or wl):
-        out["status"] = "none"
-    elif sv["score"] is None:
+        out["status"] = "cant_say" if any(original_groups) else "none"
+    elif not _nearest(sv, adm, 1, college) or not _nearest(sv, den, 1, college):
         out["status"] = "cant_say"
     elif not adm or not den:
         out["status"] = "none"
@@ -485,17 +500,23 @@ def _pool(sv, groups, college, source, verified, own, kinds=((), {})):
     out["kinds"] = _kinds_for(sv, kind_list, college)
     out["changes"] = _changes(sv, groups, college, gap) if lean else []
     out["changes_note"] = "" if out["changes"] or not lean else NOTHING_HELPS
-    out["points"] = _points(groups, kind_of)
+    out["points"] = _points(tuple([v for v in group if v["score"] is not None] for group in groups), kind_of)
     return out
 
 
-def closeness(student, college, tags=None) -> dict:
-    """The contract's `closeness` block for one student at one college. Deterministic; code only."""
+def closeness(student, college, tags=None, semantic_context=None) -> dict:
+    """The contract's `closeness` block for one student at one college. Distances computed in code from fields and optional precomputed vectors."""
     sv = _student_view(student, college, tags)
     short = _colleges.case_name_for(college) if college else None
     nat = _national_groups(short) if short else ([], [], [])
     kinds = _kinds(short) if short else ([], {})
     own = _own_groups(college) if college else ([], [], [])
+    context = semantic_context or {}
+    sv.update(context.get("student", {}))
+    def enriched(groups):
+        return tuple([dict(v, **context.get("cases", {}).get(v["case_id"], {})) for v in group] for group in groups)
+    nat, own = enriched(nat), enriched(own)
+    ids = {v["case_id"] for group in nat + own for v in group}
     # Say honestly where the school's cases come from: invented demo rows are never called verified.
     try:
         own_rows = _cases._own_rows(college) if college else []
@@ -506,7 +527,10 @@ def closeness(student, college, tags=None) -> dict:
     # Counselor-entered cases count as verified; the demo's are invented and say so in `source` and `invented`.
     own_pool = _pool(sv, own, college, own_source, True, own=True)
     own_pool["invented"] = invented
-    return {"needed": NEEDED, "neighbours": NEIGHBOURS,
+    return {"semantic": context.get("report", {"status": "off"}),
+            "essay_retrieval": [r for r in context.get("retrieval", []) if r["case_id"] in ids][:6],
+            "weights": dict(WEIGHTS),
+            "needed": NEEDED, "neighbours": NEIGHBOURS,
             "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
             "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
             "own": own_pool,

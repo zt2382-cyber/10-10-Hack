@@ -378,6 +378,24 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
     explain_ms = _ms(t0)
     tags = reader.get("tags") or {}
 
+    # ---- optional text comparison for closeness: one masked semantic index across the selected colleges ----
+    # Off unless a model key is set and this is a full run; with it off, closeness uses the structured parts only.
+    t_semantic = time.perf_counter()
+    semantic_mod = _part("semantic") if want_closeness else None
+    semantic_context = {"report": {"status": "off"}}
+    if semantic_mod and cases_mod and hasattr(cases_mod, "_national"):
+        rows = {}
+        national = _safe(cases_mod._national, ({}, 0, 0, 0))[0]
+        for _, college in found:
+            if college:
+                short = C.case_name_for(college)
+                for row in national.get(short, []) + _safe(cases_mod._own_rows, [], college):
+                    rows[row["case_id"]] = row
+        semantic_context = _safe(semantic_mod.prepare, {"report": {"status": "unavailable"}},
+                                 student, "" if masked.get("blocked") else masked.get("text", ""),
+                                 list(rows.values()), use_model)
+    semantic_ms = _ms(t_semantic)
+
     # ---- score and bucket ----
     t0 = time.perf_counter()
     tracker_mod = _part("tracker")
@@ -394,7 +412,7 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
                         "cost_note": None, "flags": []})
             continue
         cases = _safe(cases_mod.find_similar, None, student, col, tags) if cases_mod else None
-        close = _safe(similarity_mod.closeness, None, student, col, tags) if (similarity_mod and want_closeness) else None
+        close = _safe(similarity_mod.closeness, None, student, col, tags, semantic_context) if (similarity_mod and want_closeness) else None
         says =_safe(claims_mod.college_says, [], col) if claims_mod else []
         myths = _safe(claims_mod.myth_checks, [], col) if claims_mod and hasattr(claims_mod, "myth_checks") else []
         flags = []
@@ -408,8 +426,10 @@ def run(student_input: dict, use_model: bool = True, closeness: bool | None = No
                     "cost_note": _cost_note(col, student), "flags": flags})
     score_ms = _ms(t0)
     have = "SAT of %s" % student["sat"] if student.get("sat") else ("ACT of %s" % student["act"] if student.get("act") else "no test score")
-    steps.append({"step": "score", "by": "code", "ms": score_ms,
-                  "what": f"Compared the student's {have} with each college's published range, and found finished cases like this student"})
+    text_cmp = str((semantic_context.get("report") or {}).get("status", "off"))
+    steps.append({"step": "score", "by": "code", "ms": score_ms + semantic_ms,
+                  "what": f"Compared the student's {have} with each college's published range, and found finished cases like this student"
+                          + (f"; text comparison: {text_cmp}" if text_cmp != "off" else "")})
 
     t0 = time.perf_counter()
     balance = _safe(balance_mod.assess, {"counts": {}, "warnings": [], "suggestions": [], "cost_notes": []}, labelled, student) if balance_mod else {"counts": {}, "warnings": [], "suggestions": [], "cost_notes": []}
