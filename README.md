@@ -27,6 +27,8 @@ It answers four questions:
 
 It never gives a personal chance of admission.
 
+**Demo video (2 minutes):** [docs/video/counselor_copilot_demo.mp4](docs/video/counselor_copilot_demo.mp4). The narration text is in `docs/video/narration.json`.
+
 ![The first view: one picture of the whole list, three counters, and three levers](docs/screens/first_view.jpg)
 
 ![Opening a college: finished cases like this student, the school's own beside the national pool](docs/screens/cases.jpg)

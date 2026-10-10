@@ -1,0 +1,61 @@
+{
+  "voice": {
+    "name": "Matilda",
+    "voice_id": "XrExE9yKIg1WjnnlVkGX",
+    "model_id": "eleven_multilingual_v2",
+    "voice_settings": {
+      "stability": 0.55,
+      "similarity_boost": 0.75,
+      "style": 0.0,
+      "use_speaker_boost": true,
+      "speed": 0.95
+    }
+  },
+  "gap": 0.45,
+  "segments": [
+    {
+      "id": "s01_need",
+      "text": "Every fall, a counselor sits down with a student and a list of dream schools. The family wants one answer: where do I stand? Today that answer comes from rankings, rumor, and tools that hand back a single percentage nobody can check."
+    },
+    {
+      "id": "s02_promise",
+      "text": "Counselor Copilot gives them something better: an honest picture, built from evidence they can see."
+    },
+    {
+      "id": "s03_who",
+      "text": "It starts with the student. What stands out, in their own words. A model reads the essay only after names and personal details are hidden."
+    },
+    {
+      "id": "s04_where",
+      "text": "Then the list. Each college is a place on the trail: how far its usual range sits from this student's score. Reach, target, likely: every label is set by a written rule, in code, from published federal numbers. Never by a model."
+    },
+    {
+      "id": "s05_cases",
+      "text": "Open any college to see what actually happened to students like this one. Your school's cases beside public posts. Counts, not odds. Admits and denials. And when there are too few to say, it says so."
+    },
+    {
+      "id": "s06_hands",
+      "text": "Then, what you can do. Add colleges that fit. Move the score and watch what changes. See what each college says it looks for.",
+      "hold": 2.8
+    },
+    {
+      "id": "s07_working",
+      "text": "There is no percentage, because no one can honestly give one. Instead, one switch shows the working: every source, every rule, every check."
+    },
+    {
+      "id": "s08_safety",
+      "text": "An essay with hidden instructions for the AI is stopped before any model reads it."
+    },
+    {
+      "id": "s09_built",
+      "text": "Under the hood: models reached through Nicrron read the essay. PRISM guards the input, checks each college statement against a knowledge base, and records every step. Sixty of sixty labels match an answer sheet worked by hand."
+    },
+    {
+      "id": "s10_ending",
+      "text": "The family leaves with a plan. And when results come in, they go back into the school's own cases, with no names. Counselor Copilot turns a college list into a reach, target and likely picture you can check, grounded in real outcomes. And it flags what it does not know."
+    }
+  ],
+  "tempo": 1.1,
+  "lead_in": 0.7,
+  "tail": 3.0
+}
