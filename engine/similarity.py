@@ -463,6 +463,7 @@ def closeness(student, college, tags=None) -> dict:
     kinds = _kinds(short) if short else ([], {})
     own = _own_groups(college) if college else ([], [], [])
     return {"needed": NEEDED, "neighbours": NEIGHBOURS,
+            "student": {"score": sv["score"], "converted": sv["converted"], "activities": sv["activities"]},
             "national": _pool(sv, nat, college, NATIONAL_SOURCE, False, own=False, kinds=kinds),
             "own": _pool(sv, own, college, OWN_SOURCE, True, own=True),
             "caveat": CAVEAT}

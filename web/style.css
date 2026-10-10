@@ -316,6 +316,29 @@ main:focus { outline: none; }
 .cases-table { border-collapse: collapse; width: 100%; font-size: 14px; }
 .cases-table th { text-align: left; color: var(--mute); font-weight: 600; padding: 4px 8px 4px 0; border-bottom: 1.5px solid var(--line); white-space: nowrap; }
 .cases-table td { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--soft); vertical-align: top; }
+/* who they resemble: the lean, the scatter, part bars, kinds, changes */
+.lean { border: 1.5px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--raised); margin-bottom: 12px; display: grid; gap: 5px; }
+.lean-h { font-size: 21px; font-weight: 750; }
+.lean-closer_to_admitted { border-color: var(--likely); } .lean-closer_to_denied { border-color: var(--reach); } .lean-in_between { border-color: var(--target); }
+.lean-not_enough, .lean-none, .lean-cant_say { border-style: dashed; border-color: var(--unsure); }
+.scatter { display: block; width: 100%; height: auto; max-width: 700px; font-family: inherit; margin: 6px 0 4px; }
+.sc-grid { stroke: var(--soft); stroke-width: 1; } .sc-axis { stroke: var(--line); stroke-width: 1.2; }
+.sc-tick { font-size: 11px; fill: var(--mute); } .sc-ax { font-size: 12px; fill: var(--mute); font-weight: 650; }
+.sc-a { fill: var(--likely); opacity: .75; } .sc-d { stroke: var(--reach); stroke-width: 1.7; fill: none; } .sc-w { fill: var(--unsure); opacity: .75; }
+.sc-medoid { fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.sc-mk { font-size: 11.5px; font-weight: 700; fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; }
+.sc-me { fill: var(--ink); stroke: var(--panel); stroke-width: 1.5; } .sc-line { stroke: var(--ink); stroke-width: 2.5; }
+.lg-star { color: var(--ink); font-size: 14px; line-height: 1; }
+.pbars { display: grid; gap: 7px; margin: 8px 0 4px; }
+.pbars li { display: grid; grid-template-columns: 130px minmax(80px, 1fr) 170px; gap: 10px; align-items: center; font-size: 15px; }
+.pb-name { font-weight: 600; }
+.pb-track { display: block; height: 12px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); overflow: hidden; }
+.pb-fill { display: block; height: 100%; background: var(--accent); }
+.pb-word { color: var(--ink); }
+.kinds { display: grid; gap: 5px; font-size: 15.5px; }
+.kinds li.nearest { font-weight: 650; }
+.changes { list-style: decimal; padding-left: 22px; display: grid; gap: 8px; font-size: 16px; }
+.changes .quiet { display: block; font-size: 14.5px; }
 .clevers { display: grid; gap: 12px; margin-bottom: 10px; }
 .clevers li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; }
 .lv-icon { fill: var(--accent); margin-top: 3px; }

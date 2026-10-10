@@ -647,7 +647,8 @@ function examplesTable(examples) {
     }, function (e) { return str(e.activities_note) || (num(e.activities_rating) !== null ? 'x' : ''); }],
     ['Essay theme', function (e) { return esc(e.essay_theme); }, function (e) { return str(e.essay_theme); }],
     ['Year', function (e) { return esc(e.cycle_year); }, function (e) { return str(e.cycle_year); }],
-    ['Outcome', function (e) { return outcomeTag(e.outcome); }, function () { return 'x'; }]
+    ['Outcome', function (e) { return outcomeTag(e.outcome); }, function () { return 'x'; }],
+    ['Distance', function (e) { return num(e.distance) !== null ? f2(num(e.distance)) : ''; }, function (e) { return num(e.distance) !== null ? 'x' : ''; }]
   ].filter(function (col) { return ex.some(function (e) { return col[2](e) !== ''; }); });
   return '<div class="table-wrap"><table class="cases-table"><thead><tr>' +
     cols.map(function (col) { return '<th scope="col">' + col[0] + '</th>'; }).join('') + '</tr></thead><tbody>' +
@@ -738,7 +739,139 @@ function renderSaysTab(c) {
   h += '<p class="cost"><b>Cost.</b> ' + (str(c.cost_note) ? esc(c.cost_note) : 'No cost figure is published for this college.') + '</p>';
   return h;
 }
-var TABS = [['why', 'Why this label'], ['cases', 'Cases like this student'], ['levers', 'What could change it'], ['says', 'What the college says']];
+/* ---------- Level 2: who they resemble (closeness) ---------- */
+var LEAN_WORD = {closer_to_admitted: 'Closer to the people admitted', closer_to_denied: 'Closer to the people denied', in_between: 'In between'};
+var PART_NAME = {score: 'Score', activities: 'Activities rating', major: 'Major group', hooks: 'Hook status', residency: 'Residency', gpa: 'GPA'};
+function leanWord(v) { return LEAN_WORD[str(v)] || str(v).replace(/_/g, ' '); }
+function starPath(cx, cy, r) {
+  var pts = [];
+  for (var i = 0; i < 10; i++) {
+    var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+    pts.push((Math.round((cx + rr * Math.cos(a)) * 10) / 10) + ',' + (Math.round((cy + rr * Math.sin(a)) * 10) / 10));
+  }
+  return pts.join(' ');
+}
+/* score across, activities rating up; circle = admitted, cross = denied, diamond = waitlisted; kinds' medoids ringed; student = star */
+function renderScatter(pool, student) {
+  var n = obj(pool), st = obj(student), pts = arr(n.points).map(obj).filter(function (p) { return num(p.sat) !== null; });
+  if (!pts.length) return '';
+  var drawn = pts.filter(function (p) { return num(p.activities) !== null; }), skipped = pts.length - drawn.length;
+  var sScore = num(st.score), sAct = num(st.activities);
+  var W = 640, H = 300, L = 46, R = 14, T = 16, B = 36;
+  var xs = drawn.map(function (p) { return num(p.sat); }); if (sScore !== null) xs.push(sScore);
+  if (!xs.length) return '';
+  var xmin = Math.max(400, Math.floor((Math.min.apply(null, xs) - 40) / 50) * 50), xmax = Math.min(1600, Math.ceil((Math.max.apply(null, xs) + 40) / 50) * 50);
+  if (xmax - xmin < 100) { xmin = Math.max(400, xmin - 50); xmax = Math.min(1600, xmax + 50); }
+  function sx(v) { return L + (v - xmin) / (xmax - xmin) * (W - L - R); }
+  function sy(v) { return T + (10 - v) / 10 * (H - T - B); }
+  function p(v) { return (Math.round(v * 10) / 10).toString(); }
+  var medoid = {}; arr(n.kinds).map(obj).forEach(function (k) { if (str(k.medoid_case_id)) medoid[str(k.medoid_case_id)] = str(k.kind_id); });
+  var counts = {admitted: 0, denied: 0, waitlisted: 0}; drawn.forEach(function (q) { if (counts[q.outcome] !== undefined) counts[q.outcome]++; });
+  var say = 'Scatter of ' + drawn.length + ' ' + plural(drawn.length, 'case', 'cases') + ' at this college: score across, activities rating up. ' +
+    counts.admitted + ' admitted as circles, ' + counts.denied + ' denied as crosses, ' + counts.waitlisted + ' waitlisted as diamonds. ' +
+    (sScore !== null ? (sAct !== null ? 'The student is the star at score ' + sScore + ' and rating ' + sAct + '. ' : 'The student is the vertical line at score ' + sScore + '; no activities rating was given. ') : 'The student has no score, so is not drawn. ') +
+    (arr(n.kinds).length ? 'The medoid of each kind of admitted student is ringed and labelled. ' : '') +
+    (skipped ? skipped + ' ' + plural(skipped, 'case has', 'cases have') + ' no activities rating and ' + plural(skipped, 'is', 'are') + ' not drawn.' : '');
+  var s = '<svg class="scatter" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + esc(say) + '">';
+  var step = (xmax - xmin) > 600 ? 200 : 100, t;
+  for (t = Math.ceil(xmin / step) * step; t <= xmax; t += step) {
+    s += '<line class="sc-grid" x1="' + p(sx(t)) + '" x2="' + p(sx(t)) + '" y1="' + T + '" y2="' + (H - B) + '"/>' +
+      '<text class="sc-tick" x="' + p(sx(t)) + '" y="' + (H - B + 14) + '" text-anchor="middle">' + t + '</text>';
+  }
+  for (t = 0; t <= 10; t += 2) {
+    s += '<line class="sc-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + p(sy(t)) + '" y2="' + p(sy(t)) + '"/>' +
+      '<text class="sc-tick" x="' + (L - 6) + '" y="' + p(sy(t) + 4) + '" text-anchor="end">' + t + '</text>';
+  }
+  s += '<line class="sc-axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/><line class="sc-axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/>' +
+    '<text class="sc-ax" x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">Score (SAT scale)</text>' +
+    '<text class="sc-ax" x="' + (L + 4) + '" y="' + (T - 4) + '">Activities rating</text>';
+  drawn.forEach(function (q) {
+    var x = sx(num(q.sat)), y = sy(num(q.activities)), o = str(q.outcome);
+    if (o === 'admitted') s += '<circle class="sc-a" cx="' + p(x) + '" cy="' + p(y) + '" r="4"/>';
+    else if (o === 'denied') s += '<path class="sc-d" d="M' + p(x - 3.5) + ' ' + p(y - 3.5) + 'l7 7M' + p(x + 3.5) + ' ' + p(y - 3.5) + 'l-7 7"/>';
+    else s += '<rect class="sc-w" x="' + p(x - 3) + '" y="' + p(y - 3) + '" width="6" height="6" transform="rotate(45 ' + p(x) + ' ' + p(y) + ')"/>';
+    if (medoid[str(q.case_id)]) s += '<circle class="sc-medoid" cx="' + p(x) + '" cy="' + p(y) + '" r="9"/><text class="sc-mk" x="' + p(x + 11) + '" y="' + p(y - 8) + '">' + esc(medoid[str(q.case_id)]) + '</text>';
+  });
+  if (sScore !== null) {
+    var lx = sx(sScore);
+    if (sAct !== null) s += '<polygon class="sc-me" points="' + starPath(lx, sy(sAct), 9) + '"/>';
+    else s += '<line class="sc-line" x1="' + p(lx) + '" x2="' + p(lx) + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+    s += '<text class="sc-mk" x="' + p(Math.min(lx + 8, W - R - 50)) + '" y="' + (T + 11) + '">Student</text>';
+  }
+  return s + '</svg>';
+}
+function renderPartBars(parts) {
+  var ps = arr(parts).map(obj).filter(function (q) { return str(q.part) && num(q.distance) !== null; });
+  if (!ps.length) return '<p class="quiet">No parts to compare.</p>';
+  return '<ul class="pbars" aria-label="How close the student is to the nearest admitted, part by part">' + ps.map(function (q) {
+    var d = Math.max(0, Math.min(1, num(q.distance)));
+    return '<li><span class="pb-name">' + esc(PART_NAME[str(q.part)] || cap(q.part)) + '</span>' +
+      '<span class="pb-track" aria-hidden="true"><span class="pb-fill" style="width:' + Math.round(d * 100) + '%"></span></span>' +
+      '<span class="pb-word">' + esc(str(q.text)) + ' <span class="quiet">(' + f2(d) + ')</span></span></li>';
+  }).join('') + '</ul>';
+}
+function renderResembleTab(c) {
+  c = obj(c);
+  if (!c.closeness) return '<p class="state-box">No closeness data for this college.</p>';
+  var cl = obj(c.closeness), n = obj(cl.national), o = obj(cl.own), st = obj(cl.student), ok = n.status === 'ok', h = '';
+  var lean = str(n.lean), k = num(cl.neighbours) || 7;
+  var head = ok ? leanWord(lean) : (n.status === 'not_enough' ? 'Not enough cases to say' : (n.status === 'cant_say' ? "Can't say" : 'No cases'));
+  h += '<div class="lean lean-' + esc(ok ? lean : str(n.status)) + '"><p class="lean-h">' + esc(head) + '</p>';
+  if (str(n.text)) h += '<p>' + esc(n.text) + '</p>';
+  if (num(n.n_admitted) !== null) {
+    h += '<p class="out-line"><span><i class="cd cd-admitted" aria-hidden="true"></i><b>' + (num(n.n_admitted) || 0) + '</b> admitted</span>' +
+      '<span><i class="cd cd-denied" aria-hidden="true"></i><b>' + (num(n.n_denied) || 0) + '</b> denied</span>' +
+      '<span><i class="cd cd-waitlisted" aria-hidden="true"></i><b>' + (num(n.n_waitlisted) || 0) + '</b> waitlisted</span>' +
+      '<span class="quiet">national, self-reported, with a score</span></p>';
+  }
+  if (num(n.d_admitted) !== null && num(n.d_denied) !== null) {
+    h += '<p class="small">Distance to the ' + k + ' nearest admitted <b>' + f2(num(n.d_admitted)) + '</b>, to the ' + k + ' nearest denied <b>' + f2(num(n.d_denied)) + '</b>' +
+      (num(n.gap) !== null ? ' (gap ' + f2(num(n.gap)) + ')' : '') + '. 0 is the same person; 1 is as far as it gets.</p>';
+  }
+  if (ok) {
+    var flips = arr(n.flips).map(obj).filter(function (f) { return str(f.cause); });
+    h += '<p class="small">' + (n.steady === true ? '<b>Steady.</b> The same answer with 5 or 10 nearest cases and with the score 30 points either way.'
+      : '<b>On the edge.</b> ' + esc(flips.map(function (f) { return cap(f.cause) + ' gives "' + leanWord(f.to).toLowerCase() + '"'; }).join('; ')) + '.') + '</p>';
+  }
+  h += '</div>';
+  if (ok || n.status === 'not_enough') {
+    var sc = renderScatter(n, st);
+    if (sc) {
+      h += '<h4>Every case here, by score and activities rating</h4>' + sc +
+        '<ul class="legend" aria-label="How to read the scatter"><li><i class="cd cd-admitted"></i>admitted</li><li><i class="cd cd-denied"></i>denied</li><li><i class="cd cd-waitlisted"></i>waitlisted</li>' +
+        '<li><span class="lg-hollow"></span>a kind\'s medoid</li><li><span class="lg-star">★</span>the student</li></ul>';
+    }
+    h += '<h4>Close or far, part by part</h4>' + renderPartBars(n.parts);
+    var nu = arr(n.not_used).map(str).filter(Boolean);
+    if (nu.length) h += '<p class="quiet small">Not used: ' + esc(nu.join('; ')) + '.</p>';
+    var kinds = arr(n.kinds).map(obj);
+    if (kinds.length) {
+      h += '<h4>Kinds of admitted student here</h4><ul class="kinds">' + kinds.map(function (q) {
+        return '<li' + (q.nearest === true ? ' class="nearest"' : '') + '><b>' + esc(q.kind_id) + '</b> ' + esc(q.name) +
+          ' <span class="quiet">(' + (num(q.size) || 0) + ' ' + plural(num(q.size) || 0, 'case', 'cases') + (num(q.distance) !== null ? ', distance ' + f2(num(q.distance)) : '') + ')</span>' +
+          (q.nearest === true ? ' <span class="tag tag-verified">nearest</span>' : '') + '</li>';
+      }).join('') + '</ul>';
+    }
+    h += '<h4>Nearest admitted</h4>' + examplesTable(n.nearest_admitted) + '<h4>Nearest denied</h4>' + examplesTable(n.nearest_denied);
+  }
+  if (ok) {
+    var ch = arr(n.changes).map(obj).filter(function (q) { return str(q.change); });
+    h += '<h4>What would bring the student closer</h4>';
+    if (ch.length) {
+      h += '<ol class="changes">' + ch.map(function (q) {
+        return '<li><b>' + esc(q.change) + '.</b> Gap ' + f2(num(q.gap_before) || 0) + ' to ' + f2(num(q.gap_after) || 0) + ', ' + esc(leanWord(q.lean_after).toLowerCase()) + '.' +
+          (arr(q.because).length ? '<span class="quiet">Nearest admitted would be ' + esc(arr(q.because).map(str).join(', ')) + '.</span>' : '') + '</li>';
+      }).join('') + '</ol>';
+    } else h += '<p class="state-box">' + esc(str(n.changes_note) || 'Nothing we can measure here would move this.') + '</p>';
+    h += '<p class="quiet small">Only the score, the activities rating and a major the student named are ever varied. Nothing about who the student is.</p>';
+  }
+  h += '<h4>Your school</h4>';
+  if (o.status === 'ok') h += '<p><b>' + esc(leanWord(o.lean)) + '.</b> ' + esc(str(o.text)) + '</p>';
+  else h += '<p>' + esc(str(o.text) || 'No finished cases.') + (num(o.n_admitted) !== null ? ' <span class="quiet">(' + (num(o.n_admitted) || 0) + ' admitted, ' + (num(o.n_denied) || 0) + ' denied, ' + (num(o.n_waitlisted) || 0) + ' waitlisted)</span>' : '') + '</p>';
+  h += '<p class="quiet small">' + esc(str(cl.caveat) || 'Closeness is a distance to past cases, not a forecast.') + '</p>';
+  return h;
+}
+var TABS = [['why', 'Why this label'], ['cases', 'Cases like this student'], ['resemble', 'Who they resemble'], ['levers', 'What could change it'], ['says', 'What the college says']];
 function renderDrill(c, tab) {
   c = obj(c);
   var L = obj(c.label), g = groupOf(L.state), active = TABS.some(function (t) { return t[0] === tab; }) ? tab : 'why';
@@ -748,7 +881,7 @@ function renderDrill(c, tab) {
     return h + '<section class="rc-sec">' + renderWhyTab(c) +
       '<p class="state-box">This college is outside our data, so there are no cases, statements or costs to show. Check the spelling, or pick it from the search.</p></section>';
   }
-  var body = {why: renderWhyTab(c), cases: renderCasesTab(c), levers: renderLeversTab(c), says: renderSaysTab(c)};
+  var body = {why: renderWhyTab(c), cases: renderCasesTab(c), resemble: renderResembleTab(c), levers: renderLeversTab(c), says: renderSaysTab(c)};
   h += '<div class="tabs" role="tablist" aria-label="About this college">' + TABS.map(function (t) {
     return '<button type="button" role="tab" id="tab-' + t[0] + '" data-act="tab" data-tab="' + t[0] + '" aria-controls="pan-' + t[0] +
       '" aria-selected="' + (t[0] === active ? 'true' : 'false') + '">' + esc(t[1]) + '</button>';
@@ -955,7 +1088,7 @@ function normaliseStudent(s) {
   return {
     label: str(first(s.label, s.name, s.id)), index: num(s.index),
     sat: num(first(s.sat, s.sat_total)), act: num(first(s.act, s.act_composite)),
-    gpa: num(first(s.gpa, s.gpa_value)), gpa_scale: num(first(s.gpa_scale, s.gpa_scale_max)),
+    gpa: num(first(s.gpa, s.gpa_value)), gpa_scale: num(first(s.gpa_scale, s.gpa_scale_max)), activities_rating: num(s.activities_rating),
     home_state: str(first(s.home_state, s.state)), intended_major: str(first(s.intended_major, s.major)),
     hooks: arr(s.hooks).map(str).filter(function (h) { return h && h.toLowerCase() !== 'none'; }),
     activities: arr(s.activities).map(function (a) {
@@ -991,6 +1124,7 @@ var api = {
   renderLeversCard: renderLeversCard, renderSuggestionsPanel: renderSuggestionsPanel, renderFootLinks: renderFootLinks,
   renderChanceAnswer: renderChanceAnswer, rangeBar: rangeBar, renderDrill: renderDrill, renderPool: renderPool,
   renderWhyTab: renderWhyTab, renderCasesTab: renderCasesTab, renderLeversTab: renderLeversTab, renderSaysTab: renderSaysTab,
+  renderResembleTab: renderResembleTab, renderScatter: renderScatter, renderPartBars: renderPartBars, TABS: TABS,
   renderEssay: renderEssay, renderHow: renderHow, renderStopBanner: renderStopBanner, verdictMarks: verdictMarks, renderEssayPanel: renderEssayPanel, renderHowPanel: renderHowPanel,
   renderFamily: renderFamily, renderCollegeChips: renderCollegeChips, renderQuickAdds: renderQuickAdds, renderEssayPicks: renderEssayPicks,
   renderActivityRows: renderActivityRows, renderHits: renderHits, listFrom: listFrom, normaliseStudent: normaliseStudent,
@@ -1060,7 +1194,7 @@ function showResult(result) {
 }
 function inputFromStudent(st) {
   var s = normaliseStudent(st);
-  return {label: s.label || 'Student', sat: s.sat, act: s.act, gpa: s.gpa, gpa_scale: s.gpa_scale, home_state: s.home_state || null,
+  return {label: s.label || 'Student', sat: s.sat, act: s.act, gpa: s.gpa, gpa_scale: s.gpa_scale, activities_rating: s.activities_rating, home_state: s.home_state || null,
           intended_major: s.intended_major || null, hooks: s.hooks.length ? s.hooks : ['none'], activities: s.activities, essay: '', college_list: s.college_list};
 }
 
@@ -1153,6 +1287,7 @@ function fillForm(s) {
   s = s || normaliseStudent({});
   $('f-label').value = s.label || '';
   setSlider('sat', s.sat, 1200); setSlider('act', s.act, 24); setSlider('gpa', s.gpa === null ? null : Math.min(4, s.gpa), 3.5);
+  setSlider('actv', s.activities_rating, 5);
   $('f-state').value = (s.home_state || '').toUpperCase();
   $('f-major').value = s.intended_major || ''; syncMajor();
   $('f-essay').value = s.essay || '';
@@ -1183,7 +1318,7 @@ function readForm() {
   function sv(k) { return $('f-' + k + '-none').checked ? null : num($('f-' + k).value); }
   var hooks = all('[data-act="toggle-hook"][aria-pressed="true"]').map(function (b) { return b.getAttribute('data-hook'); });
   return {
-    label: $('f-label').value.trim() || 'Student', sat: sv('sat'), act: sv('act'), gpa: sv('gpa'), gpa_scale: 4.0,
+    label: $('f-label').value.trim() || 'Student', sat: sv('sat'), act: sv('act'), gpa: sv('gpa'), gpa_scale: 4.0, activities_rating: sv('actv'),
     home_state: $('f-state').value || null, intended_major: $('f-major').value.trim() || null,
     hooks: hooks.length ? hooks : ['none'],
     activities: S.acts.filter(function (a) { return a.type || a.role || a.description; }),
@@ -1383,13 +1518,13 @@ function boot() {
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (t.id === 'whatif') onWhatIf(t.value);
-    else if (t.id === 'f-sat' || t.id === 'f-act' || t.id === 'f-gpa') { showOut(t.id.slice(2)); changed(); }
+    else if (t.id === 'f-sat' || t.id === 'f-act' || t.id === 'f-gpa' || t.id === 'f-actv') { showOut(t.id.slice(2)); changed(); }
     else if (t.id === 'f-major') { syncMajor(); changed(); }
     else if (t.id === 'f-essay') { S.essayPick = -2; drawEssayPicks(); }
   });
   document.addEventListener('change', function (e) {
     var t = e.target;
-    if (/^f-(sat|act|gpa)-none$/.test(t.id)) { showOut(t.id.slice(2, -5)); changed(); }
+    if (/^f-(sat|act|gpa|actv)-none$/.test(t.id)) { showOut(t.id.slice(2, -5)); changed(); }
     else if (t.id === 'f-state') changed();
   });
   $('student-form').addEventListener('submit', function (e) { e.preventDefault(); run(); });

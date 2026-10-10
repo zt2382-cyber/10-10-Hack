@@ -175,6 +175,7 @@ class ClosenessTests(unittest.TestCase):
             self.assertIn("to", f)
         self.assertTrue(r["own"]["verified"])
         self.assertIn("not a forecast", r["caveat"])
+        self.assertEqual(r["student"], {"score": 1450, "converted": False, "activities": None})
 
     def test_lean_follows_gap_and_threshold(self):
         self.assertEqual(S._lean(S.LEAN_GAP), "closer_to_admitted")
