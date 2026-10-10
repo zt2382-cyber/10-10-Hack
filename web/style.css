@@ -378,6 +378,9 @@ mark::before { content: "“"; } mark::after { content: "”"; }
 .step-name { font-weight: 700; }
 .step-what, .step-by { font-size: 15px; grid-column: 2; }
 .step-by { color: var(--mute); overflow-wrap: anywhere; }
+.ccheck { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--raised); display: grid; gap: 6px; }
+.ccheck-t { max-width: 420px; } .ccheck-t th[scope=col] { color: var(--mute); font-weight: 600; width: auto; }
+.ccheck-t th[scope=row] { width: 55%; }
 .case-msg.ok, .case-msg.refuse { margin-top: 10px; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--accent); background: var(--accent-soft); font-weight: 550; }
 .case-msg.refuse { border-color: var(--edge); background: var(--edge-bg); }
 

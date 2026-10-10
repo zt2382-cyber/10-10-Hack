@@ -424,5 +424,23 @@ class KindsTests(unittest.TestCase):
         self.assertLess(time.perf_counter() - t, 1.0)
 
 
+class CheckTests(unittest.TestCase):
+    def test_small_check_is_deterministic_national_only_and_adds_up(self):
+        a = S.check(n=60, seed=7)
+        b = S.check(n=60, seed=7)
+        for k in ("rows", "used", "sampled", "skipped_small_groups"):
+            self.assertEqual(a[k], b[k])
+        self.assertEqual(a["sampled"], 60)
+        self.assertEqual(a["used"] + a["skipped_small_groups"], 60)
+        self.assertEqual([r["lean"] for r in a["rows"]], ["closer_to_admitted", "in_between", "closer_to_denied"])
+        for r in a["rows"]:
+            self.assertEqual(r["n"], r["admitted"] + r["denied"])
+        self.assertNotIn("synthetic", json.dumps(a).lower())
+        for text in strings(a):
+            for w in FORBIDDEN:
+                self.assertNotIn(w, text.lower())
+        self.assertNotEqual(json.dumps(S.check(n=60, seed=8)["rows"]), json.dumps(a["rows"]))
+
+
 if __name__ == "__main__":
     unittest.main()

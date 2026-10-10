@@ -15,9 +15,12 @@ on where the data has them, never suggested as things to change.
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from engine import cases as _cases
 from engine import colleges as _colleges
+
+ROOT = Path(__file__).resolve().parent.parent
 
 NEIGHBOURS = 7
 NEEDED = _cases.NEEDED
@@ -469,6 +472,63 @@ def closeness(student, college, tags=None) -> dict:
             "caveat": CAVEAT}
 
 
+# ---------------------------------------------------------------- R5. how well it holds up
+
+CHECK_N = 400
+CHECK_SEED = 20261010
+CHECK_PATH = ROOT / "docs" / "closeness_check.json"
+CHECK_CAVEAT = ("Counted on self-reported public posts, each person hidden before their own lean was computed. People who "
+                "post are admitted far more often than applicants overall, so this says how the lean sorts posters, not "
+                "applicants.")
+
+
+def check(n=CHECK_N, seed=CHECK_SEED) -> dict:
+    """For a seeded sample of real national decisions, hide that person, compute their lean at that college, and
+    count how many in each lean were in fact admitted and denied. National pool only; never SYNTHETIC rows."""
+    import random
+    from datetime import datetime, timezone
+
+    by_college = _cases._national()[0]
+    scorecard = {}
+    for col in _colleges.load_colleges():
+        short = _colleges.case_name_for(col)
+        if short and short not in scorecard:
+            scorecard[short] = col
+    pool = [(short, cv) for short in sorted(by_college) for cv in _national_groups(short)[0] + _national_groups(short)[1]]
+    rng = random.Random(seed)
+    sample = rng.sample(pool, min(n, len(pool)))
+    table = {k: {"admitted": 0, "denied": 0} for k in ("closer_to_admitted", "in_between", "closer_to_denied")}
+    skipped = 0
+    for short, cv in sample:
+        groups = _national_groups(short)
+        adm, den = groups[0], groups[1]
+        # the hidden person must leave both groups at or above NEEDED, as a real student would see them
+        if len(adm) - (cv["outcome"] == "admitted") < NEEDED or len(den) - (cv["outcome"] == "denied") < NEEDED:
+            skipped += 1
+            continue
+        sv = {"score": cv["score"], "converted": False, "activities": cv["activities"], "major_group": cv["major_group"],
+              "major_interests": [cv["major_group"]] if cv["major_group"] else [], "hooks": cv["hooks"],
+              "home_state": cv["home_state"], "gpa": None}
+        lean = _lean(_gap(sv, groups, scorecard.get(short, {}), exclude=cv["case_id"])[2])
+        if lean:
+            table[lean][cv["outcome"]] += 1
+    rows = [{"lean": k, "admitted": v["admitted"], "denied": v["denied"], "n": v["admitted"] + v["denied"]} for k, v in table.items()]
+    return {"generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"), "sampled": len(sample),
+            "used": sum(r["n"] for r in rows), "skipped_small_groups": skipped, "seed": seed, "neighbours": NEIGHBOURS,
+            "lean_gap": LEAN_GAP, "source": NATIONAL_SOURCE, "rows": rows, "caveat": CHECK_CAVEAT}
+
+
+def _write_check():
+    import json
+    res = check()
+    CHECK_PATH.write_text(json.dumps(res, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"{'lean':20} {'admitted':>9} {'denied':>7} {'n':>5}")
+    for r in res["rows"]:
+        print(f"{r['lean']:20} {r['admitted']:9} {r['denied']:7} {r['n']:5}")
+    print(f"sampled {res['sampled']}, used {res['used']}, skipped {res['skipped_small_groups']} (a group would drop under {NEEDED})")
+    print("written:", CHECK_PATH)
+
+
 # ---------------------------------------------------------------- command line
 
 def _spread():
@@ -492,7 +552,7 @@ if __name__ == "__main__":
     if "--spread" in sys.argv:
         _spread()
     elif "--check" in sys.argv:
-        print("--check is not built yet.")
+        _write_check()
     else:
         from engine import pipeline
         st = pipeline.demo_students()[0]

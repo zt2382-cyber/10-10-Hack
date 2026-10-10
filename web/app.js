@@ -936,7 +936,15 @@ function renderEssay(reader, privacy) {
   if (meta.length) h += '<details class="more"><summary>Details</summary><p class="quiet small">' + esc(meta.join('. ')) + '.</p></details>';
   return h + '</div>';
 }
-function renderHow(steps, checks, prism, privacy) {
+function renderClosenessCheck(cc) {
+  var c = obj(cc), rows = arr(c.rows).map(obj).filter(function (r) { return str(r.lean); });
+  if (!rows.length) return '';
+  return '<div class="ccheck"><p><b>Closeness, checked on ' + (num(c.used) || 0) + ' past decisions.</b> Each person was hidden, their lean computed, and the real outcome counted.</p>' +
+    '<table class="kv ccheck-t"><thead><tr><th scope="col">Lean</th><th scope="col">Admitted</th><th scope="col">Denied</th></tr></thead><tbody>' +
+    rows.map(function (r) { return '<tr><th scope="row">' + esc(leanWord(r.lean)) + '</th><td>' + (num(r.admitted) || 0) + '</td><td>' + (num(r.denied) || 0) + '</td></tr>'; }).join('') +
+    '</tbody></table>' + (str(c.caveat) ? '<p class="quiet small">' + esc(c.caveat) + '</p>' : '') + '</div>';
+}
+function renderHow(steps, checks, prism, privacy, closenessCheck) {
   var ss = arr(steps).map(obj), ch = obj(checks), pr = obj(prism), pv = obj(privacy), h = '<div class="how">';
   if (ss.length) {
     h += '<ol class="steps">' + ss.map(function (s, i) {
@@ -966,6 +974,7 @@ function renderHow(steps, checks, prism, privacy) {
       (num(pr.records_sent) ? ' ' + num(pr.records_sent) + ' ' + plural(num(pr.records_sent), 'record', 'records') + ' sent.' : '') +
       (str(pr.guardrail) ? ' Essay guard: ' + esc(pr.guardrail) + '.' : '') + '</p>';
   }
+  h += renderClosenessCheck(closenessCheck);
   return h + '<p class="quiet small">Labels are set by code from published numbers. A model only reads the essay and returns quotes, which code checks. The counselor decides.</p></div>';
 }
 /* The essay guard's verdicts: a calm banner when the essay was stopped, small passed marks otherwise. */
@@ -987,7 +996,7 @@ function renderStopBanner(privacy, reader) {
 function renderEssayPanel(result) { return panelHead('For the counselor', 'Essay notes') + '<section class="rc-sec">' + renderEssay(obj(result).reader, obj(result).privacy) + '</section>'; }
 function renderHowPanel(result) {
   var r = obj(result);
-  return panelHead('Check the work', 'How this was made') + '<section class="rc-sec">' + renderHow(r.steps, r.checks, r.prism, r.privacy) + '</section>';
+  return panelHead('Check the work', 'How this was made') + '<section class="rc-sec">' + renderHow(r.steps, r.checks, r.prism, r.privacy, r.closeness_check) + '</section>';
 }
 
 /* ---------- family sheet (print only) ---------- */
