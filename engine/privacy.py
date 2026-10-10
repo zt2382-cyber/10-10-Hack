@@ -42,6 +42,8 @@ _ADDR = re.compile(
     r"\b\d{1,6}[ \t]+((?:[A-Za-z0-9.'’\-]+[ \t]+){1,3}?)(" + _SUFFIX + r")\b\.?"
     r"(?:,?[ \t]+(?:apt|apartment|unit|suite|ste|#)\.?[ \t]*[\w\-]+)?"
     r"(?:,[ \t]*" + _CITY_STATE_ZIP + r")?", re.I)
+_ADDR_PLAIN_WORDS = {"different", "new", "more", "other", "easy", "long", "short", "same", "only", "best", "right",
+                     "wrong", "hard", "big", "great", "good", "bad", "whole", "single", "simple", "better", "worse"}
 _ADDR_NOT_A_STREET = {  # words that mean the number is a count or a time, not a house number
     "the", "of", "a", "an", "to", "on", "in", "at", "my", "our", "and", "or", "for", "with", "from", "by", "that",
     "this", "it", "its", "his", "her", "their", "your", "years", "year", "days", "day", "hours", "hour", "minutes",
@@ -251,7 +253,10 @@ def _address_fn(m):
     if any(w.strip(".,'") in _ADDR_NOT_A_STREET for w in words):
         return None
     if m.group(2).lower() in _AMBIGUOUS_SUFFIX and not any(w[:1].isupper() or w[:1].isdigit() for w in m.group(1).split()):
-        return None
+        # Lower-case street names ("123 main way") are still addresses; only let through phrases that are plainly
+        # not a street ("3 different way", "2 more pl"). Found by a second-opinion review through Nicrron.
+        if any(w.strip(".,'") in _ADDR_PLAIN_WORDS for w in words):
+            return None
     return "[ADDRESS]"
 
 
